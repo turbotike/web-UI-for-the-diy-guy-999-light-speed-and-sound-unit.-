@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RC Engine Sound ESP32 — Configurator Edition by turbotike</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --border: #222;
+    --accent: #20C20E;
+    --accent2: #f472b6;
+    --gold: #fbbf24;
+    --text: #e0e0e0;
+    --dim: #888;
+  }
+  body {
+    font-family: 'Segoe UI', -apple-system, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* Hero */
+  .hero {
+    text-align: center;
+    padding: 80px 20px 60px;
+    background: linear-gradient(180deg, #0f1a0f 0%, var(--bg) 100%);
+    border-bottom: 1px solid var(--border);
+  }
+  .hero h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    color: var(--accent);
+    font-weight: 800;
+    letter-spacing: -1px;
+    text-shadow: 0 0 40px rgba(32, 194, 14, 0.3);
+  }
+  .hero .subtitle {
+    font-size: 1.2rem;
+    color: var(--dim);
+    margin-top: 8px;
+  }
+  .hero .by {
+    font-size: 1rem;
+    color: var(--gold);
+    margin-top: 16px;
+    font-weight: 600;
+  }
+  .hero .by span { color: var(--dim); font-weight: 400; }
+  .hero .buttons {
+    margin-top: 32px;
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  .btn {
+    display: inline-block;
+    padding: 14px 32px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: #000;
+  }
+  .btn-primary:hover { background: #2dd612; text-decoration: none; transform: translateY(-2px); box-shadow: 0 4px 20px rgba(32, 194, 14, 0.4); }
+  .btn-outline {
+    background: transparent;
+    color: var(--accent);
+    border: 2px solid var(--accent);
+  }
+  .btn-outline:hover { background: rgba(32, 194, 14, 0.1); text-decoration: none; transform: translateY(-2px); }
+
+  /* Sections */
+  section {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 60px 20px;
+  }
+  section h2 {
+    font-size: 2rem;
+    margin-bottom: 32px;
+    text-align: center;
+    color: var(--accent);
+  }
+
+  /* Features grid */
+  .features {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  .feature {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .feature:hover { border-color: var(--accent); transform: translateY(-4px); }
+  .feature .icon { font-size: 2rem; margin-bottom: 12px; }
+  .feature h3 { color: var(--gold); font-size: 1.1rem; margin-bottom: 8px; }
+  .feature p { color: var(--dim); font-size: 0.95rem; }
+
+  /* Steps */
+  .steps {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 24px;
+    margin-top: 20px;
+  }
+  .step {
+    text-align: center;
+    padding: 32px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+  }
+  .step .num {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #000;
+    font-weight: 800;
+    font-size: 1.4rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+  .step h3 { margin-bottom: 8px; color: #fff; }
+  .step p { color: var(--dim); font-size: 0.9rem; }
+  .step code {
+    background: #1a1a1a;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: var(--accent);
+  }
+
+  /* Vehicles table */
+  .vehicles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 12px;
+  }
+  .veh-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .veh-card h4 { color: var(--gold); font-size: 0.9rem; margin-bottom: 6px; }
+  .veh-card p { color: var(--dim); font-size: 0.8rem; line-height: 1.4; }
+
+  /* Image showcase */
+  .showcase {
+    text-align: center;
+    margin: 40px 0;
+  }
+  .showcase img {
+    max-width: 100%;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  }
+
+  /* Credits */
+  .credits {
+    text-align: center;
+    padding: 40px 20px 60px;
+    border-top: 1px solid var(--border);
+  }
+  .credits h2 { margin-bottom: 24px; }
+  .credit-row {
+    display: flex;
+    justify-content: center;
+    gap: 40px;
+    flex-wrap: wrap;
+  }
+  .credit {
+    text-align: center;
+    min-width: 160px;
+  }
+  .credit .role { color: var(--dim); font-size: 0.85rem; }
+  .credit .name { color: var(--gold); font-size: 1.1rem; font-weight: 600; margin-top: 4px; }
+
+  /* Footer */
+  footer {
+    text-align: center;
+    padding: 20px;
+    border-top: 1px solid var(--border);
+    color: var(--dim);
+    font-size: 0.85rem;
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .hero { padding: 50px 16px 40px; }
+    section { padding: 40px 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Hero -->
+<div class="hero">
+  <h1>RC Engine Sound ESP32</h1>
+  <div class="subtitle">Configurator Edition — Full browser-based tuning for your RC truck</div>
+  <div class="by">
+    <span>Created by</span> turbotike
+    <span>&nbsp;•&nbsp;Original firmware by</span> <a href="https://github.com/TheDIYGuy999/Rc_Engine_Sound_ESP32">TheDIYGuy999</a>
+  </div>
+  <div class="buttons">
+    <a href="https://github.com/turbotike/Rc_Engine_Sound_ESP32/releases" class="btn btn-primary">Download Latest</a>
+    <a href="https://github.com/turbotike/Rc_Engine_Sound_ESP32" class="btn btn-outline">View on GitHub</a>
+  </div>
+</div>
+
+<!-- Features -->
+<section>
+  <h2>Features</h2>
+  <div class="features">
+    <div class="feature">
+      <div class="icon">🖥️</div>
+      <h3>Web-Based Configurator</h3>
+      <p>Full browser GUI — adjust every setting with sliders, dropdowns, and checkboxes. No code editing.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🔊</div>
+      <h3>Live Sound Builder</h3>
+      <p>Load, preview, trim, crossfade, and smooth engine sounds in real-time. Install with one click.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🎚️</div>
+      <h3>80+ Vehicle Profiles</h3>
+      <p>Scania V8, Mack, Kenworth, Caterpillar, Defender, Mustang, LaFerrari, tanks, tractors, and more.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">⚡</div>
+      <h3>One-Click Setup</h3>
+      <p>Double-click START.bat — Python installs automatically if needed, browser opens, done.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🎵</div>
+      <h3>WAV → Header Converter</h3>
+      <p>Drag & drop .wav files to create ESP32-compatible sound headers with resampling & normalization.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🚀</div>
+      <h3>Compile & Flash</h3>
+      <p>Build and upload firmware to your ESP32 directly from the web interface.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">💾</div>
+      <h3>Backup & Restore</h3>
+      <p>Export your entire vehicle config. Share it, import it on another board, or roll back changes.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🔁</div>
+      <h3>Seamless Loop Crossfade</h3>
+      <p>Firmware-level 10% crossfade for perfectly seamless engine sound loops — no clicks or pops.</p>
+    </div>
+    <div class="feature">
+      <div class="icon">🎛️</div>
+      <h3>Software Volume Override</h3>
+      <p>Bypass the hardware volume pot entirely — control volume from the web slider (0-250%).</p>
+    </div>
+  </div>
+</section>
+
+<!-- Quick Start -->
+<section>
+  <h2>Quick Start</h2>
+  <div class="steps">
+    <div class="step">
+      <div class="num">1</div>
+      <h3>Download</h3>
+      <p>Grab the latest release from GitHub or clone the repo</p>
+    </div>
+    <div class="step">
+      <div class="num">2</div>
+      <h3>Launch</h3>
+      <p>Double-click <code>START.bat</code> — it handles everything</p>
+    </div>
+    <div class="step">
+      <div class="num">3</div>
+      <h3>Configure</h3>
+      <p>Tweak sounds, lights, ESC — all from your browser</p>
+    </div>
+    <div class="step">
+      <div class="num">4</div>
+      <h3>Flash</h3>
+      <p>Hit Compile & Flash to upload to your ESP32</p>
+    </div>
+  </div>
+</section>
+
+<!-- Vehicle Sounds -->
+<section>
+  <h2>Included Vehicle Sounds</h2>
+  <div class="vehicles-grid">
+    <div class="veh-card">
+      <h4>Diesel Trucks</h4>
+      <p>Scania V8, Mack SuperLiner, Kenworth W900A, MAN TGX, Mercedes Actros, Freightliner Cummins</p>
+    </div>
+    <div class="veh-card">
+      <h4>Muscle & Sports</h4>
+      <p>1965 Ford Mustang V8, Chevy Nova, Jaguar XJS, LaFerrari, Jeep Trackhawk</p>
+    </div>
+    <div class="veh-card">
+      <h4>Crawlers & 4x4</h4>
+      <p>Land Rover Defender (V8, Td5), Jeep Wrangler Rubicon, Land Cruiser FJ40, Hilux Diesel</p>
+    </div>
+    <div class="veh-card">
+      <h4>Heavy Equipment</h4>
+      <p>Caterpillar D6/D11, CAT 730, Hitachi ZW370, Benford Dumper, Komatsu</p>
+    </div>
+    <div class="veh-card">
+      <h4>Military</h4>
+      <p>GAZ-66, M35 Deuce, IS-3 Tank, Kirovets K700, Ural</p>
+    </div>
+    <div class="veh-card">
+      <h4>Special</h4>
+      <p>Harley Davidson FXSB, Ferguson TEA20, Unimog, Magirus Deutz</p>
+    </div>
+  </div>
+</section>
+
+<!-- Hardware -->
+<section>
+  <h2>Hardware</h2>
+  <div class="showcase">
+    <img src="documentation/pictures/30pinSmdSwitchModeVersion.png" alt="ESP32 Sound Controller Board">
+  </div>
+  <p style="text-align:center;color:var(--dim);margin-top:16px">
+    Works with the TheDIYGuy999 ESP32 Sound & Light Controller board (v1.2+)<br>
+    ESP32-WROOM-32 • PAM8403 amplifier • PWM/PPM/SBUS/IBUS input
+  </p>
+</section>
+
+<!-- Credits -->
+<div class="credits">
+  <h2>Credits</h2>
+  <div class="credit-row">
+    <div class="credit">
+      <div class="role">Configurator & Enhancements</div>
+      <div class="name">turbotike</div>
+    </div>
+    <div class="credit">
+      <div class="role">Original Firmware</div>
+      <div class="name"><a href="https://github.com/TheDIYGuy999">TheDIYGuy999</a></div>
+    </div>
+    <div class="credit">
+      <div class="role">Sound Engine Base</div>
+      <div class="name"><a href="https://github.com/bitluni">bitluni</a></div>
+    </div>
+    <div class="credit">
+      <div class="role">LCD Dashboard</div>
+      <div class="name">Frevic & Gamadril</div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  RC Engine Sound ESP32 — Configurator Edition &copy; 2024-2026 turbotike
+</footer>
+
+</body>
+</html>

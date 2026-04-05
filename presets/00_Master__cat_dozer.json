@@ -1,0 +1,1134 @@
+{
+  "vehicle": "00_Master.h",
+  "name": "cat dozer",
+  "savedAt": 1775341172,
+  "data": {
+    "0_generalSettings.h": {
+      "WEMOS_D1_MINI_ESP32": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "DEBUG": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "CHANNEL_DEBUG": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "ESC_DEBUG": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "AUTO_TRANS_DEBUG": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "MANUAL_TRANS_DEBUG": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "TRACKED_DEBUG": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "SERVO_DEBUG": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "ESPNOW_DEBUG": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "eeprom_id": {
+        "kind": "text_var",
+        "value": "5"
+      },
+      "ERASE_EEPROM_ON_BOOT": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "ENABLE_WIRELESS": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "cpType": {
+        "kind": "text_var",
+        "value": "WIFI_POWER_7dBm"
+      },
+      "default_ssid": {
+        "kind": "text_var",
+        "value": "\"My_Truck\""
+      },
+      "default_password": {
+        "kind": "text_var",
+        "value": "\"123456789\""
+      },
+      "USE_CSS": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "MODERN_CSS": {
+        "kind": "flag",
+        "enabled": true
+      }
+    },
+    "1_Vehicle.h": {
+      "__vehicle__": "00_Master.h"
+    },
+    "2_Remote.h": {
+      "FLYSKY_FS_I6X": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "FLYSKY_FS_I6S": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "FLYSKY_FS_I6S_LOADER": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "FLYSKY_FS_I6S_DOZER": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "FLYSKY_FS_I6S_EXCAVATOR": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "FRSKY_TANDEM_EXCAVATOR": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "FRSKY_TANDEM_HARMONY_LOADER": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "FRSKY_TANDEM_CRANE": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "FLYSKY_GT5": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "RGT_EX86100": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "GRAUPNER_MZ_12": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "FLYSKY_FS_I6S_EXCAVATOR_TEST": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "PROTOTYPE_36": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "SBUS_COMMUNICATION": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "sbusBaud": {
+        "kind": "text_var",
+        "value": "100000"
+      },
+      "EMBEDDED_SBUS": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "sbusFailsafeTimeout": {
+        "kind": "text_var",
+        "value": "100"
+      },
+      "IBUS_COMMUNICATION": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "SUMD_COMMUNICATION": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "PPM_COMMUNICATION": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "EXPONENTIAL_THROTTLE": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "EXPONENTIAL_STEERING": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "CHANNEL_AVERAGING": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "pulseNeutral": {
+        "kind": "text_var",
+        "value": "30"
+      },
+      "pulseSpan": {
+        "kind": "text_var",
+        "value": "480"
+      },
+      "AUTO_LIGHTS": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "AUTO_ENGINE_ON_OFF": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "AUTO_INDICATORS": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "STEERING": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "1"
+      },
+      "GEARBOX": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "6"
+      },
+      "THROTTLE": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "3"
+      },
+      "HORN": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "5"
+      },
+      "FUNCTION_R": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "2"
+      },
+      "FUNCTION_L": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "4"
+      },
+      "POT2": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "8"
+      },
+      "MODE1": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "7"
+      },
+      "MODE2": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "9"
+      },
+      "MOMENTARY1": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "NONE"
+      },
+      "HAZARDS": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "NONE"
+      },
+      "INDICATOR_LEFT": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "NONE"
+      },
+      "INDICATOR_RIGHT": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "NONE"
+      },
+      "CH_14": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "14"
+      },
+      "CH_15": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "15"
+      },
+      "CH_16": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "16"
+      },
+      "sbusInverted": {
+        "kind": "bool_var",
+        "value": "true"
+      }
+    },
+    "3_ESC.h": {
+      "QUICRUN_FUSION": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "HYDROSTATIC_MODE": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "directionChangeLimit": {
+        "kind": "text_var",
+        "value": "80"
+      },
+      "RZ7886_DRIVER_MODE": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "RZ7886_FREQUENCY": {
+        "kind": "text_var",
+        "value": "500"
+      },
+      "RZ7886_DRAGBRAKE_DUTY": {
+        "kind": "text_var",
+        "value": "100"
+      },
+      "brakeMargin": {
+        "kind": "text_var",
+        "value": "0"
+      },
+      "escPulseSpan": {
+        "kind": "text_var",
+        "value": "500"
+      },
+      "escTakeoffPunch": {
+        "kind": "text_var",
+        "value": "70"
+      },
+      "escReversePlus": {
+        "kind": "text_var",
+        "value": "0"
+      },
+      "crawlerEscRampTime": {
+        "kind": "text_var",
+        "value": "10"
+      },
+      "globalAccelerationPercentage": {
+        "kind": "text_var",
+        "value": "100"
+      },
+      "BATTERY_PROTECTION": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "CUTOFF_VOLTAGE": {
+        "kind": "text_var",
+        "value": "3.3"
+      },
+      "FULLY_CHARGED_VOLTAGE": {
+        "kind": "text_var",
+        "value": "4.2"
+      },
+      "RECOVERY_HYSTERESIS": {
+        "kind": "text_var",
+        "value": "0.2"
+      },
+      "RESISTOR_TO_BATTTERY_PLUS": {
+        "kind": "text_var",
+        "value": "9400"
+      },
+      "RESISTOR_TO_GND": {
+        "kind": "text_var",
+        "value": "1000"
+      },
+      "DIODE_DROP": {
+        "kind": "text_var",
+        "value": "0.31"
+      },
+      "outOfFuelVolumePercentage": {
+        "kind": "text_var",
+        "value": "80"
+      }
+    },
+    "4_Transmission.h": {
+      "VIRTUAL_3_SPEED": {
+        "kind": "define_val",
+        "enabled": false,
+        "value": "allows to simulate a 3 speed shifing transmission, if your vehicle doesn't have a real one."
+      },
+      "VIRTUAL_16_SPEED_SEQUENTIAL": {
+        "kind": "define_val",
+        "enabled": false,
+        "value": "will enable a sequencial transmission, shifted by up / down impulses via 3 position switch"
+      },
+      "automaticReverseAccelerationPercentage": {
+        "kind": "text_var",
+        "value": "100"
+      },
+      "lowRangePercentage": {
+        "kind": "text_var",
+        "value": "58"
+      },
+      "SEMI_AUTOMATIC": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "MODE1_SHIFTING": {
+        "kind": "define_val",
+        "enabled": false,
+        "value": "The 2 speed transmission is shifted by the \"Mode 1\" button instead of the 3 position switch."
+      },
+      "TRANSMISSION_NEUTRAL": {
+        "kind": "define_val",
+        "enabled": false,
+        "value": "Allows to put the transmission in neutral. This can't be used, if the \"Mode 1\" button is used for other stuff!"
+      },
+      "maxClutchSlippingRpm": {
+        "kind": "text_var",
+        "value": "250"
+      },
+      "DOUBLE_CLUTCH": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "HIGH_SLIPPINGPOINT": {
+        "kind": "flag",
+        "enabled": false
+      }
+    },
+    "5_Shaker.h": {
+      "GT_POWER_STOCK": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "GT_POWER_PLASTIC": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "shakerStart": {
+        "kind": "text_var",
+        "value": "100"
+      },
+      "shakerIdle": {
+        "kind": "text_var",
+        "value": "49"
+      },
+      "shakerFullThrottle": {
+        "kind": "text_var",
+        "value": "40"
+      },
+      "shakerStop": {
+        "kind": "text_var",
+        "value": "60"
+      }
+    },
+    "6_Lights.h": {
+      "NEOPIXEL_ENABLED": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "NEOPIXEL_ON_CH4": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "NEOPIXEL_COUNT": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "8"
+      },
+      "NEOPIXEL_BRIGHTNESS": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "127"
+      },
+      "MAX_POWER_MILLIAMPS": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "100"
+      },
+      "NEOPIXEL_HIGHBEAM": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "neopixelMode": {
+        "kind": "text_var",
+        "value": "2"
+      },
+      "THIRD_BRAKELIGHT": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "ROTATINGBEACON_ON_B1": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "INDICATOR_TOGGLING_MODE": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "noCabLights": {
+        "kind": "bool_var",
+        "value": "false"
+      },
+      "noFogLights": {
+        "kind": "bool_var",
+        "value": "false"
+      },
+      "xenonLights": {
+        "kind": "bool_var",
+        "value": "false"
+      },
+      "flickeringWileCranking": {
+        "kind": "bool_var",
+        "value": "false"
+      },
+      "ledIndicators": {
+        "kind": "bool_var",
+        "value": "false"
+      },
+      "swap_L_R_indicators": {
+        "kind": "bool_var",
+        "value": "false"
+      },
+      "indicatorsAsSidemarkers": {
+        "kind": "bool_var",
+        "value": "false"
+      },
+      "separateFullBeam": {
+        "kind": "bool_var",
+        "value": "false"
+      },
+      "flashingBlueLight": {
+        "kind": "bool_var",
+        "value": "true"
+      },
+      "hazardsWhile5thWheelUnlocked": {
+        "kind": "bool_var",
+        "value": "true"
+      },
+      "cabLightsBrightness": {
+        "kind": "text_var",
+        "value": "100"
+      },
+      "sideLightsBrightness": {
+        "kind": "text_var",
+        "value": "140"
+      },
+      "rearlightDimmedBrightness": {
+        "kind": "text_var",
+        "value": "30"
+      },
+      "rearlightParkingBrightness": {
+        "kind": "text_var",
+        "value": "5"
+      },
+      "headlightParkingBrightness": {
+        "kind": "text_var",
+        "value": "5"
+      },
+      "reversingLightBrightness": {
+        "kind": "text_var",
+        "value": "140"
+      },
+      "fogLightBrightness": {
+        "kind": "text_var",
+        "value": "255"
+      }
+    },
+    "7_Servos.h": {
+      "SERVOS_DEFAULT": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "SERVOS_LANDY_MN_MODEL": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "SERVOS_LANDY_DOUBLE_EAGLE": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "SERVOS_C34": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "SERVOS_URAL": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "SERVOS_RGT_EX86100": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "SERVOS_ACTROS": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "SERVOS_KING_HAULER": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "SERVOS_RACING_TRUCK": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "SERVOS_MECCANO_DUMPER": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "SERVOS_OPEN_RC_TRACTOR": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "SERVOS_EXCAVATOR": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "SERVOS_HYDRAULIC_EXCAVATOR": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "SERVOS_CRANE": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "CH3_BEACON": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "MODE2_TRAILER_UNLOCKING": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "SERVO_FREQUENCY": {
+        "kind": "text_var",
+        "value": "50"
+      },
+      "CH1L": {
+        "kind": "text_var",
+        "value": "1000"
+      },
+      "CH1C": {
+        "kind": "text_var",
+        "value": "1500"
+      },
+      "CH1R": {
+        "kind": "text_var",
+        "value": "2000"
+      },
+      "CH2L": {
+        "kind": "text_var",
+        "value": "1000"
+      },
+      "CH2C": {
+        "kind": "text_var",
+        "value": "1500"
+      },
+      "CH2R": {
+        "kind": "text_var",
+        "value": "2000"
+      },
+      "CH3L": {
+        "kind": "text_var",
+        "value": "1000"
+      },
+      "CH3C": {
+        "kind": "text_var",
+        "value": "1500"
+      },
+      "CH3R": {
+        "kind": "text_var",
+        "value": "2000"
+      },
+      "CH4L": {
+        "kind": "text_var",
+        "value": "1350"
+      },
+      "CH4R": {
+        "kind": "text_var",
+        "value": "1650"
+      },
+      "STEERING_RAMP_TIME": {
+        "kind": "text_var",
+        "value": "0"
+      },
+      "MODE2_WINCH": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "NO_WINCH_DELAY": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "MODE2_HYDRAULIC": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "boomDownwardsHydraulic": {
+        "kind": "bool_var",
+        "value": "true"
+      },
+      "reverseBoomSoundDirection": {
+        "kind": "bool_var",
+        "value": "false"
+      },
+      "CH4C": {
+        "kind": "text_var",
+        "value": "1500"
+      },
+      "CH1_RAMP_TIME": {
+        "kind": "text_var",
+        "value": "0"
+      },
+      "CH2_RAMP_TIME": {
+        "kind": "text_var",
+        "value": "100"
+      },
+      "CH3_RAMP_TIME": {
+        "kind": "text_var",
+        "value": "1000"
+      },
+      "CH4_RAMP_TIME": {
+        "kind": "text_var",
+        "value": "2000"
+      },
+      "PINGON_MODE": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "ESC_L": {
+        "kind": "text_var",
+        "value": "1000"
+      },
+      "ESC_C": {
+        "kind": "text_var",
+        "value": "1500"
+      },
+      "ESC_R": {
+        "kind": "text_var",
+        "value": "2000"
+      },
+      "ESC_MIN": {
+        "kind": "text_var",
+        "value": "1500"
+      },
+      "ESC_MAX": {
+        "kind": "text_var",
+        "value": "1800"
+      }
+    },
+    "8_Sound.h": {
+      "NO_SIREN": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "NO_INDICATOR_SOUND": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "numberOfVolumeSteps": {
+        "kind": "text_var",
+        "value": "4"
+      },
+      "masterVolumeCrawlerThreshold": {
+        "kind": "text_var",
+        "value": "60"
+      }
+    },
+    "9_Dashboard.h": {
+      "SPI_DASHBOARD": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "FREVIC_DASHBOARD": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "dashRotation": {
+        "kind": "text_var",
+        "value": "1"
+      },
+      "MAX_REAL_SPEED": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "110"
+      },
+      "RPM_MAX": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "500"
+      }
+    },
+    "10_Trailer.h": {
+      "TRAILER_LIGHTS_TRAILER_PRESENCE_SWITCH_DEPENDENT": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "defaultUseTrailer1": {
+        "kind": "bool_var",
+        "value": "true"
+      },
+      "defaultUseTrailer2": {
+        "kind": "bool_var",
+        "value": "false"
+      },
+      "defaultUseTrailer3": {
+        "kind": "bool_var",
+        "value": "false"
+      }
+    },
+    "vehicles/00_Master.h": {
+      "__sound__the_start_sound_uncomment_the_one_you_want": {
+        "kind": "sound_choice",
+        "value": "Cat3408Start.h"
+      },
+      "__sound__the_motor_idle_sound_uncomment_the_one_you_want": {
+        "kind": "sound_choice",
+        "value": "MackSuperLinerIdle.h"
+      },
+      "__sound__the_motor_revving_sound_uncomment_the_one_you_want": {
+        "kind": "sound_choice",
+        "value": "MackSuperLinerRev.h"
+      },
+      "__sound__the_jake_brake_sound_uncomment_the_one_you_want": {
+        "kind": "sound_choice",
+        "value": "JakeBrake.h"
+      },
+      "__sound__the_diesel_or_whatever_ignition_knock_sound_played_in_the_fixed_sampling_rate_interrupt_uncomment_the_one_you_want": {
+        "kind": "sound_choice",
+        "value": "MackSuperLinerKnock.h"
+      },
+      "__sound__the_horn_sound_uncomment_the_one_you_want": {
+        "kind": "sound_choice",
+        "value": "westinghouseHorn.h"
+      },
+      "__sound__the_siren_additional_horn_sound_uncomment_the_one_you_want": {
+        "kind": "sound_choice",
+        "value": "Tequila.h"
+      },
+      "__sound__the_air_brake_release_sound_uncomment_the_one_you_want": {
+        "kind": "sound_choice",
+        "value": "TruckAirBrakes2.h"
+      },
+      "__sound__the_parking_brake_engaging_sound_uncomment_the_one_you_want": {
+        "kind": "sound_choice",
+        "value": "ParkingBrake.h"
+      },
+      "__sound__the_gear_shifting_sound_uncomment_the_one_you_want": {
+        "kind": "sound_choice",
+        "value": "ClunkingGearShifting.h"
+      },
+      "__sound__the_additional_sound1_uncomment_the_one_you_want": {
+        "kind": "sound_choice",
+        "value": "M2Fire.h"
+      },
+      "__sound__the_reversing_beep_sound": {
+        "kind": "sound_choice",
+        "value": "TruckReversingBeep.h"
+      },
+      "__sound__the_indicator_turn_signal_options": {
+        "kind": "sound_choice",
+        "value": "Indicator.h"
+      },
+      "startVolumePercentage": {
+        "kind": "text_var",
+        "value": "150"
+      },
+      "idleVolumePercentage": {
+        "kind": "text_var",
+        "value": "90"
+      },
+      "engineIdleVolumePercentage": {
+        "kind": "text_var",
+        "value": "60"
+      },
+      "fullThrottleVolumePercentage": {
+        "kind": "text_var",
+        "value": "130"
+      },
+      "REV_SOUND": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "revVolumePercentage": {
+        "kind": "text_var",
+        "value": "100"
+      },
+      "engineRevVolumePercentage": {
+        "kind": "text_var",
+        "value": "60"
+      },
+      "revSwitchPoint": {
+        "kind": "text_var",
+        "value": "10"
+      },
+      "idleEndPoint": {
+        "kind": "text_var",
+        "value": "500"
+      },
+      "idleVolumeProportionPercentage": {
+        "kind": "text_var",
+        "value": "90"
+      },
+      "JAKE_BRAKE_SOUND": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "JAKEBRAKE_ENGINE_SLOWDOWN": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "jakeBrakeVolumePercentage": {
+        "kind": "text_var",
+        "value": "140"
+      },
+      "jakeBrakeIdleVolumePercentage": {
+        "kind": "text_var",
+        "value": "0"
+      },
+      "jakeBrakeMinRpm": {
+        "kind": "text_var",
+        "value": "200"
+      },
+      "dieselKnockVolumePercentage": {
+        "kind": "text_var",
+        "value": "200"
+      },
+      "dieselKnockIdleVolumePercentage": {
+        "kind": "text_var",
+        "value": "0"
+      },
+      "dieselKnockStartPoint": {
+        "kind": "text_var",
+        "value": "10"
+      },
+      "dieselKnockInterval": {
+        "kind": "text_var",
+        "value": "8"
+      },
+      "R6": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "V8": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "V8_468": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "V2": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "R6_2": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "dieselKnockAdaptiveVolumePercentage": {
+        "kind": "text_var",
+        "value": "18"
+      },
+      "RPM_DEPENDENT_KNOCK": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "minKnockVolumePercentage": {
+        "kind": "text_var",
+        "value": "80"
+      },
+      "knockStartRpm": {
+        "kind": "text_var",
+        "value": "50"
+      },
+      "turboVolumePercentage": {
+        "kind": "text_var",
+        "value": "25"
+      },
+      "turboIdleVolumePercentage": {
+        "kind": "text_var",
+        "value": "0"
+      },
+      "chargerVolumePercentage": {
+        "kind": "text_var",
+        "value": "0"
+      },
+      "chargerIdleVolumePercentage": {
+        "kind": "text_var",
+        "value": "10"
+      },
+      "chargerStartPoint": {
+        "kind": "text_var",
+        "value": "10"
+      },
+      "wastegateVolumePercentage": {
+        "kind": "text_var",
+        "value": "90"
+      },
+      "wastegateIdleVolumePercentage": {
+        "kind": "text_var",
+        "value": "1"
+      },
+      "fanVolumePercentage": {
+        "kind": "text_var",
+        "value": "0"
+      },
+      "fanIdleVolumePercentage": {
+        "kind": "text_var",
+        "value": "0"
+      },
+      "fanStartPoint": {
+        "kind": "text_var",
+        "value": "0"
+      },
+      "GEARBOX_WHINING": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "hornVolumePercentage": {
+        "kind": "text_var",
+        "value": "100"
+      },
+      "sirenVolumePercentage": {
+        "kind": "text_var",
+        "value": "100"
+      },
+      "brakeVolumePercentage": {
+        "kind": "text_var",
+        "value": "150"
+      },
+      "parkingBrakeVolumePercentage": {
+        "kind": "text_var",
+        "value": "150"
+      },
+      "shiftingVolumePercentage": {
+        "kind": "text_var",
+        "value": "200"
+      },
+      "sound1VolumePercentage": {
+        "kind": "text_var",
+        "value": "100"
+      },
+      "reversingVolumePercentage": {
+        "kind": "text_var",
+        "value": "70"
+      },
+      "indicatorVolumePercentage": {
+        "kind": "text_var",
+        "value": "100"
+      },
+      "indicatorOn": {
+        "kind": "text_var",
+        "value": "300"
+      },
+      "INDICATOR_DIR": {
+        "kind": "bool_var",
+        "value": "true"
+      },
+      "COUPLING_SOUND": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "couplingVolumePercentage": {
+        "kind": "text_var",
+        "value": "100"
+      },
+      "TIRE_SQUEAL": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "tireSquealVolumePercentage": {
+        "kind": "text_var",
+        "value": "160"
+      },
+      "XENON_LIGHTS": {
+        "kind": "flag",
+        "enabled": true
+      },
+      "SEPARATE_FULL_BEAM": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "INDICATOR_SIDE_MARKERS": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "doubleFlashBlueLight": {
+        "kind": "bool_var",
+        "value": "true"
+      },
+      "escRampTimeFirstGear": {
+        "kind": "text_var",
+        "value": "20"
+      },
+      "escRampTimeSecondGear": {
+        "kind": "text_var",
+        "value": "50"
+      },
+      "escRampTimeThirdGear": {
+        "kind": "text_var",
+        "value": "75"
+      },
+      "escBrakeSteps": {
+        "kind": "text_var",
+        "value": "30"
+      },
+      "escAccelerationSteps": {
+        "kind": "text_var",
+        "value": "3"
+      },
+      "automatic": {
+        "kind": "bool_var",
+        "value": "false"
+      },
+      "NumberOfAutomaticGears": {
+        "kind": "define_val",
+        "enabled": true,
+        "value": "3"
+      },
+      "doubleClutch": {
+        "kind": "bool_var",
+        "value": "false"
+      },
+      "shiftingAutoThrottle": {
+        "kind": "bool_var",
+        "value": "true"
+      },
+      "clutchEngagingPoint": {
+        "kind": "text_var",
+        "value": "90"
+      },
+      "MAX_RPM_PERCENTAGE": {
+        "kind": "text_var",
+        "value": "330"
+      },
+      "SUPER_SLOW": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "acc": {
+        "kind": "text_var",
+        "value": "2"
+      },
+      "dec": {
+        "kind": "text_var",
+        "value": "1"
+      },
+      "TRACKED_MODE": {
+        "kind": "flag",
+        "enabled": false
+      },
+      "DUMP_BED": {
+        "kind": "flag",
+        "enabled": false
+      }
+    }
+  }
+}
