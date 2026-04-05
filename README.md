@@ -38,7 +38,7 @@
 
 ### 1. Download
 ```
-git clone https://github.com/turbotike/web-UI-for-the-diy-guy-999-light-speed-and-sound-unit.git
+git clone https://github.com/turbotike/web-UI-for-the-diy-guy-999-light-speed-and-sound-unit.-.git
 ```
 Or download the ZIP and extract it.
 
