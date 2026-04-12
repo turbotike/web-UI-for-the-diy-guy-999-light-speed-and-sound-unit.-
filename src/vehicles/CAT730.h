@@ -59,7 +59,7 @@ volatile int chargerStartPoint = 10; // Volume will raise above this point ( usu
 
 // Adjust the additional turbo wastegate  / blowoff valve  sound (set "wastegateVolumePercentage" to "0", if you don't want it)--------
 volatile int wastegateVolumePercentage = 100; // Adjust the wastegate volume (usually = 70%, up to 250%)
-volatile int wastegateIdleVolumePercentage = 1; // Wastegate sound is played, after rapid throttle drop with engaged clutch
+volatile int wastegateIdleVolumePercentage = 0; // Wastegate sound is played, after rapid throttle drop with engaged clutch
 //#include "sounds/WastegateDummy.h"
 #include "sounds/1000HpScaniaV8wastegate.h"
 
@@ -146,7 +146,7 @@ volatile int reversingVolumePercentage = 200; // Adjust the reversing sound volu
 
 // Choose the indicator / turn signal options --------
 volatile int indicatorVolumePercentage = 100; // Adjust the indicator sound volume (usually = 100%)
-const uint16_t indicatorOn = 300; // The indicator will be switched on above +/- this value, if wheels are turned
+const uint16_t indicatorOn = 100; // The indicator will be switched on above +/- this value, if wheels are turned
 const boolean INDICATOR_DIR = true; // adjust indicator direction with true or false
 #include "sounds/Indicator.h" // "Tick-Tack" sound
 
@@ -188,8 +188,8 @@ const boolean doubleFlashBlueLight = true; // double flash blue lights if "true"
 
 // Acceleration & deceleration settings ----------------------------------------------------------------------------------
 const uint8_t escRampTimeFirstGear = 20; // determines, how fast the acceleration and deceleration happens (about 15 - 25, 20 for King Hauler)
-const uint8_t escRampTimeSecondGear = 70; // 50 for King Hauler (this value is always in use for automatic transmission, about 80)
-const uint8_t escRampTimeThirdGear = 75; // 75 for King Hauler
+const uint8_t escRampTimeSecondGear = 50; // 50 for King Hauler (this value is always in use for automatic transmission, about 80)
+const uint8_t escRampTimeThirdGear = 50; // 75 for King Hauler
 const uint8_t escBrakeSteps = 30; // determines, how fast the ESC is able to brake down (20 - 30, 30 for King Hauler)
 const uint8_t escAccelerationSteps = 3; // determines, how fast the ESC is able to accelerate (2 - 3, 3 for King Hauler)
 

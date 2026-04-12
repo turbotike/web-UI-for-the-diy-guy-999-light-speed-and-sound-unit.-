@@ -151,23 +151,36 @@ def clean_comment(text):
 
 
 def simplify_description(desc):
-    """Shorten description for display, keeping full version as tooltip."""
+    """Shorten description for display — strip code junk."""
     if not desc:
         return ""
-    # Remove common verbose patterns and keep it concise
     short = desc
-    # Remove redundant prefixes/suffixes
-    short = re.sub(r"^(The |Set |Configure |Choose )", "", short, flags=re.I)
-    short = re.sub(r"(\s*-+\s*)?$", "", short).strip()
-    # Limit to first 80 chars, break at word boundary
+    # Strip C preprocessor and code fragments
+    short = re.sub(r'#(?:define|ifdef|ifndef|endif|include)\b[^,;)]*', '', short)
+    short = re.sub(r'"[^"]*\.h"', '', short)
+    # Strip common verbose patterns
+    short = re.sub(r'^(The |Set |Configure |Choose |Adjust |Select )', '', short, flags=re.I)
+    short = re.sub(r'\buncomment\b.*?(,|\.|;|$)', '', short, flags=re.I)
+    short = re.sub(r'\bcomment\b.*?out.*?(,|\.|;|$)', '', short, flags=re.I)
+    short = re.sub(r"don't uncomment.*", '', short, flags=re.I)
+    short = re.sub(r'\bif you (want|don).{0,60}?(\.|,|;|!|$)', '', short, flags=re.I)
+    short = re.sub(r'\(usually\s*=?[^)]*\)', '', short)
+    short = re.sub(r'\(set\s[^)]*\)', '', short, flags=re.I)
+    short = re.sub(r'\(use\s[^)]*\)', '', short, flags=re.I)
+    short = re.sub(r'\(about\s[^)]*\)', '', short, flags=re.I)
+    short = re.sub(r'\(never\s[^)]*\)', '', short, flags=re.I)
+    # Clean up leftover punctuation and whitespace
+    short = re.sub(r'\s*-+\s*$', '', short)
+    short = re.sub(r'\s{2,}', ' ', short).strip(' -,;()')
     if len(short) > 80:
-        short = short[:77] + "..."
+        short = short[:77].rsplit(' ', 1)[0] + '...'
     return short
 
 
 # Fields that should render as range sliders instead of text inputs.
 # Format: "varName": (min, max, step, suffix)
 SLIDER_FIELDS = {
+    # ── Volumes ──
     "MAX_RPM_PERCENTAGE":              (100, 500, 10, "%"),
     "idleVolumePercentage":            (0, 300, 5, "%"),
     "engineIdleVolumePercentage":      (0, 100, 5, "%"),
@@ -182,15 +195,106 @@ SLIDER_FIELDS = {
     "chargerVolumePercentage":         (0, 300, 5, "%"),
     "chargerIdleVolumePercentage":     (0, 100, 5, "%"),
     "wastegateVolumePercentage":       (0, 300, 5, "%"),
+    "wastegateIdleVolumePercentage":   (0, 100, 5, "%"),
     "dieselKnockVolumePercentage":     (0, 600, 10, "%"),
     "dieselKnockIdleVolumePercentage": (0, 100, 5, "%"),
+    "dieselKnockAdaptiveVolumePercentage": (0, 100, 5, "%"),
     "hornVolumePercentage":            (0, 300, 5, "%"),
     "sirenVolumePercentage":           (0, 300, 5, "%"),
     "jakeBrakeVolumePercentage":       (0, 300, 5, "%"),
     "jakeBrakeIdleVolumePercentage":   (0, 100, 5, "%"),
-    "dieselKnockAdaptiveVolumePercentage": (0, 100, 5, "%"),
+    "brakeVolumePercentage":           (0, 300, 5, "%"),
+    "parkingBrakeVolumePercentage":    (0, 300, 5, "%"),
+    "shiftingVolumePercentage":        (0, 300, 5, "%"),
+    "sound1VolumePercentage":          (0, 300, 5, "%"),
+    "reversingVolumePercentage":       (0, 300, 5, "%"),
+    "indicatorVolumePercentage":       (0, 300, 5, "%"),
+    "couplingVolumePercentage":        (0, 300, 5, "%"),
+    "hydraulicPumpVolumePercentage":   (0, 300, 5, "%"),
+    "hydraulicFlowVolumePercentage":   (0, 300, 5, "%"),
+    "trackRattleVolumePercentage":     (0, 300, 5, "%"),
+    "trackRattle2VolumePercentage":    (0, 300, 5, "%"),
+    "bucketRattleVolumePercentage":    (0, 300, 5, "%"),
+    "outOfFuelVolumePercentage":       (0, 300, 5, "%"),
+    # ── Engine tuning ──
+    "revSwitchPoint":                  (0, 500, 10, ""),
+    "idleEndPoint":                    (0, 500, 10, ""),
+    "idleVolumeProportionPercentage":  (0, 100, 5, "%"),
+    "dieselKnockInterval":             (0, 40, 1, ""),
+    "dieselKnockStartPoint":           (0, 500, 10, ""),
+    "jakeBrakeMinRpm":                 (0, 500, 10, ""),
+    "chargerStartPoint":               (0, 500, 10, ""),
+    "fanStartPoint":                   (0, 500, 10, ""),
+    "indicatorOn":                     (0, 100, 5, ""),
+    "clutchEngagingPoint":             (0, 500, 10, ""),
+    # ── Transmission ──
     "acc":                              (1, 9, 1, ""),
     "dec":                              (1, 9, 1, ""),
+    "escRampTimeFirstGear":            (0, 50, 1, ""),
+    "escRampTimeSecondGear":           (0, 50, 1, ""),
+    "escRampTimeThirdGear":            (0, 50, 1, ""),
+    "escBrakeSteps":                   (1, 30, 1, ""),
+    "escAccelerationSteps":            (1, 30, 1, ""),
+    "NumberOfAutomaticGears":          (1, 6, 1, ""),
+    "automaticReverseAccelerationPercentage": (0, 100, 5, "%"),
+    "lowRangePercentage":              (0, 100, 5, "%"),
+    "maxClutchSlippingRpm":            (0, 500, 10, ""),
+    "globalAccelerationPercentage":    (0, 200, 5, "%"),
+    # ── ESC ──
+    "brakeMargin":                     (0, 50, 1, ""),
+    "escPulseSpan":                    (100, 600, 10, ""),
+    "escTakeoffPunch":                 (0, 200, 5, ""),
+    "escReversePlus":                  (0, 100, 5, ""),
+    "crawlerEscRampTime":              (0, 50, 1, ""),
+    "directionChangeLimit":            (0, 100, 5, ""),
+    "RZ7886_FREQUENCY":                (100, 50000, 500, " Hz"),
+    "RZ7886_DRAGBRAKE_DUTY":           (0, 255, 5, ""),
+    # ── Track drive ──
+    "pwmStrokeChainDriveTopSpeed":     (0, 255, 5, ""),
+    "pwmStrokeChainDriveStartRotation": (0, 100, 5, ""),
+    "trackRattleIntervalMin":          (0, 500, 10, " ms"),
+    "trackRattleIntervalMax":          (0, 2000, 50, " ms"),
+    # ── Battery ──
+    "CUTOFF_VOLTAGE":                  (0, 50, 1, " V"),
+    "FULLY_CHARGED_VOLTAGE":           (0, 50, 1, " V"),
+    "RECOVERY_HYSTERESIS":             (0, 10, 1, " V"),
+    "RESISTOR_TO_BATTTERY_PLUS":       (0, 200000, 1000, " Ω"),
+    "RESISTOR_TO_GND":                 (0, 200000, 1000, " Ω"),
+    "DIODE_DROP":                      (0, 10, 1, " V"),
+    # ── Shaker ──
+    "shakerStart":                     (0, 255, 5, ""),
+    "shakerIdle":                      (0, 255, 5, ""),
+    "shakerFullThrottle":              (0, 255, 5, ""),
+    "shakerStop":                      (0, 255, 5, ""),
+    # ── Lights ──
+    "NEOPIXEL_COUNT":                  (0, 100, 1, ""),
+    "NEOPIXEL_BRIGHTNESS":             (0, 255, 5, ""),
+    "MAX_POWER_MILLIAMPS":             (0, 5000, 100, " mA"),
+    "neopixelMode":                    (0, 5, 1, ""),
+    "cabLightsBrightness":             (0, 255, 5, ""),
+    "sideLightsBrightness":            (0, 255, 5, ""),
+    "rearlightDimmedBrightness":       (0, 255, 5, ""),
+    "rearlightParkingBrightness":      (0, 255, 5, ""),
+    "headlightParkingBrightness":      (0, 255, 5, ""),
+    "reversingLightBrightness":        (0, 255, 5, ""),
+    "fogLightBrightness":              (0, 255, 5, ""),
+    # ── Remote ──
+    "pulseNeutral":                    (0, 100, 5, ""),
+    "pulseSpan":                       (100, 600, 10, ""),
+    # ── Servos ──
+    "SERVO_FREQUENCY":                 (50, 400, 10, " Hz"),
+    "STEERING_RAMP_TIME":              (0, 2000, 50, " ms"),
+    "CH1_RAMP_TIME":                   (0, 2000, 50, " ms"),
+    "CH2_RAMP_TIME":                   (0, 2000, 50, " ms"),
+    "CH3_RAMP_TIME":                   (0, 2000, 50, " ms"),
+    "CH4_RAMP_TIME":                   (0, 2000, 50, " ms"),
+    # ── Sound ──
+    "numberOfVolumeSteps":             (1, 10, 1, ""),
+    "masterVolumeCrawlerThreshold":    (0, 255, 5, ""),
+    # ── Dashboard ──
+    "dashRotation":                    (0, 3, 1, ""),
+    "MAX_REAL_SPEED":                  (0, 300, 10, ""),
+    "RPM_MAX":                         (0, 10000, 500, ""),
 }
 
 # Friendly display names for cryptic C++ variable names
@@ -1763,10 +1867,7 @@ def render_section_html(rel, label, vehicles, current_vehicle, selected_vehicle=
         numbered_title = "%d. %s" % (si, nice_title)
 
         sound_help = esc("Select active sound sample for: " + nice_title)
-        # Add "None" option at top to disable this sound
-        none_selected = ' selected' if not sc.get('selected') else ''
-        opts = '<option value="__none__"%s>-- None (disabled) --</option>' % none_selected
-        opts += "".join(
+        opts = "".join(
             '<option value="%s"%s>%s</option>'
             % (
                 esc(o["file"]),
@@ -1775,13 +1876,15 @@ def render_section_html(rel, label, vehicles, current_vehicle, selected_vehicle=
             )
             for o in all_options
         )
+        if not opts:
+            opts = '<option value="">-- No sounds available --</option>'
         rows.append(
             '<tr><td class="name">%s</td>'
             '<td><select name="__sound__%s" onchange="markDirty()" title="%s" data-i18n-title="tooltipSoundPicker">%s</select>'
             ' <button type="button" class="btn-cyan" style="font-size:10px;padding:1px 6px" '
             'onclick="previewSoundFromDropdown(this)" title="Preview this sound">&#9654;</button></td>'
-            '<td class="hint">%s<span class="tip" title="%s" data-i18n-title="tooltipSoundPicker">?</span></td></tr>'
-            % (esc(numbered_title), esc(sc["key"]), sound_help, opts, esc(nice_title), sound_help)
+            '<td class="hint">%s</td></tr>'
+            % (esc(numbered_title), esc(sc["key"]), sound_help, opts, esc(nice_title))
         )
 
     for it in items:
@@ -1802,22 +1905,77 @@ def render_section_html(rel, label, vehicles, current_vehicle, selected_vehicle=
         rows.append(
           '<tr%s><td class="name">%s</td>'
           '<td><label class="sw"><input type="checkbox" name="%s"%s onchange="markDirty()" title="%s"><span class="sl"></span></label></td>'
-          '<td class="hint">%s<span class="tip" title="%s">?</span></td></tr>'
-          % (row_class, display_name, field_name, chk, full_desc, short_desc, full_desc)
+          '<td class="hint">%s</td></tr>'
+          % (row_class, display_name, field_name, chk, full_desc, short_desc)
         )
 
       elif it["kind"] == "define_val":
         val = esc(it["value"] or "")
         en = " checked" if it["enabled"] else ""
-        rows.append(
-          '<tr%s><td class="name">%s</td>'
-          '<td><label class="sw" style="vertical-align:middle">'
-          '<input type="checkbox" name="%s__enabled"%s onchange="markDirty()" title="%s">'
-          '<span class="sl"></span></label> '
-          '<input type="text" name="%s" value="%s" onchange="markDirty()" title="%s"></td>'
-          '<td class="hint">%s<span class="tip" title="%s">?</span></td></tr>'
-          % (row_class, display_name, field_name, en, full_desc, field_name, val, full_desc, short_desc, full_desc)
-        )
+        slider_cfg = SLIDER_FIELDS.get(raw_name)
+        is_numeric = False
+        if not slider_cfg:
+          try:
+            float(val)
+            is_numeric = True
+          except (ValueError, TypeError):
+            pass
+        if slider_cfg:
+          smin, smax, sstep, suffix = slider_cfg
+          try:
+            num_val = int(float(val))
+          except (ValueError, TypeError):
+            num_val = smin
+          rows.append(
+            '<tr%s><td class="name">%s</td>'
+            '<td style="display:flex;align-items:center;gap:6px">'
+            '<label class="sw" style="vertical-align:middle;flex-shrink:0">'
+            '<input type="checkbox" name="%s__enabled"%s onchange="markDirty()" title="%s">'
+            '<span class="sl"></span></label>'
+            '<input type="range" name="%s" min="%d" max="%d" step="%d" value="%d" '
+            'oninput="this.nextElementSibling.textContent=this.value+\'%s\';markDirty()" '
+            'onchange="markDirty()" title="%s" '
+            'style="flex:1;min-width:100px">'
+            '<span class="slider-val">%d%s</span></td>'
+            '<td class="hint">%s</td></tr>'
+            % (row_class, display_name, field_name, en, full_desc,
+               field_name, smin, smax, sstep, num_val,
+               esc(suffix), full_desc, num_val, esc(suffix), short_desc)
+          )
+        elif is_numeric:
+          try:
+            num_val = int(float(val))
+          except (ValueError, TypeError):
+            num_val = 0
+          auto_max = max(abs(num_val) * 3, 10) if num_val != 0 else 100
+          auto_step = max(auto_max // 50, 1)
+          auto_min = -auto_max if num_val < 0 else 0
+          rows.append(
+            '<tr%s><td class="name">%s</td>'
+            '<td style="display:flex;align-items:center;gap:6px">'
+            '<label class="sw" style="vertical-align:middle;flex-shrink:0">'
+            '<input type="checkbox" name="%s__enabled"%s onchange="markDirty()" title="%s">'
+            '<span class="sl"></span></label>'
+            '<input type="range" name="%s" min="%d" max="%d" step="%d" value="%d" '
+            'oninput="this.nextElementSibling.textContent=this.value;markDirty()" '
+            'onchange="markDirty()" title="%s" '
+            'style="flex:1;min-width:100px">'
+            '<span class="slider-val">%d</span></td>'
+            '<td class="hint">%s</td></tr>'
+            % (row_class, display_name, field_name, en, full_desc,
+               field_name, auto_min, auto_max, auto_step, num_val,
+               full_desc, num_val, short_desc)
+          )
+        else:
+          rows.append(
+            '<tr%s><td class="name">%s</td>'
+            '<td><label class="sw" style="vertical-align:middle">'
+            '<input type="checkbox" name="%s__enabled"%s onchange="markDirty()" title="%s">'
+            '<span class="sl"></span></label> '
+            '<input type="text" name="%s" value="%s" onchange="markDirty()" title="%s"></td>'
+            '<td class="hint">%s</td></tr>'
+            % (row_class, display_name, field_name, en, full_desc, field_name, val, full_desc, short_desc)
+          )
 
       elif it["kind"] == "text_var":
         vtype = it.get("vtype", "")
@@ -1827,11 +1985,18 @@ def render_section_html(rel, label, vehicles, current_vehicle, selected_vehicle=
           rows.append(
             '<tr%s><td class="name">%s</td>'
             '<td><label class="sw"><input type="checkbox" name="%s" data-vartype="bool"%s onchange="markDirty()" title="%s"><span class="sl"></span></label></td>'
-            '<td class="hint">%s<span class="tip" title="%s">?</span></td></tr>'
-            % (row_class, display_name, field_name, chk, full_desc, short_desc, full_desc)
+            '<td class="hint">%s</td></tr>'
+            % (row_class, display_name, field_name, chk, full_desc, short_desc)
           )
         else:
           slider_cfg = SLIDER_FIELDS.get(raw_name)
+          is_numeric = False
+          if not slider_cfg:
+            try:
+              float(val)
+              is_numeric = True
+            except (ValueError, TypeError):
+              pass
           if slider_cfg:
             smin, smax, sstep, suffix = slider_cfg
             try:
@@ -1844,18 +2009,38 @@ def render_section_html(rel, label, vehicles, current_vehicle, selected_vehicle=
               '<input type="range" name="%s" min="%d" max="%d" step="%d" value="%d" '
               'oninput="this.nextElementSibling.textContent=this.value+\'%s\';markDirty()" '
               'onchange="markDirty()" title="%s" '
-              'style="flex:1;min-width:100px;accent-color:#f59e0b;cursor:pointer">'
-              '<span style="min-width:40px;font-size:12px;color:#f59e0b">%d%s</span></td>'
-              '<td class="hint">%s<span class="tip" title="%s">?</span></td></tr>'
+              'style="flex:1;min-width:100px">'
+              '<span class="slider-val">%d%s</span></td>'
+              '<td class="hint">%s</td></tr>'
               % (row_class, display_name, field_name, smin, smax, sstep, num_val,
-                 esc(suffix), full_desc, num_val, esc(suffix), short_desc, full_desc)
+                 esc(suffix), full_desc, num_val, esc(suffix), short_desc)
+            )
+          elif is_numeric:
+            try:
+              num_val = int(float(val))
+            except (ValueError, TypeError):
+              num_val = 0
+            auto_max = max(abs(num_val) * 3, 10) if num_val != 0 else 100
+            auto_step = max(auto_max // 50, 1)
+            auto_min = -auto_max if num_val < 0 else 0
+            rows.append(
+              '<tr%s><td class="name">%s</td>'
+              '<td style="display:flex;align-items:center;gap:6px">'
+              '<input type="range" name="%s" min="%d" max="%d" step="%d" value="%d" '
+              'oninput="this.nextElementSibling.textContent=this.value;markDirty()" '
+              'onchange="markDirty()" title="%s" '
+              'style="flex:1;min-width:100px">'
+              '<span class="slider-val">%d</span></td>'
+              '<td class="hint">%s</td></tr>'
+              % (row_class, display_name, field_name, auto_min, auto_max, auto_step, num_val,
+                 full_desc, num_val, short_desc)
             )
           else:
             rows.append(
               '<tr%s><td class="name">%s</td>'
               '<td><input type="text" name="%s" value="%s" onchange="markDirty()" title="%s"></td>'
-              '<td class="hint">%s<span class="tip" title="%s">?</span></td></tr>'
-              % (row_class, display_name, field_name, val, full_desc, short_desc, full_desc)
+              '<td class="hint">%s</td></tr>'
+              % (row_class, display_name, field_name, val, full_desc, short_desc)
             )
 
     if not rows:
@@ -2047,6 +2232,60 @@ select, input[type=text] {
   max-width: 100%;
 }
 
+/* ── neon green sliders ───────────────────── */
+input[type=range] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #0a3d1a 0%, #0f5e28 100%);
+  outline: none;
+  cursor: pointer;
+  border: 1px solid #1a6b30;
+  box-shadow: 0 0 6px rgba(57,255,20,0.15);
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #b0ff57, #39ff14 40%, #20c20e 70%, #0f7a0f);
+  border: 2px solid #39ff14;
+  box-shadow: 0 0 10px rgba(57,255,20,0.7), 0 0 20px rgba(57,255,20,0.3);
+  cursor: pointer;
+}
+input[type=range]::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #b0ff57, #39ff14 40%, #20c20e 70%, #0f7a0f);
+  border: 2px solid #39ff14;
+  box-shadow: 0 0 10px rgba(57,255,20,0.7), 0 0 20px rgba(57,255,20,0.3);
+  cursor: pointer;
+}
+input[type=range]::-moz-range-track {
+  height: 8px;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #0a3d1a 0%, #0f5e28 100%);
+  border: 1px solid #1a6b30;
+}
+input[type=range]:hover::-webkit-slider-thumb {
+  box-shadow: 0 0 14px rgba(57,255,20,0.9), 0 0 28px rgba(57,255,20,0.5);
+  background: radial-gradient(circle at 35% 35%, #d4ff80, #57ff2a 40%, #39ff14 70%, #1ce80f);
+}
+input[type=range]:active::-webkit-slider-thumb {
+  transform: scale(1.15);
+}
+.slider-val {
+  min-width: 50px;
+  font-size: 12px;
+  color: #39ff14;
+  text-shadow: 0 0 6px rgba(57,255,20,0.5);
+  font-family: 'Orbitron', Consolas, monospace;
+  text-align: right;
+}
+
 .panel {
   margin: 12px 14px 0;
   background: var(--card);
@@ -2133,19 +2372,7 @@ td.hint {
   font-size: 11px;
   word-break: break-word;
 }
-.tip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 16px;
-  height: 16px;
-  margin-left: 6px;
-  border-radius: 50%;
-  border: 1px solid var(--border);
-  color: #93c5fd;
-  font-size: 10px;
-  cursor: help;
-}
+
 .sw {
   position: relative;
   display: inline-block;
@@ -2220,7 +2447,7 @@ input:checked + .sl::before { transform: translateX(20px); }
 }
 .converter-grid {
   display: grid;
-  grid-template-columns: 1.35fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 10px;
   padding: 10px;
 }
@@ -2245,32 +2472,6 @@ input:checked + .sl::before { transform: translateX(20px); }
   color: var(--dim);
   font-size: 12px;
   padding: 8px 12px;
-}
-.preview-card {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: #0b1220;
-  padding: 10px;
-  height: fit-content;
-}
-.preview-card h3 {
-  font-size: 14px;
-  color: #fca5a5;
-  margin-bottom: 8px;
-}
-.preview-card p {
-  color: var(--dim);
-  font-size: 12px;
-  margin-bottom: 8px;
-}
-#previewAudio {
-  width: 100%;
-  margin-top: 8px;
-}
-#previewInfo {
-  margin-top: 8px;
-  color: #93c5fd;
-  font-size: 12px;
 }
 .converter-pane {
   border: 1px solid var(--border);
@@ -2320,15 +2521,58 @@ input:checked + .sl::before { transform: translateX(20px); }
   td.name { width: 230px; }
   .converter-grid { grid-template-columns: 1fr; }
 }
+
+/* Build-failure modal */
+#buildFailModal {
+  display: none; position: fixed; inset: 0; z-index: 9999;
+  background: rgba(0,0,0,0.7); align-items: center; justify-content: center;
+}
+#buildFailModal.visible { display: flex; }
+#buildFailModal .modal-box {
+  background: #1a1a2e; border: 2px solid #f87171; border-radius: 12px;
+  padding: 24px 28px; max-width: 520px; width: 90%; color: #e2e8f0;
+  box-shadow: 0 0 40px rgba(248,113,113,0.3);
+}
+#buildFailModal h2 { color: #f87171; margin: 0 0 12px; font-size: 18px; }
+#buildFailModal ul { padding-left: 18px; margin: 10px 0 18px; line-height: 1.7; font-size: 13px; color: #cbd5e1; }
+#buildFailModal .modal-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+#buildFailModal .modal-actions button { flex: 1; min-width: 100px; padding: 8px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; border: 1px solid; background: transparent; }
+#buildFailModal .mbtn-reset { border-color: #f87171; color: #f87171; }
+#buildFailModal .mbtn-reset:hover { background: rgba(248,113,113,0.15); }
+#buildFailModal .mbtn-log { border-color: #fbbf24; color: #fbbf24; }
+#buildFailModal .mbtn-log:hover { background: rgba(251,191,36,0.15); }
+#buildFailModal .mbtn-close { border-color: #64748b; color: #94a3b8; }
+#buildFailModal .mbtn-close:hover { background: rgba(100,116,139,0.2); }
 </style>
 </head>
 <body>
+
+<!-- Build-failure troubleshooting modal -->
+<div id="buildFailModal">
+  <div class="modal-box">
+    <h2>&#9888; Build Failed</h2>
+    <p style="font-size:13px;color:#94a3b8;margin:0 0 8px">Don't panic! Here are some things to try:</p>
+    <ul>
+      <li><strong>Reset the vehicle</strong> &mdash; restores all settings to their original defaults</li>
+      <li><strong>Check the build log</strong> &mdash; scroll to the bottom to see the actual error</li>
+      <li>If you just installed a custom sound, it may be <strong>too large</strong> &mdash; try a shorter loop or lower sample rate</li>
+      <li>Make sure no slider values are blank or set to something weird</li>
+      <li>Try switching to a different vehicle and building that &mdash; if it works, the problem is in your vehicle settings</li>
+    </ul>
+    <div class="modal-actions">
+      <button class="mbtn-reset" onclick="closeBuildFailModal(); resetVehicleNow()">&#8634; Reset Vehicle</button>
+      <button class="mbtn-log" onclick="closeBuildFailModal(); document.getElementById('log').className='open'">&#128220; View Build Log</button>
+      <button class="mbtn-close" onclick="closeBuildFailModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 <header>
   <!-- ══ Brand ══════════════════════════════════════════════════════ -->
   <div class="brand">
     <div class="brand-logo">DIYGuy999</div>
     <div class="brand-sub">&#9670; Light &middot; Sound &middot; Speed Controller &#9670;</div>
-    <div id="currentVehicleName" style="font-family:'Orbitron',monospace;font-size:9px;font-weight:700;color:#ffd700;letter-spacing:1px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:200px" title="Currently active vehicle"></div>
+    <div id="currentVehicleName" style="font-family:'Orbitron',monospace;font-size:12px;font-weight:700;color:#ffd700;letter-spacing:1px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:320px;text-shadow:0 0 8px rgba(255,215,0,0.4)" title="Currently active vehicle"></div>
   </div>
 
   <!-- ══ Toolbar ════════════════════════════════════════════════════ -->
@@ -2353,7 +2597,8 @@ input:checked + .sl::before { transform: translateX(20px); }
       <div class="btn-group-inner">
         <button class="btn-cyan" onclick="saveAll()" title="Save all changes now">&#128190; Save</button>
         <button class="btn-magenta" onclick="resetVehicleNow()" title="Restore vehicle to original defaults">&#8634; Reset</button>
-        <button class="btn-green" onclick="createVehicleFromCurrent()" title="Create a new vehicle from the current one">&#10010; Create Vehicle</button>
+        <button class="btn-green" onclick="createVehicleFromCurrent()" title="Create a new vehicle from the current one">&#10010; Clone</button>
+        <button class="btn-gold" onclick="downloadVehicleFile()" title="Download the active vehicle .h file">&#128229; Export</button>
       </div>
     </div>
 
@@ -2382,7 +2627,7 @@ input:checked + .sl::before { transform: translateX(20px); }
       <div class="btn-group-label">&#128266; Volume</div>
       <div class="btn-group-inner" style="min-width:160px">
         <input id="masterVolSlider" type="range" min="0" max="250" value="200" step="5"
-          style="width:110px;accent-color:var(--accent);cursor:pointer"
+          style="width:110px"
           oninput="onVolumeSliderChange(this.value)"
           onchange="saveVolumeSlider(this.value)"
           title="Master volume (0-250%)">
@@ -2414,17 +2659,200 @@ input:checked + .sl::before { transform: translateX(20px); }
     <div class="converter-head">
       <strong>Live Sound Builder</strong>
       <span class="chrome-chip">Sound Forge</span>
-      <div class="converter-actions">
-        <button id="modeBrowserBtn" type="button" onclick="openConverterMode('browser')" class="active-mode">&#127911; Sound Browser</button>
-        <button id="modeAudioBtn" type="button" onclick="openConverterMode('audio')">WAV to H</button>
-        <button id="modeHeaderBtn" type="button" onclick="openConverterMode('header')">H to WAV</button>
-      </div>
     </div>
-    <div class="converter-note">Browse, preview &amp; tune all 500+ sounds live, or convert WAV/header files.</div>
+    <div class="converter-note">Browse, preview &amp; tune all 500+ sounds live, or convert your own WAV files.</div>
     <div class="converter-grid">
       <div>
-        <div id="paneAudio" class="converter-pane hidden">
-          <h3 data-i18n="wavToHeaderTitle">WAV to Header</h3>
+        <div class="converter-pane" style="margin-bottom:10px">
+          <h3>&#127925; Live Sound Editor</h3>
+          <div style="padding:6px;background:#0a0a1a;border-radius:8px;border:1px solid #333">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+              <span style="color:#fbbf24;font-size:13px;font-weight:bold" id="sbNowPlaying">No sound loaded</span>
+              <button type="button" class="btn-cyan" onclick="sbPlayStop()" id="sbPlayBtn" style="min-width:60px">&#9654; Play</button>
+              <label style="font-size:12px;color:#ccc"><input id="sbLoop" type="checkbox" checked> Loop</label>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap">
+              <label style="color:#93c5fd;font-size:12px;white-space:nowrap">RPM:</label>
+              <input id="sbRpmSlider" type="range" min="0.3" max="3.0" step="0.05" value="1.0"
+                style="flex:1;min-width:150px"
+                oninput="sbUpdateRpm(this.value)">
+              <span id="sbRpmLabel" style="color:#fbbf24;font-size:13px;min-width:70px">1.00x (idle)</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap">
+              <label style="color:#93c5fd;font-size:12px;white-space:nowrap">Volume:</label>
+              <input id="sbVolSlider" type="range" min="0" max="200" step="5" value="100"
+                style="width:100px"
+                oninput="sbUpdateVol(this.value)">
+              <span id="sbVolLabel" style="color:#20C20E;font-size:12px">100%</span>
+              <span style="color:#666;font-size:11px;margin-left:auto" id="sbSoundInfo"></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap">
+              <label style="color:#4ade80;font-size:12px;white-space:nowrap">Loop Start:</label>
+              <input id="sbLoopStart" type="range" min="0" max="1" step="0.001" value="0"
+                style="flex:1;min-width:120px"
+                oninput="sbUpdateLoopPoints()">
+              <span id="sbLoopStartLabel" style="color:#4ade80;font-size:11px;min-width:50px">0.000s</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap">
+              <label style="color:#f87171;font-size:12px;white-space:nowrap">Loop End:</label>
+              <input id="sbLoopEnd" type="range" min="0" max="1" step="0.001" value="1"
+                style="flex:1;min-width:120px"
+                oninput="sbUpdateLoopPoints()">
+              <span id="sbLoopEndLabel" style="color:#f87171;font-size:11px;min-width:50px">1.000s</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap">
+              <label style="color:#fbbf24;font-size:12px;white-space:nowrap">Smooth:</label>
+              <input id="sbSmooth" type="range" min="0" max="100" step="5" value="0"
+                style="flex:1;min-width:100px"
+                oninput="document.getElementById('sbSmoothLabel').textContent=this.value+'%'; if(_sbPlaying){if(_sbSwapTimer)clearTimeout(_sbSwapTimer);_sbSwapTimer=setTimeout(_sbHotSwap,150);}">
+              <span id="sbSmoothLabel" style="color:#fbbf24;font-size:11px;min-width:30px">0%</span>
+              <span style="color:#666;font-size:10px">(evens out loud &amp; quiet spots)</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap">
+              <label style="color:#f472b6;font-size:12px;white-space:nowrap">Crossfade:</label>
+              <input id="sbCrossfade" type="range" min="0" max="100" step="1" value="10"
+                style="flex:1;min-width:100px"
+                oninput="document.getElementById('sbCrossfadeLabel').textContent=this.value+'%'; if(_sbPlaying){if(_sbSwapTimer)clearTimeout(_sbSwapTimer);_sbSwapTimer=setTimeout(_sbHotSwap,150);}">
+              <span id="sbCrossfadeLabel" style="color:#f472b6;font-size:11px;min-width:30px">10%</span>
+              <span style="color:#666;font-size:10px">(0=off, blends end&rarr;start for seamless loop)</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap">
+              <label style="color:#60a5fa;font-size:12px;white-space:nowrap">Low Cut:</label>
+              <input id="sbHighPass" type="range" min="0" max="2000" step="10" value="0"
+                style="flex:1;min-width:100px"
+                oninput="document.getElementById('sbHighPassLabel').textContent=this.value+'Hz'; sbUpdateFilters();">
+              <span id="sbHighPassLabel" style="color:#60a5fa;font-size:11px;min-width:40px">0Hz</span>
+              <span style="color:#666;font-size:10px">(removes rumble)</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap">
+              <label style="color:#a78bfa;font-size:12px;white-space:nowrap">High Cut:</label>
+              <input id="sbLowPass" type="range" min="500" max="11025" step="25" value="11025"
+                style="flex:1;min-width:100px"
+                oninput="document.getElementById('sbLowPassLabel').textContent=this.value+'Hz'; sbUpdateFilters();">
+              <span id="sbLowPassLabel" style="color:#a78bfa;font-size:11px;min-width:50px">11025Hz</span>
+              <span style="color:#666;font-size:10px">(removes hiss)</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap">
+              <label style="color:#e879f9;font-size:12px;white-space:nowrap">Pitch:</label>
+              <input id="sbPitch" type="range" min="-12" max="12" step="0.5" value="0"
+                style="flex:1;min-width:100px"
+                oninput="sbUpdatePitch()">
+              <span id="sbPitchLabel" style="color:#e879f9;font-size:11px;min-width:50px">0 st</span>
+              <label style="font-size:11px;color:#ccc;white-space:nowrap" title="When locked, pitch stays constant regardless of RPM speed"><input id="sbPitchLock" type="checkbox" onchange="sbUpdatePitch()"> Lock</label>
+              <span style="color:#666;font-size:10px">(semitones)</span>
+            </div>
+            <p style="color:#888;font-size:11px;margin:8px 0 0;padding-top:8px;border-top:1px solid #333">Export bakes in your current RPM, loop points, and pitch settings.</p>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:6px;flex-wrap:wrap">
+              <label style="color:#22d3ee;font-size:12px;white-space:nowrap">Rate:</label>
+              <select id="sbExportRate" style="width:80px" title="Output sample rate">
+                <option value="8000">8 kHz</option>
+                <option value="11025">11 kHz</option>
+                <option value="16000">16 kHz</option>
+                <option value="22050" selected>22 kHz</option>
+              </select>
+              <label style="font-size:12px;color:#ccc"><input id="sbExportNorm" type="checkbox" checked> Normalize</label>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
+              <label style="color:#20C20E;font-size:12px;white-space:nowrap">Install as:</label>
+              <select id="sbInstallCategory" style="flex:1;min-width:200px"><option value="">-- loading categories --</option></select>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
+              <button type="button" class="btn-gold" onclick="sbExportSelection()" title="Export the selected loop region as a .h header file">&#128229; Export .h</button>
+              <button type="button" class="btn-gold" onclick="sbInstallSelection()" title="Export and install to active vehicle">&#9654; Install</button>
+              <span id="sbSelectionInfo" style="color:#93c5fd;font-size:11px"></span>
+            </div>
+          </div>
+          <div style="margin-top:10px;border-top:1px solid #333;padding-top:8px">
+            <h4 onclick="var p=document.getElementById('synthPanel');var a=this.querySelector('span');if(p.style.display==='none'){p.style.display='block';a.textContent='▾'}else{p.style.display='none';a.textContent='▸'}" style="cursor:pointer;color:#22d3ee;margin:0;font-size:13px;user-select:none">&#9881; Engine Synthesizer <span style="font-size:11px">&#9656;</span></h4>
+            <div id="synthPanel" style="display:none;margin-top:8px">
+              <p style="color:#93c5fd;font-size:11px;margin:0 0 8px">Generate engine sounds from scratch. Each cylinder fires individually per the real firing order.</p>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:6px">
+                <label style="color:#22d3ee;font-size:12px;white-space:nowrap">Engine:</label>
+                <select id="synthEngine" style="min-width:160px" onchange="synthUpdateLabel()">
+                  <option value="single">Single Cylinder</option>
+                  <option value="twin">Parallel Twin</option>
+                  <option value="i3">Inline 3</option>
+                  <option value="i4">Inline 4</option>
+                  <option value="boxer4">Flat 4 (Boxer/Subaru)</option>
+                  <option value="i6" selected>Inline 6</option>
+                  <option value="v6">V6 (60&deg;)</option>
+                  <option value="v8xp">V8 Cross-plane</option>
+                  <option value="v8fp">V8 Flat-plane (Ferrari)</option>
+                  <option value="v10">V10</option>
+                  <option value="v12">V12</option>
+                </select>
+                <span id="synthOrderLabel" style="color:#666;font-size:10px"></span>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:4px">
+                <label style="color:#fbbf24;font-size:12px;white-space:nowrap">RPM:</label>
+                <input id="synthRpm" type="range" min="300" max="8000" step="50" value="800" style="flex:1;min-width:120px" oninput="document.getElementById('synthRpmVal').textContent=this.value">
+                <span id="synthRpmVal" style="color:#fbbf24;font-size:12px;min-width:40px">800</span>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:4px">
+                <label style="color:#f87171;font-size:12px;white-space:nowrap">Combustion:</label>
+                <input id="synthCombustion" type="range" min="10" max="100" step="5" value="75" style="flex:1;min-width:80px" oninput="document.getElementById('synthCombVal').textContent=this.value+'%'">
+                <span id="synthCombVal" style="color:#f87171;font-size:11px;min-width:30px">75%</span>
+                <span style="color:#666;font-size:10px">(explosion energy)</span>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:4px">
+                <label style="color:#fb923c;font-size:12px;white-space:nowrap">Exhaust Hz:</label>
+                <input id="synthExhaustFreq" type="range" min="60" max="500" step="10" value="180" style="flex:1;min-width:80px" oninput="document.getElementById('synthExhVal').textContent=this.value+'Hz'">
+                <span id="synthExhVal" style="color:#fb923c;font-size:11px;min-width:45px">180Hz</span>
+                <span style="color:#666;font-size:10px">(deep=low, harsh=high)</span>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:4px">
+                <label style="color:#38bdf8;font-size:12px;white-space:nowrap">Injector:</label>
+                <input id="synthInjector" type="range" min="0" max="100" step="5" value="25" style="flex:1;min-width:80px" oninput="document.getElementById('synthInjVal').textContent=this.value+'%'">
+                <span id="synthInjVal" style="color:#38bdf8;font-size:11px;min-width:30px">25%</span>
+                <span style="color:#666;font-size:10px">(click before fire)</span>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:4px">
+                <label style="color:#a3e635;font-size:12px;white-space:nowrap">Mechanical:</label>
+                <input id="synthMechanical" type="range" min="0" max="100" step="5" value="20" style="flex:1;min-width:80px" oninput="document.getElementById('synthMechVal').textContent=this.value+'%'">
+                <span id="synthMechVal" style="color:#a3e635;font-size:11px;min-width:30px">20%</span>
+                <span style="color:#666;font-size:10px">(valvetrain ticks)</span>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:4px">
+                <label style="color:#e879f9;font-size:12px;white-space:nowrap">Roughness:</label>
+                <input id="synthRoughness" type="range" min="0" max="100" step="5" value="15" style="flex:1;min-width:80px" oninput="document.getElementById('synthRoughVal').textContent=this.value+'%'">
+                <span id="synthRoughVal" style="color:#e879f9;font-size:11px;min-width:30px">15%</span>
+                <span style="color:#666;font-size:10px">(cylinder variation)</span>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:4px">
+                <label style="color:#c084fc;font-size:12px;white-space:nowrap">Resonance:</label>
+                <input id="synthResonance" type="range" min="1" max="20" step="0.5" value="5" style="flex:1;min-width:80px">
+                <span id="synthResVal" style="color:#c084fc;font-size:11px;min-width:25px">5</span>
+                <span style="color:#666;font-size:10px">(exhaust pipe Q)</span>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:4px">
+                <label style="color:#f472b6;font-size:12px;white-space:nowrap">Drive:</label>
+                <input id="synthDrive" type="range" min="0" max="100" step="5" value="40" style="flex:1;min-width:80px">
+                <span id="synthDriveVal" style="color:#f472b6;font-size:11px;min-width:30px">40%</span>
+                <span style="color:#666;font-size:10px">(warm saturation)</span>
+              </div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:4px">
+                <label style="color:#94a3b8;font-size:12px;white-space:nowrap">Stroke:</label>
+                <select id="synthStroke" style="width:90px">
+                  <option value="4" selected>4-stroke</option>
+                  <option value="2">2-stroke</option>
+                </select>
+                <label style="color:#94a3b8;font-size:12px;white-space:nowrap">Cycles:</label>
+                <select id="synthCycles" style="width:50px">
+                  <option value="1">1</option>
+                  <option value="2" selected>2</option>
+                  <option value="4">4</option>
+                </select>
+                <span style="color:#666;font-size:10px">(more = longer loop)</span>
+              </div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px">
+                <button type="button" class="btn-cyan" onclick="synthGenerateEngine()" style="font-weight:bold">&#9881; Generate Engine</button>
+                <span id="synthStatus" style="color:#4ade80;font-size:11px"></span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div id="paneAudio" class="converter-pane">
+          <h3>&#128196; WAV to Header Converter</h3>
           <div class="converter-row">
             <input id="convWavFile" type="file" accept=".wav,audio/wav">
             <input id="convVarName" type="text" value="" placeholder="pick a category first" readonly style="background:#1a1a2e;color:#888;cursor:not-allowed">
@@ -2447,7 +2875,8 @@ input:checked + .sl::before { transform: translateX(20px); }
           </div>
           <div class="converter-row">
             <label style="color:#fbbf24;font-size:12px" title="Automatically trim audio to fit in flash memory"><input id="convAutoTrim" type="checkbox" checked> Auto trim to</label>
-            <input id="convAutoTrimMax" type="number" min="0.1" step="0.1" value="2" style="width:55px" title="Maximum duration in seconds">s
+            <input id="convAutoTrimMax" type="range" min="0.5" max="10" step="0.5" value="2" style="width:100px" title="Maximum duration in seconds" oninput="this.nextElementSibling.textContent=this.value+'s'">
+            <span class="slider-val">2s</span>
             <span id="convDuration" style="color:#20C20E;font-size:11px;margin-left:8px"></span>
           </div>
           <div class="converter-row">
@@ -2455,7 +2884,7 @@ input:checked + .sl::before { transform: translateX(20px); }
             <label style="margin-left:12px"><input id="convLoopFade" type="checkbox" checked> Loop crossfade</label>
             <button type="button" class="btn-cyan" onclick="convertWavToHeader()" data-i18n="convertNow">Convert Now</button>
             <button type="button" class="btn-gold" onclick="downloadHeaderText()" data-i18n="downloadHeader">Download .h</button>
-            <button type="button" id="btn-install-header" class="btn-gold" onclick="installHeaderToSrc()" data-i18n-title="tooltipInstallHeader" title="Save converted .h into sounds/ and add it to the active vehicle's sound dropdown" data-i18n="installHeaderTitle">▶ Install Sound</button>
+            <button type="button" id="btn-install-header" class="btn-gold" onclick="installHeaderToSrc()" data-i18n-title="tooltipInstallHeader" title="Save converted .h into sounds/ and add it to the active vehicle's sound dropdown" data-i18n="installHeaderTitle">&#9654; Install Sound</button>
           </div>
           <div class="converter-row">
             <label style="color:#20C20E">Install as:</label>
@@ -2467,22 +2896,11 @@ input:checked + .sl::before { transform: translateX(20px); }
             <div id="customSoundsList" style="font-size:12px;color:#ccc">Loading...</div>
           </div>
         </div>
-
-        <div id="paneHeader" class="converter-pane hidden">
-          <h3 data-i18n="headerToWavTitle">Header to WAV</h3>
-          <div class="converter-row">
-            <input id="convHeaderFile" type="file" accept=".h" onchange="loadHeaderFileIntoEditor(event)">
-            <button type="button" class="btn-cyan" onclick="convertHeaderToWav()" data-i18n="convertNow">Convert Now</button>
-            <button type="button" class="btn-gold" onclick="downloadConvertedWav()" data-i18n="downloadWav">Download .wav</button>
-          </div>
-          <textarea id="convHeaderIn" placeholder="Paste or load .h content here..."></textarea>
-          <audio id="convAudioPreview" controls style="width:100%;margin-top:8px"></audio>
-          <div id="convInfo" style="margin-top:6px;color:#93c5fd;font-size:12px"></div>
-        </div>
-
+      </div>
+      <div>
         <div id="paneBrowser" class="converter-pane">
-          <h3>&#127911; Live Sound Builder</h3>
-          <p style="color:#93c5fd;font-size:12px;margin:4px 0 10px">Browse all 500+ sounds. Preview with looping, tune RPM/speed/crossfade, then export or install directly.</p>
+          <h3>&#127911; Sound Browser</h3>
+          <p style="color:#93c5fd;font-size:12px;margin:4px 0 10px">Browse all 500+ sounds. Click a sound to load it into the editor.</p>
           <div class="converter-row" style="flex-wrap:wrap;gap:8px">
             <select id="sbCatFilter" onchange="filterSoundBrowser()" style="min-width:150px">
               <option value="">All categories</option>
@@ -2512,86 +2930,8 @@ input:checked + .sl::before { transform: translateX(20px); }
             <input id="sbSearch" type="text" placeholder="Search sounds..." oninput="filterSoundBrowser()" style="flex:1;min-width:150px">
             <span id="sbCount" style="color:#20C20E;font-size:12px"></span>
           </div>
-          <div style="margin:10px 0;padding:10px;background:#0a0a1a;border-radius:8px;border:1px solid #333">
-            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-              <span style="color:#fbbf24;font-size:13px;font-weight:bold" id="sbNowPlaying">No sound loaded</span>
-              <button type="button" class="btn-cyan" onclick="sbPlayStop()" id="sbPlayBtn" style="min-width:60px">&#9654; Play</button>
-              <label style="font-size:12px;color:#ccc"><input id="sbLoop" type="checkbox" checked> Loop</label>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap">
-              <label style="color:#93c5fd;font-size:12px;white-space:nowrap">RPM Sim:</label>
-              <input id="sbRpmSlider" type="range" min="0.3" max="3.0" step="0.05" value="1.0"
-                style="flex:1;min-width:150px;accent-color:#fbbf24"
-                oninput="sbUpdateRpm(this.value)">
-              <span id="sbRpmLabel" style="color:#fbbf24;font-size:13px;min-width:70px">1.00x (idle)</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap">
-              <label style="color:#93c5fd;font-size:12px;white-space:nowrap">Volume:</label>
-              <input id="sbVolSlider" type="range" min="0" max="200" step="5" value="100"
-                style="width:100px;accent-color:#20C20E"
-                oninput="sbUpdateVol(this.value)">
-              <span id="sbVolLabel" style="color:#20C20E;font-size:12px">100%</span>
-              <span style="color:#666;font-size:11px;margin-left:auto" id="sbSoundInfo"></span>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap">
-              <label style="color:#4ade80;font-size:12px;white-space:nowrap">Loop Start:</label>
-              <input id="sbLoopStart" type="range" min="0" max="1" step="0.001" value="0"
-                style="flex:1;min-width:120px;accent-color:#4ade80"
-                oninput="sbUpdateLoopPoints()">
-              <span id="sbLoopStartLabel" style="color:#4ade80;font-size:11px;min-width:50px">0.000s</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;margin-top:4px;flex-wrap:wrap">
-              <label style="color:#f87171;font-size:12px;white-space:nowrap">Loop End:</label>
-              <input id="sbLoopEnd" type="range" min="0" max="1" step="0.001" value="1"
-                style="flex:1;min-width:120px;accent-color:#f87171"
-                oninput="sbUpdateLoopPoints()">
-              <span id="sbLoopEndLabel" style="color:#f87171;font-size:11px;min-width:50px">1.000s</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;padding-top:8px;border-top:1px solid #333">
-              <label style="color:#22d3ee;font-size:12px;white-space:nowrap">Rate:</label>
-              <select id="sbExportRate" style="width:80px" title="Output sample rate">
-                <option value="8000">8 kHz</option>
-                <option value="11025">11 kHz</option>
-                <option value="16000">16 kHz</option>
-                <option value="22050" selected>22 kHz</option>
-              </select>
-              <label style="font-size:12px;color:#ccc"><input id="sbExportNorm" type="checkbox" checked> Normalize</label>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap">
-              <label style="color:#fbbf24;font-size:12px;white-space:nowrap">Smooth:</label>
-              <input id="sbSmooth" type="range" min="0" max="100" step="5" value="0"
-                style="flex:1;min-width:100px;accent-color:#fbbf24"
-                oninput="document.getElementById('sbSmoothLabel').textContent=this.value+'%'">
-              <span id="sbSmoothLabel" style="color:#fbbf24;font-size:11px;min-width:30px">0%</span>
-              <span style="color:#666;font-size:10px">(evens out loud &amp; quiet spots)</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap">
-              <label style="color:#f472b6;font-size:12px;white-space:nowrap">Crossfade:</label>
-              <input id="sbCrossfade" type="range" min="0" max="100" step="1" value="10"
-                style="flex:1;min-width:100px;accent-color:#f472b6"
-                oninput="document.getElementById('sbCrossfadeLabel').textContent=this.value+'%'">
-              <span id="sbCrossfadeLabel" style="color:#f472b6;font-size:11px;min-width:30px">10%</span>
-              <span style="color:#666;font-size:10px">(0=off, blends end→start for seamless loop)</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
-              <label style="color:#20C20E;font-size:12px;white-space:nowrap">Install as:</label>
-              <select id="sbInstallCategory" style="flex:1;min-width:200px"><option value="">-- loading categories --</option></select>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
-              <button type="button" class="btn-gold" onclick="sbExportSelection()" title="Export the selected loop region as a .h header file">&#128229; Export Selection as .h</button>
-              <button type="button" class="btn-gold" onclick="sbInstallSelection()" title="Export and install to active vehicle">&#9654; Install Selection</button>
-              <span id="sbSelectionInfo" style="color:#93c5fd;font-size:11px"></span>
-            </div>
-          </div>
-          <div id="sbList" style="max-height:400px;overflow-y:auto;border:1px solid #333;border-radius:6px;background:#0d0d1a"></div>
+          <div id="sbList" style="max-height:600px;overflow-y:auto;border:1px solid #333;border-radius:6px;background:#0d0d1a;margin-top:8px"></div>
         </div>
-      </div>
-      <div class="preview-card">
-        <h3 data-i18n="previewTitle">Preview Converted Sound</h3>
-        <p data-i18n="previewHint">Drop a .wav or generated .h file here and preview instantly.</p>
-        <input id="previewFile" type="file" accept=".wav,.h,audio/wav" onchange="previewConvertedSound(event)">
-        <audio id="previewAudio" controls></audio>
-        <div id="previewInfo"></div>
       </div>
     </div>
   </div>
@@ -2697,6 +3037,22 @@ async function createVehicleFromCurrent() {
   } catch(e) { status('Create failed: ' + e, 'bad'); }
 }
 
+async function downloadVehicleFile() {
+  const vehicle = getSelectedVehicleFile();
+  if (!vehicle) { status('No vehicle selected', 'bad'); return; }
+  try {
+    const r = await fetch('/download_vehicle?vehicle=' + encodeURIComponent(vehicle));
+    if (!r.ok) throw new Error('Download failed');
+    const blob = await r.blob();
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = vehicle;
+    a.click();
+    URL.revokeObjectURL(a.href);
+    status('Downloaded ' + vehicle, '');
+  } catch(e) { status('Export failed: ' + e, 'bad'); }
+}
+
 function applyFormDataMapToDom(dataMap) {
   Object.keys(dataMap || {}).forEach(file => {
     const form = document.querySelector('form[data-file="' + file + '"]');
@@ -2766,7 +3122,6 @@ function setAdvancedSoundVisibility(show) {
 
 function openConverter() {
   switchMainTab('converter');
-  openConverterMode('browser');
   loadSoundCategories();
   loadCustomSounds();
 }
@@ -2786,28 +3141,7 @@ function switchMainTab(tab) {
 }
 
 function openConverterMode(mode) {
-  const audioPane = document.getElementById('paneAudio');
-  const headerPane = document.getElementById('paneHeader');
-  const browserPane = document.getElementById('paneBrowser');
-  const btnA = document.getElementById('modeAudioBtn');
-  const btnH = document.getElementById('modeHeaderBtn');
-  const btnB = document.getElementById('modeBrowserBtn');
-  if (!audioPane || !headerPane || !btnA || !btnH) return;
-
-  audioPane.className = 'converter-pane hidden';
-  headerPane.className = 'converter-pane hidden';
-  if (browserPane) browserPane.className = 'converter-pane hidden';
-  if (btnA) btnA.className = '';
-  if (btnH) btnH.className = '';
-  if (btnB) btnB.className = '';
-
-  if (mode === 'audio') { audioPane.className = 'converter-pane'; btnA.className = 'active-mode'; }
-  else if (mode === 'header') { headerPane.className = 'converter-pane'; btnH.className = 'active-mode'; }
-  else if (mode === 'browser') {
-    if (browserPane) browserPane.className = 'converter-pane';
-    if (btnB) btnB.className = 'active-mode';
-    loadSoundBrowser();
-  }
+  // Legacy compatibility — no-op, both panes are always visible now
 }
 
 function previewHeaderToWavBlob(text) {
@@ -3251,6 +3585,8 @@ async function handleVehicleSelection(sel) {
     applyVehicleDraft(sel.value);
     setAdvancedSoundVisibility(showAdvancedSound);
     updateVehicleNameDisplay();
+    // Persist immediately so page refresh always loads the right vehicle
+    localStorage.setItem('lastVehicle', sel.value);
     markDirty();
     status('Live vehicle loaded: ' + sel.value, 'warn');
   } catch (e) {
@@ -3405,6 +3741,13 @@ function closeLog() {
   document.getElementById('log').className = '';
 }
 
+function showBuildFailModal() {
+  document.getElementById('buildFailModal').classList.add('visible');
+}
+function closeBuildFailModal() {
+  document.getElementById('buildFailModal').classList.remove('visible');
+}
+
 function setBuildLight(state) {
   const light = document.getElementById('buildLight');
   if (!light) return;
@@ -3469,13 +3812,16 @@ async function runCmd(cmd) {
         if (cmd === 'flash') { setTimeout(closeLog, 2500); }
       } else {
         status(cmd === 'flash' ? 'Flash failed (exit ' + exitCode + ')' : 'Build failed (exit ' + exitCode + ')', 'bad');
+        showBuildFailModal();
       }
     } else {
       setBuildLight('fail');
+      showBuildFailModal();
     }
   } catch (e) {
     body.textContent += '\nError: ' + e + '\n';
     setBuildLight('fail');
+    showBuildFailModal();
   }
 }
 
@@ -3589,8 +3935,30 @@ async function deleteCustomSound(filename) {
   } catch(e) { status('Delete error: ' + e, 'bad'); }
 }
 
+async function sbDeleteCustom(filename) {
+  if (!confirm('Delete custom sound "' + filename + '"?')) return;
+  try {
+    const r = await fetch('/delete_sound', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({filename: filename})
+    });
+    const j = await r.json();
+    if (j.ok) {
+      status('Deleted ' + filename, '');
+      _sbCustomFiles.delete(filename);
+      _sbSounds = _sbSounds.filter(s => s.file !== filename);
+      renderSoundBrowser();
+      loadCustomSounds();
+    } else {
+      status('Delete failed: ' + (j.error || '?'), 'bad');
+    }
+  } catch(e) { status('Delete error: ' + e, 'bad'); }
+}
+
 // ===== Sound Browser =====
 let _sbSounds = [];
+let _sbCustomFiles = new Set();
 let _sbAudioCtx = null;
 let _sbSource = null;
 let _sbGain = null;
@@ -3600,10 +3968,49 @@ let _sbCurrentFile = '';
 let _sbLoopBuf = null;       // crossfaded loop AudioBuffer used for preview
 let _sbLoopStartTime = 0;    // ctx.currentTime when loop source started
 let _sbSwapTimer = null;      // debounce timer for live slider updates
+let _sbHighPass = null;       // BiquadFilterNode highpass
+let _sbLowPass = null;        // BiquadFilterNode lowpass
 
 function _getAudioCtx() {
   if (!_sbAudioCtx) _sbAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
   return _sbAudioCtx;
+}
+
+function sbUpdateFilters() {
+  const ctx = _getAudioCtx();
+  if (_sbHighPass) {
+    const hp = parseInt(document.getElementById('sbHighPass').value) || 0;
+    const hpVal = hp > 0 ? hp : 10;
+    _sbHighPass.frequency.setValueAtTime(_sbHighPass.frequency.value, ctx.currentTime);
+    _sbHighPass.frequency.linearRampToValueAtTime(hpVal, ctx.currentTime + 0.1);
+  }
+  if (_sbLowPass) {
+    const lp = parseInt(document.getElementById('sbLowPass').value) || 11025;
+    _sbLowPass.frequency.setValueAtTime(_sbLowPass.frequency.value, ctx.currentTime);
+    _sbLowPass.frequency.linearRampToValueAtTime(lp, ctx.currentTime + 0.1);
+  }
+}
+
+function _sbConnectChain(source, ctx) {
+  // source → highpass → lowpass → gain → destination
+  const hp = parseInt(document.getElementById('sbHighPass').value) || 0;
+  const lp = parseInt(document.getElementById('sbLowPass').value) || 11025;
+  _sbHighPass = ctx.createBiquadFilter();
+  _sbHighPass.type = 'highpass';
+  _sbHighPass.frequency.value = hp > 0 ? hp : 10;
+  _sbHighPass.Q.value = 0.7;
+  _sbLowPass = ctx.createBiquadFilter();
+  _sbLowPass.type = 'lowpass';
+  _sbLowPass.frequency.value = lp;
+  _sbLowPass.Q.value = 0.7;
+  const volSlider = document.getElementById('sbVolSlider');
+  _sbGain = ctx.createGain();
+  _sbGain.gain.value = (volSlider ? parseInt(volSlider.value) : 100) / 100;
+  source.connect(_sbHighPass);
+  _sbHighPass.connect(_sbLowPass);
+  _sbLowPass.connect(_sbGain);
+  _sbGain.connect(ctx.destination);
+  return _sbGain;
 }
 
 async function previewSoundFromDropdown(btn) {
@@ -3641,6 +4048,12 @@ async function loadSoundBrowser() {
   if (_sbSounds.length) { renderSoundBrowser(); return; }
   const list = document.getElementById('sbList');
   if (list) list.innerHTML = '<div style="padding:12px;color:#666">Loading sounds...</div>';
+  // Load custom sounds set for delete buttons
+  try {
+    const cr2 = await fetch('/custom_sounds');
+    const cj2 = await cr2.json();
+    _sbCustomFiles = new Set((cj2.sounds || []).map(s => s.file));
+  } catch(e) { _sbCustomFiles = new Set(); }
   // Load install categories for the Sound Browser dropdown
   try {
     const catSel = document.getElementById('sbInstallCategory');
@@ -3689,15 +4102,20 @@ function renderSoundBrowser() {
   const catColors = {idle:'#4ade80',rev:'#f87171',start:'#fbbf24',knock:'#f97316',jakebrake:'#c084fc',
     horn:'#60a5fa',siren:'#f472b6',airbrake:'#94a3b8',turbo:'#22d3ee',wastegate:'#a78bfa',
     trackrattle:'#a3e635',other:'#666'};
-  let html = '<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  let html = '<table style="width:100%;table-layout:fixed;border-collapse:collapse;font-size:12px"><colgroup><col style="width:auto"><col style="width:75px"><col style="width:60px"></colgroup>';
   filtered.forEach(s => {
     const color = catColors[s.category] || '#888';
     const playing = s.file === _sbCurrentFile;
     const hl = playing ? 'background:#1a2a1a;' : '';
     html += '<tr style="border-bottom:1px solid #222;cursor:pointer;' + hl + '" onclick="sbLoadSound(\'' + s.file.replace(/'/g, "\\'") + '\')" title="Click to load: ' + s.file + '">';
-    html += '<td style="padding:6px 8px;color:#eee;white-space:nowrap">' + (playing ? '&#9654; ' : '') + s.label + '</td>';
-    html += '<td style="padding:6px 8px"><span style="color:' + color + ';font-size:10px;background:#111;padding:1px 6px;border-radius:8px">' + s.category + '</span></td>';
-    html += '<td style="padding:6px 4px;text-align:right"><button class="btn-cyan" style="font-size:11px;padding:2px 8px" onclick="event.stopPropagation();sbLoadAndPlay(\'' + s.file.replace(/'/g, "\\'") + '\')">&#9654;</button></td>';
+    html += '<td style="padding:6px 8px;color:#eee;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + (playing ? '&#9654; ' : '') + s.label + '</td>';
+    html += '<td style="padding:6px 4px;text-align:center"><span style="color:' + color + ';font-size:10px;background:#111;padding:1px 6px;border-radius:8px;white-space:nowrap">' + s.category + '</span></td>';
+    html += '<td style="padding:6px 4px;text-align:right;white-space:nowrap">';
+    html += '<button class="btn-cyan" style="font-size:11px;padding:2px 8px" onclick="event.stopPropagation();sbLoadAndPlay(\'' + s.file.replace(/'/g, "\\'") + '\')">&#9654;</button>';
+    if (_sbCustomFiles.has(s.file)) {
+      html += ' <button style="background:#c62828;color:#fff;border:none;padding:2px 6px;border-radius:3px;cursor:pointer;font-size:10px" onclick="event.stopPropagation();sbDeleteCustom(\'' + s.file.replace(/'/g, "\\'") + '\')" title="Delete custom sound">&#10005;</button>';
+    }
+    html += '</td>';
     html += '</tr>';
   });
   html += '</table>';
@@ -3750,25 +4168,324 @@ function sbPlay() {
   const endSlider = document.getElementById('sbLoopEnd');
   const ls = parseFloat(startSlider ? startSlider.value : '0') * dur;
   const le = parseFloat(endSlider ? endSlider.value : '1') * dur;
+  const doLoop = !!(document.getElementById('sbLoop') && document.getElementById('sbLoop').checked);
+
+  // Always use a pre-built preview buffer for looping (with at least a tiny
+  // micro-crossfade to eliminate the click/pause at loop boundaries)
+  if (doLoop) {
+    const previewBuf = _sbBuildPreviewBuf(ctx);
+    if (previewBuf) {
+      _sbLoopBuf = previewBuf;
+      _sbSource = ctx.createBufferSource();
+      _sbSource.buffer = previewBuf;
+      _sbSource.loop = true;
+      _sbSource.loopStart = 0;
+      _sbSource.loopEnd = previewBuf.duration;
+      const rpmSlider = document.getElementById('sbRpmSlider');
+      _sbSource.playbackRate.value = rpmSlider ? parseFloat(rpmSlider.value) : 1.0;
+      _sbConnectChain(_sbSource, ctx);
+      _sbSource.onended = function() { _sbPlaying = false; updatePlayBtn(); };
+      _sbSource.start(0);
+      _sbLoopStartTime = ctx.currentTime;
+      _sbPlaying = true;
+      updatePlayBtn();
+      return;
+    }
+  }
 
   _sbSource = ctx.createBufferSource();
   _sbSource.buffer = _sbBuffer;  // use the original full buffer
-  const doLoop = !!(document.getElementById('sbLoop') && document.getElementById('sbLoop').checked);
   _sbSource.loop = doLoop;
   _sbSource.loopStart = ls;
   _sbSource.loopEnd = le;
   const rpmSlider = document.getElementById('sbRpmSlider');
   _sbSource.playbackRate.value = rpmSlider ? parseFloat(rpmSlider.value) : 1.0;
-  _sbGain = ctx.createGain();
-  const volSlider = document.getElementById('sbVolSlider');
-  _sbGain.gain.value = (volSlider ? parseInt(volSlider.value) : 100) / 100;
-  _sbSource.connect(_sbGain);
-  _sbGain.connect(ctx.destination);
+  _sbConnectChain(_sbSource, ctx);
   _sbSource.onended = function() { _sbPlaying = false; updatePlayBtn(); };
   _sbSource.start(0, ls);  // start playback from loop start position
   _sbLoopStartTime = ctx.currentTime;
   _sbPlaying = true;
   updatePlayBtn();
+}
+
+// Resample PCM int8 array by a factor (>1 = more samples = lower pitch, <1 = fewer = higher)
+function _sbResample(samples, factor) {
+  if (Math.abs(factor - 1.0) < 0.001) return samples;
+  const newLen = Math.max(4, Math.round(samples.length * factor));
+  const out = new Int8Array(newLen);
+  for (let i = 0; i < newLen; i++) {
+    const srcPos = i / factor;
+    const idx = Math.floor(srcPos);
+    const frac = srcPos - idx;
+    const s0 = idx < samples.length ? samples[idx] : 0;
+    const s1 = (idx + 1) < samples.length ? samples[idx + 1] : s0;
+    out[i] = Math.max(-128, Math.min(127, Math.round(s0 * (1 - frac) + s1 * frac)));
+  }
+  return out;
+}
+
+function sbUpdatePitch() {
+  const pitchSlider = document.getElementById('sbPitch');
+  const pitchLabel = document.getElementById('sbPitchLabel');
+  const v = parseFloat(pitchSlider ? pitchSlider.value : '0');
+  if (pitchLabel) pitchLabel.textContent = (v >= 0 ? '+' : '') + v.toFixed(1) + ' st';
+  if (_sbPlaying) {
+    if (_sbSwapTimer) clearTimeout(_sbSwapTimer);
+    _sbSwapTimer = setTimeout(_sbHotSwap, 120);
+  }
+}
+
+// ─── Engine Synthesizer ─────────────────────────────────────────
+const _SYNTH_ENGINES = {
+  single: { name:'Single Cylinder', cyl:1, order:[1], deg:720 },
+  twin:   { name:'Parallel Twin',   cyl:2, order:[1,2], deg:360 },
+  i3:     { name:'Inline 3',        cyl:3, order:[1,2,3], deg:240 },
+  i4:     { name:'Inline 4',        cyl:4, order:[1,3,4,2], deg:180 },
+  boxer4: { name:'Flat 4 (Boxer)',   cyl:4, order:[1,3,2,4], deg:180 },
+  i6:     { name:'Inline 6',        cyl:6, order:[1,5,3,6,2,4], deg:120 },
+  v6:     { name:'V6 60deg',        cyl:6, order:[1,4,2,5,3,6], deg:120 },
+  v8xp:   { name:'V8 Cross-plane',  cyl:8, order:[1,8,4,3,6,5,7,2], deg:90 },
+  v8fp:   { name:'V8 Flat-plane',   cyl:8, order:[1,5,4,8,3,7,2,6], deg:90 },
+  v10:    { name:'V10',             cyl:10,order:[1,6,5,10,2,7,3,8,4,9], deg:72 },
+  v12:    { name:'V12',             cyl:12,order:[1,7,5,11,3,9,6,12,2,8,4,10], deg:60 },
+};
+
+function synthUpdateLabel() {
+  const type = document.getElementById('synthEngine').value;
+  const cfg = _SYNTH_ENGINES[type];
+  const el = document.getElementById('synthOrderLabel');
+  if (el && cfg) el.textContent = 'Firing: ' + cfg.order.join('-') + ' (' + cfg.deg + '\u00b0 apart)';
+}
+// Init label on load
+setTimeout(synthUpdateLabel, 500);
+
+let _synthRegenTimer = null;
+let _synthAutoEnabled = false;
+function synthAutoRegen() {
+  if (!_synthAutoEnabled) return;
+  if (_synthRegenTimer) clearTimeout(_synthRegenTimer);
+  _synthRegenTimer = setTimeout(synthGenerateEngine, 200);
+}
+// Event delegation: all synth sliders auto-regen after first Generate
+setTimeout(function() {
+  var sp = document.getElementById('synthPanel');
+  if (sp) {
+    sp.addEventListener('input', function(e) {
+      var id = e.target.id;
+      if (id==='synthRpm') document.getElementById('synthRpmVal').textContent=e.target.value;
+      else if (id==='synthCombustion') document.getElementById('synthCombVal').textContent=e.target.value+'%';
+      else if (id==='synthExhaustFreq') document.getElementById('synthExhVal').textContent=e.target.value+'Hz';
+      else if (id==='synthInjector') document.getElementById('synthInjVal').textContent=e.target.value+'%';
+      else if (id==='synthMechanical') document.getElementById('synthMechVal').textContent=e.target.value+'%';
+      else if (id==='synthRoughness') document.getElementById('synthRoughVal').textContent=e.target.value+'%';
+      else if (id==='synthResonance') document.getElementById('synthResVal').textContent=e.target.value;
+      else if (id==='synthDrive') document.getElementById('synthDriveVal').textContent=e.target.value+'%';
+      if (id && id.startsWith('synth')) synthAutoRegen();
+    });
+    sp.addEventListener('change', function(e) { if (e.target.tagName==='SELECT') { synthUpdateLabel(); synthAutoRegen(); } });
+  }
+}, 600);
+
+function synthGenerateEngine() {
+  const type = document.getElementById('synthEngine').value;
+  const cfg = _SYNTH_ENGINES[type];
+  if (!cfg) return;
+  _synthAutoEnabled = true;
+  const status = document.getElementById('synthStatus');
+
+  const rpm = parseInt(document.getElementById('synthRpm').value) || 800;
+  const SR = 22050;
+  const strokeType = parseInt(document.getElementById('synthStroke').value) || 4;
+  const numCycles = parseInt(document.getElementById('synthCycles').value) || 2;
+  const cycleDeg = strokeType === 2 ? 360 : 720;
+  const cycleSeconds = (60.0 / rpm) * (cycleDeg / 360);
+  const cycleSamples = Math.round(cycleSeconds * SR);
+  const totalSamples = cycleSamples * numCycles;
+  if (totalSamples < 10 || totalSamples > 500000) {
+    if (status) status.textContent = 'Bad RPM/cycle';
+    return;
+  }
+
+  const combustion = (parseInt(document.getElementById('synthCombustion').value) || 75) / 100;
+  const exhaustHz  = parseInt(document.getElementById('synthExhaustFreq').value) || 180;
+  const injector   = (parseInt(document.getElementById('synthInjector').value) || 25) / 100;
+  const mechanical = (parseInt(document.getElementById('synthMechanical').value) || 20) / 100;
+  const roughness  = (parseInt(document.getElementById('synthRoughness').value) || 15) / 100;
+  const resQ       = parseFloat(document.getElementById('synthResonance').value) || 5;
+  const drive      = (parseInt(document.getElementById('synthDrive').value) || 40) / 100;
+
+  const out = new Float32Array(totalSamples);
+
+  // Per-cylinder variation seeds
+  const seeds = [];
+  for (let c = 0; c < cfg.cyl; c++) {
+    seeds.push({
+      vol: 1.0 - roughness * (Math.random() * 0.45),
+      pitch: 1.0 + (Math.random() - 0.5) * roughness * 0.22,
+      timing: Math.round((Math.random() - 0.5) * roughness * 25),
+    });
+  }
+
+  // Biquad bandpass (Direct Form I) - simulates resonant exhaust pipe
+  function bpf(input, freq, Q) {
+    if (freq < 20 || freq >= SR * 0.45) return input;
+    const w0 = 2 * Math.PI * freq / SR;
+    const s = Math.sin(w0), co = Math.cos(w0);
+    const al = s / (2 * Q);
+    const b0 = al, b2 = -al, a0 = 1+al, a1 = -2*co, a2 = 1-al;
+    let x1=0,x2=0,y1=0,y2=0;
+    const r = new Float32Array(input.length);
+    for (let i = 0; i < input.length; i++) {
+      r[i] = (b0*input[i] + b2*x2 - a1*y1 - a2*y2) / a0;
+      x2=x1; x1=input[i]; y2=y1; y1=r[i];
+    }
+    return r;
+  }
+
+  for (let cycle = 0; cycle < numCycles; cycle++) {
+    const base = cycle * cycleSamples;
+    for (let fireIdx = 0; fireIdx < cfg.order.length; fireIdx++) {
+      const cylNum = cfg.order[fireIdx];
+      const seed = seeds[cylNum - 1];
+      const angle = fireIdx * cfg.deg;
+      const nomOff = Math.round((angle / cycleDeg) * cycleSamples);
+      const jitter = Math.round((Math.random() - 0.5) * roughness * 12);
+      const fireOff = base + ((nomOff + seed.timing + jitter + cycleSamples) % cycleSamples);
+
+      // === COMBUSTION: noise burst -> resonant bandpass (not sines!) ===
+      const combMs = 6 + 20 * Math.max(0, 1 - rpm / 6000);
+      const combLen = Math.min(Math.round(combMs * SR / 1000), Math.round(cycleSamples * 0.7));
+
+      // Raw noise burst with asymmetric envelope
+      const raw = new Float32Array(combLen);
+      for (let i = 0; i < combLen; i++) {
+        const tSec = i / SR;
+        const t = i / combLen;
+        const attack = Math.min(1.0, tSec / 0.0004); // 0.4ms attack
+        const decay1 = Math.exp(-t * 5.5);            // fast primary
+        const decay2 = Math.exp(-t * 1.5) * 0.35;     // slow rumble tail
+        raw[i] = (Math.random() * 2 - 1) * attack * (decay1 + decay2);
+      }
+
+      // Filter through resonant bandpass (sounds like a real exhaust pipe!)
+      const cylFreq = exhaustHz * seed.pitch;
+      const filtered = bpf(raw, cylFreq, resQ);
+      // Sub-bass: half frequency, lower Q for chest thump
+      const subFiltered = bpf(raw, Math.max(30, cylFreq * 0.5), Math.max(1, resQ * 0.4));
+      // Second resonance peak (pipe overtone)
+      const overtone = bpf(raw, Math.min(cylFreq * 2.3, SR * 0.4), Math.max(1, resQ * 0.6));
+
+      // Mix: primary resonance + sub + overtone + raw transient
+      for (let i = 0; i < combLen; i++) {
+        const idx = fireOff + i;
+        if (idx >= totalSamples) break;
+        const mixed = filtered[i]*0.55 + subFiltered[i]*0.22 + overtone[i]*0.12 + raw[i]*0.11;
+        out[idx] += mixed * combustion * seed.vol * 3.0;
+      }
+
+      // === INJECTOR CLICK ===
+      if (injector > 0.01) {
+        const injLen = Math.round(0.8 * SR / 1000);
+        const injOff = fireOff - Math.round(2.5 * SR / 1000);
+        for (let i = 0; i < injLen; i++) {
+          const idx = ((injOff+i) % totalSamples + totalSamples) % totalSamples;
+          const t = i / injLen;
+          const env = (1-t)*(1-t)*(1-t);
+          const click = Math.sin(2*Math.PI*3200*i/SR)*0.5 + Math.sin(2*Math.PI*5800*i/SR)*0.3 + (Math.random()*2-1)*0.2;
+          out[idx] += click * env * injector * 0.22 * seed.vol;
+        }
+      }
+
+      // === VALVE TRAIN TICKS ===
+      if (mechanical > 0.01) {
+        for (let v = 0; v < 2; v++) {
+          const mOff = fireOff + (v===0 ? 0 : Math.round(cycleSamples*0.5));
+          const mLen = Math.round(1.5 * SR / 1000);
+          for (let i = 0; i < mLen; i++) {
+            const idx = ((mOff+i) % totalSamples + totalSamples) % totalSamples;
+            const t = i / mLen;
+            const env = Math.exp(-t * 12);
+            const tick = (Math.random()*2-1)*0.6 + Math.sin(2*Math.PI*2200*i/SR)*0.4;
+            out[idx] += tick * env * mechanical * 0.1 * seed.vol;
+          }
+        }
+      }
+    }
+  }
+
+  // === BACKGROUND MECHANICAL RUMBLE ===
+  if (mechanical > 0.05) {
+    const firingHz = (rpm/60) * (cfg.cyl / (strokeType===2 ? 1 : 2));
+    for (let i = 0; i < totalSamples; i++) {
+      const mod = 0.5 + 0.5*Math.sin(2*Math.PI*firingHz*i/SR);
+      out[i] += (Math.random()*2-1) * mechanical * 0.035 * mod;
+    }
+  }
+
+  // === POST-PROCESSING ===
+  // 1) DC blocking highpass (~30Hz)
+  let dcPrev = 0, dcOut = 0;
+  for (let i = 0; i < totalSamples; i++) {
+    dcOut = 0.995 * (dcOut + out[i] - dcPrev);
+    dcPrev = out[i];
+    out[i] = dcOut;
+  }
+
+  // 2) Soft saturation (tanh waveshaping for analog warmth)
+  if (drive > 0.01) {
+    const g = 1 + drive * 5;
+    for (let i = 0; i < totalSamples; i++) out[i] = Math.tanh(out[i] * g);
+  }
+
+  // 3) Gentle lowpass to smooth aliasing
+  const lpCut = Math.min(exhaustHz * 4, SR * 0.42);
+  const lpRc = 1/(2*Math.PI*lpCut), lpDt = 1/SR, lpA = lpDt/(lpRc+lpDt);
+  let lpP = 0;
+  for (let i = 0; i < totalSamples; i++) {
+    lpP += lpA * (out[i] - lpP);
+    out[i] = out[i]*0.35 + lpP*0.65;
+  }
+
+  // 4) Normalize
+  let mx = 0;
+  for (let i = 0; i < totalSamples; i++) mx = Math.max(mx, Math.abs(out[i]));
+  if (mx > 0.001) {
+    const sc = 0.92 / mx;
+    for (let i = 0; i < totalSamples; i++) out[i] *= sc;
+  }
+
+  // Convert to Int8
+  const pcm8 = new Int8Array(totalSamples);
+  for (let i = 0; i < totalSamples; i++) {
+    pcm8[i] = Math.max(-128, Math.min(127, Math.round(out[i] * 127)));
+  }
+
+  // Load into editor
+  _sbRawSamples = pcm8;
+  _sbRawRate = SR;
+  sbStop();
+  const ctx = _getAudioCtx();
+  _sbBuffer = ctx.createBuffer(1, totalSamples, SR);
+  const ch = _sbBuffer.getChannelData(0);
+  for (let i = 0; i < totalSamples; i++) ch[i] = out[i];
+
+  _sbCurrentFile = 'synth_' + type + '_' + rpm + 'rpm';
+  const nameEl = document.getElementById('sbNowPlaying');
+  if (nameEl) nameEl.textContent = _sbCurrentFile;
+  const infoEl = document.getElementById('sbSoundInfo');
+  if (infoEl) infoEl.textContent = totalSamples + ' smp, ' + SR + 'Hz, ' + (totalSamples/SR).toFixed(2) + 's';
+
+  const ls = document.getElementById('sbLoopStart');
+  const le = document.getElementById('sbLoopEnd');
+  if (ls) ls.value = 0;
+  if (le) le.value = 1;
+  sbUpdateLoopPoints();
+
+  const loopCb = document.getElementById('sbLoop');
+  if (loopCb) loopCb.checked = true;
+  sbPlay();
+
+  if (status) status.textContent = cfg.name + ' @ ' + rpm + ' RPM \u2014 ' + totalSamples + ' smp, ' + (totalSamples/SR).toFixed(2) + 's';
 }
 
 // Build a crossfaded Float32 AudioBuffer for preview from current slider positions
@@ -3785,11 +4502,27 @@ function _sbBuildPreviewBuf(ctx) {
 
   let slice = _sbRawSamples.slice(startIdx, endIdx);
 
-  // Apply crossfade for seamless looping
+  // Always apply at least a tiny crossfade for click-free looping
   const cfPct = parseInt(document.getElementById('sbCrossfade').value) || 0;
-  if (cfPct > 0 && slice.length > 200) {
-    const fadeSamples = Math.max(2, Math.floor(slice.length * cfPct / 100));
-    slice = crossfadeLoop(slice, fadeSamples);
+  const minFade = 32;  // minimum samples to smooth loop boundary
+  if (slice.length > 200) {
+    const fadeSamples = Math.max(minFade, Math.floor(slice.length * cfPct / 100));
+    if (slice.length > fadeSamples * 2) {
+      slice = crossfadeLoop(slice, fadeSamples);
+    }
+  }
+
+  // Pitch shifting via resampling
+  const pitchSt = parseFloat(document.getElementById('sbPitch') ? document.getElementById('sbPitch').value : '0');
+  const pitchLock = !!(document.getElementById('sbPitchLock') && document.getElementById('sbPitchLock').checked);
+  let pitchFactor = Math.pow(2, -pitchSt / 12);  // negative semitones = stretch = lower pitch
+  if (pitchLock) {
+    // Compensate for RPM so pitch stays constant: undo the playbackRate pitch shift
+    const rpm = parseFloat(document.getElementById('sbRpmSlider') ? document.getElementById('sbRpmSlider').value : '1');
+    pitchFactor *= (1 / rpm);
+  }
+  if (Math.abs(pitchFactor - 1.0) > 0.001) {
+    slice = _sbResample(slice, pitchFactor);
   }
 
   const buf = ctx.createBuffer(1, slice.length, _sbRawRate);
@@ -3800,6 +4533,9 @@ function _sbBuildPreviewBuf(ctx) {
 
 function sbStop() {
   if (_sbSource) { try { _sbSource.stop(); } catch(e) {} _sbSource = null; }
+  if (_sbHighPass) { try { _sbHighPass.disconnect(); } catch(e) {} _sbHighPass = null; }
+  if (_sbLowPass) { try { _sbLowPass.disconnect(); } catch(e) {} _sbLowPass = null; }
+  if (_sbGain) { try { _sbGain.disconnect(); } catch(e) {} _sbGain = null; }
   _sbPlaying = false;
   updatePlayBtn();
 }
@@ -3824,14 +4560,28 @@ function sbUpdateRpm(val) {
   else if (v >= 0.7) desc = 'idle';
   else desc = 'very low';
   if (label) label.textContent = v.toFixed(2) + 'x (' + desc + ')';
-  if (_sbSource && _sbPlaying) _sbSource.playbackRate.value = v;
+  if (_sbSource && _sbPlaying) {
+    const ctx = _getAudioCtx();
+    _sbSource.playbackRate.setValueAtTime(_sbSource.playbackRate.value, ctx.currentTime);
+    _sbSource.playbackRate.linearRampToValueAtTime(v, ctx.currentTime + 0.15);
+    // When pitch lock is on, rebuild buffer to compensate for new RPM
+    const pitchLock = !!(document.getElementById('sbPitchLock') && document.getElementById('sbPitchLock').checked);
+    if (pitchLock) {
+      if (_sbSwapTimer) clearTimeout(_sbSwapTimer);
+      _sbSwapTimer = setTimeout(_sbHotSwap, 200);
+    }
+  }
 }
 
 function sbUpdateVol(val) {
   const v = parseInt(val);
   const label = document.getElementById('sbVolLabel');
   if (label) label.textContent = v + '%';
-  if (_sbGain) _sbGain.gain.value = v / 100;
+  if (_sbGain) {
+    const ctx = _getAudioCtx();
+    _sbGain.gain.setValueAtTime(_sbGain.gain.value, ctx.currentTime);
+    _sbGain.gain.linearRampToValueAtTime(v / 100, ctx.currentTime + 0.08);
+  }
 }
 
 let _sbRawSamples = null;  // original int8 samples from server
@@ -3857,10 +4607,10 @@ function sbUpdateLoopPoints() {
   const selKB = Math.round(selSamples / 1024);
   if (selInfo) selInfo.textContent = 'Selection: ' + (le - ls).toFixed(3) + 's, ~' + selSamples + ' samples, ~' + selKB + ' KB';
 
-  // Live update loop points on the playing source
+  // Live update: debounce hot-swap with new buffer
   if (_sbPlaying && _sbSource) {
-    _sbSource.loopStart = ls;
-    _sbSource.loopEnd = le;
+    if (_sbSwapTimer) clearTimeout(_sbSwapTimer);
+    _sbSwapTimer = setTimeout(_sbHotSwap, 120);
   }
 }
 
@@ -3874,37 +4624,38 @@ function _sbHotSwap() {
   // Figure out current phase so we restart at the same relative position
   const rate = _sbSource.playbackRate.value;
   const elapsed = (ctx.currentTime - _sbLoopStartTime) * rate;
-  const oldDur = _sbLoopBuf ? _sbLoopBuf.duration : 1;
-  const phase = elapsed % oldDur;  // seconds into the old loop
-  // Map to equivalent position in new buffer (proportional)
+  const oldDur = _sbLoopBuf ? _sbLoopBuf.duration : _sbBuffer.duration;
+  const phase = elapsed % oldDur;
   const offset = Math.min(phase / oldDur * newBuf.duration, newBuf.duration - 0.001);
 
-  // Quick crossfade: fade out old over 15ms, start new
-  const fadeTime = 0.015;
+  const fadeTime = 0.03;
+  const volSlider = document.getElementById('sbVolSlider');
+  const vol = (volSlider ? parseInt(volSlider.value) : 100) / 100;
+
+  // Kill old source's onended so it doesn't reset _sbPlaying
+  const oldSource = _sbSource;
   const oldGain = _sbGain;
+  oldSource.onended = null;
   oldGain.gain.setValueAtTime(oldGain.gain.value, ctx.currentTime);
   oldGain.gain.linearRampToValueAtTime(0, ctx.currentTime + fadeTime);
-  try { _sbSource.stop(ctx.currentTime + fadeTime); } catch(e) {}
+  try { oldSource.stop(ctx.currentTime + fadeTime + 0.01); } catch(e) {}
+  // oldGain/oldHighPass/oldLowPass will be garbage collected once disconnected
+  setTimeout(function(){ try { oldGain.disconnect(); } catch(e){} }, 100);
 
-  // New source
+  // Start new source NOW (overlapping with old fade-out = no gap)
   _sbLoopBuf = newBuf;
   _sbSource = ctx.createBufferSource();
   _sbSource.buffer = newBuf;
   _sbSource.loop = true;
   _sbSource.loopStart = 0;
   _sbSource.loopEnd = newBuf.duration;
-  const rpmSlider = document.getElementById('sbRpmSlider');
-  _sbSource.playbackRate.value = rpmSlider ? parseFloat(rpmSlider.value) : 1.0;
-  const volSlider = document.getElementById('sbVolSlider');
-  const vol = (volSlider ? parseInt(volSlider.value) : 100) / 100;
-  _sbGain = ctx.createGain();
+  _sbSource.playbackRate.value = rate;
+  _sbConnectChain(_sbSource, ctx);
   _sbGain.gain.setValueAtTime(0, ctx.currentTime);
   _sbGain.gain.linearRampToValueAtTime(vol, ctx.currentTime + fadeTime);
-  _sbSource.connect(_sbGain);
-  _sbGain.connect(ctx.destination);
   _sbSource.onended = function() { _sbPlaying = false; updatePlayBtn(); };
-  _sbSource.start(ctx.currentTime, offset > 0 ? offset : 0);
-  _sbLoopStartTime = ctx.currentTime - (offset / (_sbSource.playbackRate.value || 1));
+  _sbSource.start(0, offset > 0 ? offset : 0);
+  _sbLoopStartTime = ctx.currentTime - (offset / (rate || 1));
 }
 
 function sbGetLoopRegion() {
@@ -3925,7 +4676,7 @@ function sbProcessSlice() {
   if (endIdx <= startIdx) return null;
   let slice = _sbRawSamples.slice(startIdx, endIdx);
 
-  // Speed resample — uses the RPM Sim slider value
+  // Speed resample — uses the RPM slider value
   const speed = parseFloat(document.getElementById('sbRpmSlider').value) || 1;
   let outRate = parseInt(document.getElementById('sbExportRate').value) || 22050;
   if (speed !== 1) {
@@ -4013,6 +4764,42 @@ function sbExportSelection() {
   status('Exported ' + varName + '.h — ' + p.slice.length + ' samples (' + dur + 's @ ' + p.rate + 'Hz), ~' + sizeKB + ' KB', sizeKB > 500 ? 'warn' : '');
 }
 
+async function refreshVehicleSection() {
+  const veh = getSelectedVehicleFile();
+  if (!veh) return;
+  const oldDetails = document.getElementById('selectedVehicleDetails');
+  if (!oldDetails) return;
+  // Snapshot open <details> sections and scroll position
+  const scrollY = window.scrollY || window.pageYOffset;
+  const openSet = new Set();
+  oldDetails.querySelectorAll('details[open]').forEach(d => {
+    const s = d.querySelector('summary');
+    if (s) openSet.add(s.textContent.trim());
+  });
+  const wasOpen = oldDetails.hasAttribute('open');
+  try {
+    const sec = await fetch('/vehicle_section?vehicle=' + encodeURIComponent(veh));
+    const j = await sec.json();
+    if (!j.ok) return;
+    const tmp = document.createElement('div');
+    tmp.innerHTML = j.html;
+    const newDetails = tmp.firstElementChild;
+    if (!newDetails) return;
+    oldDetails.replaceWith(newDetails);
+    // Restore open state on the outer <details>
+    if (wasOpen) newDetails.setAttribute('open', '');
+    // Restore inner <details> open states
+    newDetails.querySelectorAll('details').forEach(d => {
+      const s = d.querySelector('summary');
+      if (s && openSet.has(s.textContent.trim())) d.setAttribute('open', '');
+    });
+    setAdvancedSoundVisibility(showAdvancedSound);
+    updateVehicleNameDisplay();
+    // Restore scroll position
+    window.scrollTo(0, scrollY);
+  } catch(e) { /* silent — install already succeeded */ }
+}
+
 async function sbInstallSelection() {
   if (!_sbRawSamples || !_sbBuffer) { status('Load a sound first', 'warn'); return; }
   const catSel = document.getElementById('sbInstallCategory');
@@ -4048,6 +4835,8 @@ async function sbInstallSelection() {
       const sizeKB = Math.round(p.slice.length / 1024);
       const dur = (p.slice.length / p.rate).toFixed(2);
       status('Installed ' + (j.filename || filename) + ' as ' + catKey + ' — ' + p.slice.length + ' samples (' + dur + 's @ ' + p.rate + 'Hz), ~' + sizeKB + ' KB', '');
+      // Refresh vehicle section so the new sound shows up
+      await refreshVehicleSection();
     } else {
       status('Install failed: ' + (j.error || '?'), 'bad');
     }
@@ -4059,7 +4848,6 @@ loadVolume();
 updateVehicleNameDisplay();
 setAdvancedSoundVisibility(false);
 switchMainTab('config');
-openConverterMode('browser');
 autoLoadLastSession();
 </script>
 </body>
@@ -4113,6 +4901,29 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
+        if self.path.startswith("/download_vehicle"):
+            try:
+                parsed = urllib.parse.urlparse(self.path)
+                q = urllib.parse.parse_qs(parsed.query)
+                vehicle = os.path.basename((q.get("vehicle", [""])[0] or "").strip())
+                if not vehicle or not vehicle.endswith(".h"):
+                    self.send_json({"ok": False, "error": "Invalid vehicle file"}, 400)
+                    return
+                full = os.path.join(SRC, "vehicles", vehicle)
+                if not os.path.exists(full):
+                    self.send_json({"ok": False, "error": "Vehicle file not found"}, 404)
+                    return
+                body = read_text(full).encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "application/octet-stream")
+                self.send_header("Content-Disposition", 'attachment; filename="%s"' % vehicle)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+            except Exception as e:
+                self.send_json({"ok": False, "error": str(e)}, 500)
+            return
+
         if self.path.startswith("/vehicle_section"):
             try:
                 parsed = urllib.parse.urlparse(self.path)

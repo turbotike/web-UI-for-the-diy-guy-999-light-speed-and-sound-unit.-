@@ -77,17 +77,10 @@ if !errorlevel! neq 0 (
 )
 
 :: -----------------------------------------------------------
-:: 3. Start the server and open the browser
+:: 3. Start the server hidden and open the browser
 :: -----------------------------------------------------------
-echo.
-echo  Starting server...
-echo  (This window must stay open. Close it to stop the server.)
-echo.
 
+start /b "" wscript //nologo "%~dp0_launch_hidden.vbs" "%PY%"
+timeout /t 2 /noexec >nul
 start "" http://localhost:8080
-%PY% configure.py
-
-:: If we get here, the server exited
-echo.
-echo  Server stopped.
-pause
+exit

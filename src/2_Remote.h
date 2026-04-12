@@ -31,9 +31,9 @@
 // SBUS communication (RX header, 16 channels. This is my preferred communication protocol)--------
 // #define SBUS_COMMUNICATION // control signals are coming in via the SBUS interface (comment it out for classic PWM RC signals)
 // NOTE: "boolean sbusInverted = true, so you don't have to change it
-uint32_t sbusBaud = 100000;         // Standard is 100000. Try to lower it, if your channels are coming in unstable. Working range is about 96000 - 104000.
+uint32_t sbusBaud = 160650;         // Standard is 100000. Try to lower it, if your channels are coming in unstable. Working range is about 96000 - 104000.
 #define EMBEDDED_SBUS               // Embedded SBUS code is used instead of SBUS library, if defined (recommended, don't change it)
-uint16_t sbusFailsafeTimeout = 100; // Failsafe is triggered after this timeout in milliseconds (about 100)
+uint16_t sbusFailsafeTimeout = 102; // Failsafe is triggered after this timeout in milliseconds (about 100)
 
 // IBUS communication (RX header, 13 channels not recommended, NO FAILSAFE, if bad contact in iBUS wiring!) --------
 #define IBUS_COMMUNICATION // control signals are coming in via the IBUS interface (comment it out for classic PWM RC signals)
@@ -94,15 +94,15 @@ uint16_t sbusFailsafeTimeout = 100; // Failsafe is triggered after this timeout 
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 1
-#define GEARBOX 6
-#define THROTTLE 3
-#define HORN 5
-#define FUNCTION_R 2
-#define FUNCTION_L 4
-#define POT2 8
-#define MODE1 7
-#define MODE2 9
+#define STEERING 3
+#define GEARBOX 2
+#define THROTTLE 5
+#define HORN 6
+#define FUNCTION_R 1
+#define FUNCTION_L 2
+#define POT2 0
+#define MODE1 0
+#define MODE2 0
 #define MOMENTARY1 NONE
 #define HAZARDS NONE
 #define INDICATOR_LEFT NONE
@@ -172,15 +172,15 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 1
-#define GEARBOX 6
-#define THROTTLE 3
-#define HORN 5
-#define FUNCTION_R 2
-#define FUNCTION_L 4
-#define POT2 8
-#define MODE1 7
-#define MODE2 9
+#define STEERING 3
+#define GEARBOX 2
+#define THROTTLE 5
+#define HORN 6
+#define FUNCTION_R 1
+#define FUNCTION_L 2
+#define POT2 0
+#define MODE1 0
+#define MODE2 0
 #define MOMENTARY1 NONE
 #define HAZARDS NONE
 #define INDICATOR_LEFT NONE
@@ -254,15 +254,15 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 1
-#define GEARBOX 6
-#define THROTTLE 3
-#define HORN 5
-#define FUNCTION_R 2
-#define FUNCTION_L 4
-#define POT2 8
-#define MODE1 7
-#define MODE2 9
+#define STEERING 3
+#define GEARBOX 2
+#define THROTTLE 5
+#define HORN 6
+#define FUNCTION_R 1
+#define FUNCTION_L 2
+#define POT2 0
+#define MODE1 0
+#define MODE2 0
 #define MOMENTARY1 NONE
 #define HAZARDS NONE
 #define INDICATOR_LEFT NONE
@@ -335,15 +335,15 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 1
-#define GEARBOX 6
-#define THROTTLE 3
-#define HORN 5
-#define FUNCTION_R 2
-#define FUNCTION_L 4
-#define POT2 8
-#define MODE1 7
-#define MODE2 9
+#define STEERING 3
+#define GEARBOX 2
+#define THROTTLE 5
+#define HORN 6
+#define FUNCTION_R 1
+#define FUNCTION_L 2
+#define POT2 0
+#define MODE1 0
+#define MODE2 0
 #define MOMENTARY1 NONE
 #define HAZARDS NONE
 #define INDICATOR_LEFT NONE
@@ -416,15 +416,15 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 1
-#define GEARBOX 6
-#define THROTTLE 3
-#define HORN 5
-#define FUNCTION_R 2
-#define FUNCTION_L 4
-#define POT2 8
-#define MODE1 7
-#define MODE2 9
+#define STEERING 3
+#define GEARBOX 2
+#define THROTTLE 5
+#define HORN 6
+#define FUNCTION_R 1
+#define FUNCTION_L 2
+#define POT2 0
+#define MODE1 0
+#define MODE2 0
 #define MOMENTARY1 NONE
 #define HAZARDS NONE
 #define INDICATOR_LEFT NONE
@@ -496,15 +496,15 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 1
-#define GEARBOX 6
-#define THROTTLE 3
-#define HORN 5
-#define FUNCTION_R 2
-#define FUNCTION_L 4
-#define POT2 8
-#define MODE1 7
-#define MODE2 9
+#define STEERING 3
+#define GEARBOX 2
+#define THROTTLE 5
+#define HORN 6
+#define FUNCTION_R 1
+#define FUNCTION_L 2
+#define POT2 0
+#define MODE1 0
+#define MODE2 0
 #define MOMENTARY1 NONE
 #define HAZARDS NONE
 #define INDICATOR_LEFT NONE
@@ -576,15 +576,15 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 1
-#define GEARBOX 6
-#define THROTTLE 3
-#define HORN 5
-#define FUNCTION_R 2
-#define FUNCTION_L 4
-#define POT2 8
-#define MODE1 7
-#define MODE2 9
+#define STEERING 3
+#define GEARBOX 2
+#define THROTTLE 5
+#define HORN 6
+#define FUNCTION_R 1
+#define FUNCTION_L 2
+#define POT2 0
+#define MODE1 0
+#define MODE2 0
 #define MOMENTARY1 NONE
 #define HAZARDS NONE
 #define INDICATOR_LEFT NONE
@@ -656,15 +656,15 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel (pulseWidth[x]) ##########################################
-#define STEERING 1
-#define GEARBOX 6
-#define THROTTLE 3
-#define HORN 5
-#define FUNCTION_R 2
-#define FUNCTION_L 4
-#define POT2 8
-#define MODE1 7
-#define MODE2 9
+#define STEERING 3
+#define GEARBOX 2
+#define THROTTLE 5
+#define HORN 6
+#define FUNCTION_R 1
+#define FUNCTION_L 2
+#define POT2 0
+#define MODE1 0
+#define MODE2 0
 #define MOMENTARY1 NONE
 #define HAZARDS NONE
 #define INDICATOR_LEFT NONE
@@ -736,15 +736,15 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 1
-#define GEARBOX 6
-#define THROTTLE 3
-#define HORN 5
-#define FUNCTION_R 2
-#define FUNCTION_L 4
-#define POT2 8
-#define MODE1 7
-#define MODE2 9
+#define STEERING 3
+#define GEARBOX 2
+#define THROTTLE 5
+#define HORN 6
+#define FUNCTION_R 1
+#define FUNCTION_L 2
+#define POT2 0
+#define MODE1 0
+#define MODE2 0
 #define MOMENTARY1 NONE
 #define HAZARDS NONE
 #define INDICATOR_LEFT NONE
@@ -840,15 +840,15 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 1
-#define GEARBOX 6
-#define THROTTLE 3
-#define HORN 5
-#define FUNCTION_R 2
-#define FUNCTION_L 4
-#define POT2 8
-#define MODE1 7
-#define MODE2 9
+#define STEERING 3
+#define GEARBOX 2
+#define THROTTLE 5
+#define HORN 6
+#define FUNCTION_R 1
+#define FUNCTION_L 2
+#define POT2 0
+#define MODE1 0
+#define MODE2 0
 #define MOMENTARY1 NONE
 #define HAZARDS NONE
 #define INDICATOR_LEFT NONE
@@ -939,15 +939,15 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 1
-#define GEARBOX 6
-#define THROTTLE 3
-#define HORN 5
-#define FUNCTION_R 2
-#define FUNCTION_L 4
-#define POT2 8
-#define MODE1 7
-#define MODE2 9
+#define STEERING 3
+#define GEARBOX 2
+#define THROTTLE 5
+#define HORN 6
+#define FUNCTION_R 1
+#define FUNCTION_L 2
+#define POT2 0
+#define MODE1 0
+#define MODE2 0
 #define MOMENTARY1 NONE
 #define HAZARDS NONE
 #define INDICATOR_LEFT NONE
@@ -1017,15 +1017,15 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 1
-#define GEARBOX 6
-#define THROTTLE 3
-#define HORN 5
-#define FUNCTION_R 2
-#define FUNCTION_L 4
-#define POT2 8
-#define MODE1 7
-#define MODE2 9
+#define STEERING 3
+#define GEARBOX 2
+#define THROTTLE 5
+#define HORN 6
+#define FUNCTION_R 1
+#define FUNCTION_L 2
+#define POT2 0
+#define MODE1 0
+#define MODE2 0
 #define MOMENTARY1 NONE
 #define HAZARDS NONE
 #define INDICATOR_LEFT NONE
@@ -1095,15 +1095,15 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 1
-#define GEARBOX 6
-#define THROTTLE 3
-#define HORN 5
-#define FUNCTION_R 2
-#define FUNCTION_L 4
-#define POT2 8
-#define MODE1 7
-#define MODE2 9
+#define STEERING 3
+#define GEARBOX 2
+#define THROTTLE 5
+#define HORN 6
+#define FUNCTION_R 1
+#define FUNCTION_L 2
+#define POT2 0
+#define MODE1 0
+#define MODE2 0
 #define MOMENTARY1 NONE
 #define HAZARDS NONE
 #define INDICATOR_LEFT NONE
@@ -1173,15 +1173,15 @@ boolean sbusInverted = true; // false = non standard (inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 1
-#define GEARBOX 6
-#define THROTTLE 3
-#define HORN 5
-#define FUNCTION_R 2
-#define FUNCTION_L 4
-#define POT2 8
-#define MODE1 7
-#define MODE2 9
+#define STEERING 3
+#define GEARBOX 2
+#define THROTTLE 5
+#define HORN 6
+#define FUNCTION_R 1
+#define FUNCTION_L 2
+#define POT2 0
+#define MODE1 0
+#define MODE2 0
 #define MOMENTARY1 NONE
 #define HAZARDS NONE
 #define INDICATOR_LEFT NONE

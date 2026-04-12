@@ -4,38 +4,40 @@
 
 // Sound files (22'050 Hz, 8 bit PCM recommended) -----------------------------------------------------------------------
 // Choose the start sound (uncomment the one you want) --------
-volatile int startVolumePercentage = 140; // Adjust the start volume (usually = 100%)
+volatile int startVolumePercentage = 150; // Adjust the start volume (usually = 100%)
 // #include "sounds/CAT730Start.h" // CAT 730
+// #include "sounds/CaterpillarD6DozerStart.h" // CaterpillarD6DozerStart (custom)
+#include "sounds/CaterpillarD11h_copyStart.h" // CaterpillarD11h_copyStart (custom)
 
-#include "sounds/customStart.h" // customStart (custom)
 // Choose the motor idle sound (uncomment the one you want) --------
-volatile int idleVolumePercentage = 140; // Adjust the idle volume (usually = 100%, more also working, depending on sound, 50 - 60% if additional diesel knock sound is used)
+volatile int idleVolumePercentage = 110; // Adjust the idle volume (usually = 100%, more also working, depending on sound, 50 - 60% if additional diesel knock sound is used)
 volatile int engineIdleVolumePercentage = 45; // the engine volume will be throttle dependent (usually = 40%, never more than 100%!)
-volatile int fullThrottleVolumePercentage = 140; // Volume Percentage while full throttle (for rev sound as well)
+volatile int fullThrottleVolumePercentage = 110; // Volume Percentage while full throttle (for rev sound as well)
 // #include "sounds/CAT730Idle.h" // CAT 730
 // #include "sounds/CaterpillarD11h_copyIdle.h" // CaterpillarD11h_copyIdle (custom)
+// #include "sounds/CaterpillarD6DozerIdle.h" // CaterpillarD6DozerIdle (custom)
 // #include "sounds/CaterpillarD11h_copyIdle2.h" // CaterpillarD11h_copyIdle2 (custom)
 // #include "sounds/CaterpillarD11h_copyIdle3.h" // CaterpillarD11h_copyIdle3 (custom)
 // #include "sounds/CaterpillarD11h_copyIdle4.h" // CaterpillarD11h_copyIdle4 (custom)
+// #include "sounds/CaterpillarD6DozerIdle3.h" // CaterpillarD6DozerIdle3 (custom)
+// #include "sounds/CaterpillarD6DozerIdle2.h" // CaterpillarD6DozerIdle2 (custom)
 // #include "sounds/CaterpillarD11h_copyIdle5.h" // CaterpillarD11h_copyIdle5 (custom)
-// #include "sounds/CaterpillarD11h_copyIdle6.h" // CaterpillarD11h_copyIdle6 (custom)
-#include "sounds/CaterpillarD11h_copyIdle7.h" // CaterpillarD11h_copyIdle7 (custom)
-// #include "sounds/CaterpillarD11h_copyIdle8.h" // CaterpillarD11h_copyIdle8 (custom)
+#include "sounds/CaterpillarD11h_copyIdle6.h" // CaterpillarD11h_copyIdle6 (custom)
 
 
 // Choose the motor revving sound (uncomment the one you want) --------
 #define REV_SOUND // uncomment this, if you want to use the separate, optional rev sound
-volatile int revVolumePercentage = 140; // Adjust the idle volume (usually = 100%, more also working, depending on sound) 90
-volatile int engineRevVolumePercentage = 55; // the engine volume will be throttle dependent (usually = 40%, never more than 100%!)40
+volatile int revVolumePercentage = 110; // Adjust the idle volume (usually = 100%, more also working, depending on sound) 90
+volatile int engineRevVolumePercentage = 70; // the engine volume will be throttle dependent (usually = 40%, never more than 100%!)40
 volatile const uint16_t revSwitchPoint = 50; // The rev sound is played instead of the idle sound above this point
 volatile const uint16_t idleEndPoint = 300; // above this point, we have 100% rev and 0% idle sound volume (usually 500, min. 50 more than revSwitchPoint)
-volatile const uint16_t idleVolumeProportionPercentage = 100; // The idle sound volume proportion (rest is rev proportion) below "revSwitchPoint" (about 90 - 100%, never more than 100)
+volatile const uint16_t idleVolumeProportionPercentage = 80; // The idle sound volume proportion (rest is rev proportion) below "revSwitchPoint" (about 90 - 100%, never more than 100)
 #ifdef REV_SOUND
 
 // #include "sounds/CAT730Rev.h" // CAT 730
 // #include "sounds/RevDummy.h" // silent placeholder (disabled)
-// #include "sounds/CaterpillarD11h_copyRev3.h" // CaterpillarD11h_copyRev3 (custom)
-#include "sounds/CaterpillarD11h_copyRev.h" // CaterpillarD11h_copyRev (custom)
+// #include "sounds/CaterpillarD11h_copyRev.h" // CaterpillarD11h_copyRev (custom)
+#include "sounds/CaterpillarD11h_copyRev2.h" // CaterpillarD11h_copyRev2 (custom)
 #endif
 
 // Choose the jake brake sound (uncomment the one you want) --------
@@ -56,12 +58,12 @@ volatile int dieselKnockInterval = 6; // Idle sample length divided by this numb
 volatile int dieselKnockStartPoint = 110; // Volume will raise above this point ( usually 0, for "open pipe" exhaust about 250)
 //#define V8 // V8 engine (Ford, Scania): pulses 4 and 8 will bel louder, because only 90° gap between exhaust cycles in same manifold
 //#define V2 // V2 engine (Harley): first 2 of 4 pulses will be louder (set dieselKnockInterval to 4)
-volatile int dieselKnockAdaptiveVolumePercentage = 50; // Adjust the Diesel knock volume for the non-first knocks per engine cycle (usually = 50%)
+volatile int dieselKnockAdaptiveVolumePercentage = 30; // Adjust the Diesel knock volume for the non-first knocks per engine cycle (usually = 50%)
 #include "sounds/CAT730Knock.h" // CAT 730
 
 // Adjust the additional turbo sound (set "turboVolumePercentage" to "0", if you don't want it) --------
-volatile int turboVolumePercentage = 40; // Adjust the turbo volume (usually = 70%)
-volatile int turboIdleVolumePercentage = 0; // the turbo volume will be engine rpm dependent (usually = 10%)
+volatile int turboVolumePercentage = 90; // Adjust the turbo volume (usually = 70%)
+volatile int turboIdleVolumePercentage = 10; // the turbo volume will be engine rpm dependent (usually = 10%)
 #include "sounds/TurboWhistle.h" // Turbo sound, playing in parallel with engine sound!
 
 // Adjust the additional supercharger sound (set "chargerVolumePercentage" to "0", if you don't want it) --------
@@ -72,7 +74,7 @@ volatile int chargerStartPoint = 10; // Volume will raise above this point ( usu
 
 // Adjust the additional turbo wastegate  / blowoff valve  sound (set "wastegateVolumePercentage" to "0", if you don't want it)--------
 volatile int wastegateVolumePercentage = 100; // Adjust the wastegate volume (usually = 70%, up to 250%)
-volatile int wastegateIdleVolumePercentage = 1; // Wastegate sound is played, after rapid throttle drop with engaged clutch
+volatile int wastegateIdleVolumePercentage = 0; // Wastegate sound is played, after rapid throttle drop with engaged clutch
 //#include "sounds/WastegateDummy.h"
 #include "sounds/1000HpScaniaV8wastegate.h"
 
@@ -122,13 +124,14 @@ volatile int sound1VolumePercentage = 100; // Adjust the sound1 volume (usually 
 #include "sounds/door.h" // opening and closing the door
 
 // Choose the reversing beep sound --------
-volatile int reversingVolumePercentage = 70; // Adjust the reversing sound volume (usually = 70%)
+volatile int reversingVolumePercentage = 0; // Adjust the reversing sound volume (usually = 70%)
 #include "sounds/TruckReversingBeep.h" // 1000Hz peep sound
+// #include "sounds/RevDummy.h" // silent placeholder (disabled)
 
 // Choose the indicator / turn signal options --------
 //#define LED_INDICATORS // LED based indicators will switch on and off immediately
 volatile int indicatorVolumePercentage = 100; // Adjust the indicator sound volume (usually = 100%)
-const uint16_t indicatorOn = 300; // The indicator will be switched on above +/- this value, if wheels are turned
+const uint16_t indicatorOn = 100; // The indicator will be switched on above +/- this value, if wheels are turned
 const boolean INDICATOR_DIR = true; // adjust indicator direction with true or false
 // #include "sounds/Indicator.h" // "Tick-Tack" sound
 #include "sounds/IndicatorDummy.h" // silent placeholder (disabled)
@@ -161,8 +164,8 @@ volatile int trackRattleVolumePercentage = 120; // Adjust the volume (usually = 
 #define TRACK_RATTLE_2 // If you want to use a second track rattle sound, which is played with a delay after the first one, to create a more realistic effect
 // Choose the track rattle 2 sound (uncomment the one you want) --------
 volatile int trackRattle2VolumePercentage = 150; // Adjust the volume (usually = 150%)
-const uint16_t pwmStrokeChainDriveTopSpeed = 460; //Hobbywing 1060 ESC reaches top speed at about 1800 or 1200. 1500 is neutral. This means 1500 +/- 300
-const uint16_t pwmStrokeChainDriveStartRotation = 68; // Hobbywing 1060 ESC starts to move at 1500 + this value
+const uint16_t pwmStrokeChainDriveTopSpeed = 255; //Hobbywing 1060 ESC reaches top speed at about 1800 or 1200. 1500 is neutral. This means 1500 +/- 300
+const uint16_t pwmStrokeChainDriveStartRotation = 70; // Hobbywing 1060 ESC starts to move at 1500 + this value
 const uint16_t trackRattleIntervalMin = 160; // Interval for top speed (never less than the sample duration of the track rattle sound)
 const uint16_t trackRattleIntervalMax = 500; // Maximum interval between track rattle sounds for slow speed
 #ifdef TRACK_RATTLE_2
@@ -184,7 +187,7 @@ const boolean doubleFlashBlueLight = true; // double flash blue lights if "true"
 // Acceleration & deceleration settings ----------------------------------------------------------------------------------
 const uint8_t escRampTimeFirstGear = 20; // determines, how fast the acceleration and deceleration happens (about 15 - 25, 20 for King Hauler)
 const uint8_t escRampTimeSecondGear = 50; // 50 for King Hauler (this value is always in use for automatic transmission, about 80)
-const uint8_t escRampTimeThirdGear = 75; // 75 for King Hauler
+const uint8_t escRampTimeThirdGear = 50; // 75 for King Hauler
 const uint8_t escBrakeSteps = 30; // determines, how fast the ESC is able to brake down (20 - 30, 30 for King Hauler)
 const uint8_t escAccelerationSteps = 3; // determines, how fast the ESC is able to accelerate (2 - 3, 3 for King Hauler)
 
@@ -199,7 +202,7 @@ uint16_t clutchEngagingPoint = 500; // CEP. The "clutch" is engaging above this 
 
 // Engine parameters ----------------------------------------------------------------------------------------------------
 // Engine max. RPM in % of idle RPM. About 200% for big Diesels, 400% for fast running motors.
-uint32_t MAX_RPM_PERCENTAGE = 150; // NOTE! Was called TOP_SPEED_MULTIPLIER (TSM) in earlier versions and was a multiplier instead of a percentage!
+uint32_t MAX_RPM_PERCENTAGE = 200; // NOTE! Was called TOP_SPEED_MULTIPLIER (TSM) in earlier versions and was a multiplier instead of a percentage!
 
 // Engine mass simulation
 const int8_t acc = 1; // Acceleration step (2) 1 = slow for locomotive engine, 9 = fast for trophy truck 2

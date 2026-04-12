@@ -17,7 +17,7 @@
 // #define NEOPIXEL_ON_CH4 // The CH 4 servo header is used as Neopixel output, if defined (BUS communication mode only, intended for RC trailer controller, no coupler servo)
 #endif                          // ---
 #define NEOPIXEL_COUNT 8
-#define NEOPIXEL_BRIGHTNESS 127
+#define NEOPIXEL_BRIGHTNESS 125
 #define MAX_POWER_MILLIAMPS 100
 
 #define NEOPIXEL_HIGHBEAM // Neopixel bar is used as high beam as well, if defined. Also usable in combination with NEOPIXEL_KNIGHT_RIDER & NEOPIXEL_BLUELIGHT

@@ -11,6 +11,7 @@ documentation/Rücklichter.docx
 # Build artifacts
 build/
 build_test/
+dist/
 
 # OS files
 .DS_Store
@@ -20,3 +21,8 @@ desktop.ini
 # Python
 __pycache__/
 *.pyc
+
+# User-specific
+backups/
+presets/
+*.wav

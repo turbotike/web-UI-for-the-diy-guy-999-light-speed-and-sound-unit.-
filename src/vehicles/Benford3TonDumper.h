@@ -49,7 +49,7 @@ volatile int dieselKnockAdaptiveVolumePercentage = 80; // Adjust the Diesel knoc
 //#define RPM_DEPENDENT_KNOCK // Knock volume also depending on engine RPM *****************
 #ifdef RPM_DEPENDENT_KNOCK // These parameters are for RPM dependent knock mode only:
 uint8_t minKnockVolumePercentage = 80; // percentage, if at knock start RPM (about 5 - 80)
-uint16_t knockStartRpm = 50; // starting @ this RPM (about 50 - 400)
+uint16_t knockStartRpm = 51; // starting @ this RPM (about 50 - 400)
 #endif // ********************************************************************************
 #include "sounds/BENFORD3TONKnock2.h" // Benford 3 Ton Dumper
 
@@ -66,7 +66,7 @@ volatile int chargerStartPoint = 10; // Volume will raise above this point ( usu
 
 // Adjust the additional turbo wastegate  / blowoff valve  sound (set "wastegateVolumePercentage" to "0", if you don't want it)--------
 volatile int wastegateVolumePercentage = 30; // Adjust the wastegate volume (usually = 70%, up to 250%)
-volatile int wastegateIdleVolumePercentage = 1; // Wastegate sound is played, after rapid throttle drop with engaged clutch
+volatile int wastegateIdleVolumePercentage = 0; // Wastegate sound is played, after rapid throttle drop with engaged clutch
 #include "sounds/WastegateDummy.h"
 //#include "sounds/POWERSTROKEwastegate.h" // Ford Powerstroke 7.3l V8 Diesel
 
@@ -82,56 +82,56 @@ volatile int fanStartPoint = 0; // Volume will raise above this point (250 for T
 
 // Choose the horn sound (uncomment the one you want) --------
 volatile int hornVolumePercentage = 160; // Adjust the horn volume (usually = 100%)
-//#include "sounds/TrainHorn.h" // American train horn
-//#include "sounds/HornblastersOUTLAWTrainHornShort.h" // Hornblasters outlaw train horn short
-//#include "sounds/ManTgeHorn.h" // MAN TGE truck horn (King Hauler)
-//#include "sounds/westinghouseHorn.h" // American truck horn (the best)
-//#include "sounds/FireTruckAirHorn.h" // US fire truck air horn
+// #include "sounds/TrainHorn.h" // American train horn
+// #include "sounds/HornblastersOUTLAWTrainHornShort.h" // Hornblasters outlaw train horn short
+// #include "sounds/ManTgeHorn.h" // MAN TGE truck horn (King Hauler)
+// #include "sounds/westinghouseHorn.h" // American truck horn (the best)
+// #include "sounds/FireTruckAirHorn.h" // US fire truck air horn
 #include "sounds/CarHorn.h" // A boring car horn
-//#include "sounds/TruckHorn.h" // A generic truck horn
-//#include "sounds/PeterbiltHorn.h" // A Peterbilt truck horn
-//#include "sounds/2ToneTruckHorn.h" // A 2 tone truck horn
-//#include "sounds/CaboverCAThorn.h" // Cabover with CAT engine horn
-//#include "sounds/MackSuperLinerHorn.h" // MACK Super Liner horn
-//#include "sounds/ScaniaV8trainHorn.h" // Scania with train horn
+// #include "sounds/TruckHorn.h" // A generic truck horn
+// #include "sounds/PeterbiltHorn.h" // A Peterbilt truck horn
+// #include "sounds/2ToneTruckHorn.h" // A 2 tone truck horn
+// #include "sounds/CaboverCAThorn.h" // Cabover with CAT engine horn
+// #include "sounds/MackSuperLinerHorn.h" // MACK Super Liner horn
+// #include "sounds/ScaniaV8trainHorn.h" // Scania with train horn
 
 // Choose the siren / additional horn sound (uncomment the one you want) --------
 volatile int sirenVolumePercentage = 100; // Adjust the siren volume (usually = 100%)
 #include "sounds/sirenDummy.h" // If you don't want siren sound
-//#include "sounds/UsPoliceSiren.h" // US Police siren
-//#include "sounds/FireTruckAirSiren.h" // US fire truck air siren (King Hauler)
-//#include "sounds/FeuerwehrMartinshorn.h" // European Feuerwehr Martinshorn
-//#include "sounds/IrishFireEngineHorn.h" // Irish fire truck horn
-//#include "sounds/siren01norskere22.h" // Norwegian siren
-//#include "sounds/PostAutoHorn.h" // The typical Swiss post bus horn
+// #include "sounds/UsPoliceSiren.h" // US Police siren
+// #include "sounds/FireTruckAirSiren.h" // US fire truck air siren (King Hauler)
+// #include "sounds/FeuerwehrMartinshorn.h" // European Feuerwehr Martinshorn
+// #include "sounds/IrishFireEngineHorn.h" // Irish fire truck horn
+// #include "sounds/siren01norskere22.h" // Norwegian siren
+// #include "sounds/PostAutoHorn.h" // The typical Swiss post bus horn
 
 // Choose the air brake release sound (uncomment the one you want) --------
 volatile int brakeVolumePercentage = 150; // Adjust the brake volume (usually = 200%)
 #include "sounds/AirBrakeDummy.h" // If you don't want air brake sound
-//#include "sounds/TruckAirBrakes.h" // Short truck air brake sound
-//#include "sounds/TruckAirBrakesLong.h" // Long truck air brake sound
-//#include "sounds/TruckAirBrakes2.h" // Another truck air brake sound
-//#include "sounds/AirBrakeSqueak.h" // Squeaky air brake sound
-//#include "sounds/AirBrakeSqueak2.h" // Squeaky air brake sound
-//#include "sounds/UralBrakeSqueak.h" // URAL 4320 air brake sound
+// #include "sounds/TruckAirBrakes.h" // Short truck air brake sound
+// #include "sounds/TruckAirBrakesLong.h" // Long truck air brake sound
+// #include "sounds/TruckAirBrakes2.h" // Another truck air brake sound
+// #include "sounds/AirBrakeSqueak.h" // Squeaky air brake sound
+// #include "sounds/AirBrakeSqueak2.h" // Squeaky air brake sound
+// #include "sounds/UralBrakeSqueak.h" // URAL 4320 air brake sound
 
 // Choose the parking brake engaging sound (uncomment the one you want) --------
 volatile int parkingBrakeVolumePercentage = 150; // Adjust the brake volume (usually = 200%)
 #include "sounds/ParkingBrakeDummy.h" // If you don't want parking brake sound
-//#include "sounds/ParkingBrake.h" // Parking brake sound
+// #include "sounds/ParkingBrake.h" // Parking brake sound
 
 // Choose the gear shifting sound (uncomment the one you want) --------
 volatile int shiftingVolumePercentage = 100; // Adjust the shifting volume (usually = 200%)
-//#include "sounds/AirShiftingDummy.h" // If you don't want pneumatic shifting sound
-//#include "sounds/AirShifting.h" // Pneumatic shifting sound
+// #include "sounds/AirShiftingDummy.h" // If you don't want pneumatic shifting sound
+// #include "sounds/AirShifting.h" // Pneumatic shifting sound
 #include "sounds/ClunkingGearShifting.h" // Manual clunking shifting sound
 
 // Choose the additional "sound1" (uncomment the one you want) --------
 volatile int sound1VolumePercentage = 100; // Adjust the sound1 volume (usually = 100%)
-//#include "sounds/EMDLocomotiveBell.h" // American EMD locomotive bell
-//#include "sounds/007JamesBond.h" // James Bond melody
-//#include "sounds/M2Fire.h" // M2 salve
-//#include "sounds/GlenCanyon.h" // Glen Canyon country song for truckers ;-)
+// #include "sounds/EMDLocomotiveBell.h" // American EMD locomotive bell
+// #include "sounds/007JamesBond.h" // James Bond melody
+// #include "sounds/M2Fire.h" // M2 salve
+// #include "sounds/GlenCanyon.h" // Glen Canyon country song for truckers ;-)
 #include "sounds/door.h" // opening and closing the door
 
 // Choose the reversing beep sound --------
@@ -140,7 +140,7 @@ volatile int reversingVolumePercentage = 50; // Adjust the reversing sound volum
 
 // Choose the indicator / turn signal options --------
 volatile int indicatorVolumePercentage = 60; // Adjust the indicator sound volume (usually = 100%)
-const uint16_t indicatorOn = 300; // The indicator will be switched on above +/- this value, if wheels are turned
+const uint16_t indicatorOn = 100; // The indicator will be switched on above +/- this value, if wheels are turned
 const boolean INDICATOR_DIR = true; // adjust indicator direction with true or false
 #include "sounds/Indicator.h" // "Tick-Tack" sound
 
@@ -150,12 +150,12 @@ const boolean INDICATOR_DIR = true; // adjust indicator direction with true or f
 
 // Choose the hydraulic pump sound (uncomment the one you want) --------
 volatile int hydraulicPumpVolumePercentage = 50; // Adjust the volume (usually = 120%)
-//#include "sounds/Caterpillar323Hydraulic.h" // Caterpillar 323 excavator
+// #include "sounds/Caterpillar323Hydraulic.h" // Caterpillar 323 excavator
 #include "sounds/Caterpillar323Hydraulic2.h" // Caterpillar 323 excavator (slowed down by factor 2)
 
 // Choose the hydraulic fluid flow sound (uncomment the one you want) --------
-volatile int hydraulicFlowVolumePercentage = 8; // Adjust the volume (usually = 20%)
-//#include "sounds/Caterpillar323HydraulicFlow.h" // Caterpillar 323 excavator
+volatile int hydraulicFlowVolumePercentage = 10; // Adjust the volume (usually = 20%)
+// #include "sounds/Caterpillar323HydraulicFlow.h" // Caterpillar 323 excavator
 #include "sounds/hydraulicHiss.h" // Caterpillar 323 excavator
 
 // Choose the track rattle sound (uncomment the one you want) --------
@@ -175,13 +175,13 @@ const boolean doubleFlashBlueLight = true; // double flash blue lights if "true"
 // Acceleration & deceleration settings ----------------------------------------------------------------------------------
 const uint8_t escRampTimeFirstGear = 20; // determines, how fast the acceleration and deceleration happens (about 15 - 25, 20 for King Hauler)
 const uint8_t escRampTimeSecondGear = 50; // 50 for King Hauler (this value is always in use for automatic transmission, about 80)
-const uint8_t escRampTimeThirdGear = 75; // 75 for King Hauler
+const uint8_t escRampTimeThirdGear = 50; // 75 for King Hauler
 const uint8_t escBrakeSteps = 30; // determines, how fast the ESC is able to brake down (20 - 30, 30 for King Hauler)
 const uint8_t escAccelerationSteps = 3; // determines, how fast the ESC is able to accelerate (2 - 3, 3 for King Hauler)
 
 // Gearbox parameters ---------------------------------------------------------------------------------------------------
 const boolean automatic = false; // false = linear rpm curve, true = automatic transmission with torque converter is simulated (use it, if you don't have a real shifting transmission)
-#define NumberOfAutomaticGears 4 // <<------- Select 3, 4 or 6 gears!
+#define NumberOfAutomaticGears 4
 const boolean doubleClutch = false; // do not activate it at the same time as automatic!
 const boolean shiftingAutoThrottle = true; // For Tamiya 3 speed tansmission, throttle is altered for synchronizing, if "true"
 
