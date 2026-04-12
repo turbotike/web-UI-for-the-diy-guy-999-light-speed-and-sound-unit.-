@@ -6,7 +6,7 @@ A browser-based GUI for the ESP32 RC engine sound & light controller. Change eve
 
 ## Quick Start
 
-1. **Double-click `START.bat`** (Windows) or run `python3 configure.py` (Mac/Linux)
+1. **Double-click `start_webui.bat`** (Windows) or run `python3 configure.py` (Mac/Linux)
 2. Browser opens to `http://localhost:8080`
 3. Pick your vehicle, adjust settings, hit **Compile & Flash**
 
@@ -202,7 +202,7 @@ Schematics and PCB files are in the `hardware/` folder.
 ## Project Structure
 
 ```
-├── START.bat              ← Double-click to launch (Windows)
+├── start_webui.bat        ← Double-click to launch (Windows)
 ├── configure.py           ← Web configurator server
 ├── src/
 │   ├── src.ino            ← Main firmware
