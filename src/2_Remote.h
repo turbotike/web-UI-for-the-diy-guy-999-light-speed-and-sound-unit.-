@@ -2,9 +2,9 @@
 
 // Select (remove //) the remote configuration profile you have:
 // #define FLYSKY_FS_I6X            // <------- Flysky FS-i6x
-#define FLYSKY_FS_I6S            // <------- Flysky FS-i6s
+// #define FLYSKY_FS_I6S            // <------- Flysky FS-i6s
 // #define FLYSKY_FS_I6S_LOADER     // <------- Flysky FS-i6s for BURNIE222 Volvo L120H loader (use IBUS communication setting)
-// #define FLYSKY_FS_I6S_DOZER     // <------- Flysky FS-i6s for dozer (use IBUS communication setting)
+#define FLYSKY_FS_I6S_DOZER     // <------- Flysky FS-i6s for dozer (use IBUS communication setting)
 // #define FLYSKY_FS_I6S_EXCAVATOR  // <------- Flysky FS-i6s for KABOLITE K336 hydraulic excavator (use IBUS communication setting)
 // #define FRSKY_TANDEM_EXCAVATOR   // <------- Frsky Tandem XE for hydraulic excavator (use SBUS communication setting)
 // #define FRSKY_TANDEM_HARMONY_LOADER // <------- Frsky Tandem XE for Lukas Cajkar Harmony 370 (use SBUS communication setting)
@@ -69,7 +69,7 @@ uint16_t sbusFailsafeTimeout = 102; // Failsafe is triggered after this timeout 
 
   // Channels signal range calibration -----
   const uint16_t pulseNeutral = 30; // 1500 +/- this value (around 30) is the neutral range
-  const uint16_t pulseSpan = 480; // in theory 500 (1500 center position +/-500 = 1000 - 2000ms) usually about 480
+  const uint16_t pulseSpan = 400; // in theory 500 (1500 center position +/-500 = 1000 - 2000ms) usually about 480
 
   // Automatic or manual modes -----
   //#define AUTO_LIGHTS // Lights controlled by engine state or controller CH5
@@ -94,12 +94,12 @@ uint16_t sbusFailsafeTimeout = 102; // Failsafe is triggered after this timeout 
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 3
-#define GEARBOX 2
+#define STEERING 4
+#define GEARBOX 7
 #define THROTTLE 5
 #define HORN 6
-#define FUNCTION_R 1
-#define FUNCTION_L 2
+#define FUNCTION_R 9
+#define FUNCTION_L 6
 #define POT2 0
 #define MODE1 0
 #define MODE2 0
@@ -155,7 +155,7 @@ boolean channelAutoZero[17] = {
 
 // Channels signal range calibration -----
 const uint16_t pulseNeutral = 30;
-const uint16_t pulseSpan = 480;
+const uint16_t pulseSpan = 400;
 
 // Automatic or manual modes -----
 // #define AUTO_LIGHTS
@@ -172,12 +172,12 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 3
-#define GEARBOX 2
+#define STEERING 4
+#define GEARBOX 7
 #define THROTTLE 5
 #define HORN 6
-#define FUNCTION_R 1
-#define FUNCTION_L 2
+#define FUNCTION_R 9
+#define FUNCTION_L 6
 #define POT2 0
 #define MODE1 0
 #define MODE2 0
@@ -233,7 +233,7 @@ boolean channelAutoZero[17] = {
 
 // Channels signal range calibration -----
 const uint16_t pulseNeutral = 30;
-const uint16_t pulseSpan = 480;
+const uint16_t pulseSpan = 400;
 
 // Automatic or manual modes -----
 // #define AUTO_LIGHTS
@@ -254,12 +254,12 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 3
-#define GEARBOX 2
+#define STEERING 4
+#define GEARBOX 7
 #define THROTTLE 5
 #define HORN 6
-#define FUNCTION_R 1
-#define FUNCTION_L 2
+#define FUNCTION_R 9
+#define FUNCTION_L 6
 #define POT2 0
 #define MODE1 0
 #define MODE2 0
@@ -315,7 +315,7 @@ boolean channelAutoZero[17] = {
 
 // Channels signal range calibration -----
 const uint16_t pulseNeutral = 30;
-const uint16_t pulseSpan = 480;
+const uint16_t pulseSpan = 400;
 
 // Automatic or manual modes -----
 // #define AUTO_LIGHTS
@@ -335,14 +335,14 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 3
-#define GEARBOX 2
-#define THROTTLE 5
-#define HORN 6
-#define FUNCTION_R 1
-#define FUNCTION_L 2
-#define POT2 0
-#define MODE1 0
+#define STEERING 1          // iBUS CH1 -> pulseWidth[1] -> Track 1 (or steering)
+#define GEARBOX 2           // iBUS CH2 -> pulseWidth[2] -> Track 2 (or gearbox)
+#define THROTTLE 5          // iBUS CH5 -> pulseWidth[3] -> Engine RPM sound
+#define HORN 6              // iBUS CH6 -> pulseWidth[4] -> Horn
+#define FUNCTION_R 9        // iBUS CH9 -> pulseWidth[5] -> Lights/jake brake (aux switch)
+#define FUNCTION_L 1        // iBUS CH1 -> pulseWidth[6] -> Track LEFT rattle sound
+#define POT2 2              // iBUS CH2 -> pulseWidth[7] -> Track RIGHT rattle sound
+#define MODE1 3             // iBUS CH3 -> pulseWidth[8] -> Blade hydraulic pump sound
 #define MODE2 0
 #define MOMENTARY1 NONE
 #define HAZARDS NONE
@@ -351,6 +351,10 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 #define CH_14 14
 #define CH_15 15
 #define CH_16 16
+
+// Passthrough extra iBUS channel reads (for SERVOS_PASSTHROUGH mode)
+#define PT_IBUS_CH3 3       // iBUS CH3 -> pulseWidth[14] -> Blade
+#define PT_IBUS_CH4 4       // iBUS CH4 -> pulseWidth[15] -> Ripper
 
 // Channels reversed or not
 boolean channelReversed[17] = {
@@ -376,14 +380,14 @@ boolean channelReversed[17] = {
 // Channels auto zero adjustment or not (don't use it for channels without spring centered neutral position, switches or unused channels)
 boolean channelAutoZero[17] = {
     false, // CH0 (unused)
-    true,  // CH1
-    true,  // CH2
-    false, // CH3
-    false, // CH4
-    true,  // CH5
-    true,  // CH6
-    true,  // CH7
-    true,  // CH8
+    true,  // CH1 (Track 1 - self centering stick)
+    true,  // CH2 (Track 2 - self centering stick)
+    false, // CH3 (Throttle)
+    false, // CH4 (Horn - switch)
+    false, // CH5 (FUNCTION_R - switch)
+    true,  // CH6 (Track 1 via FUNCTION_L=1 - self centering stick)
+    true,  // CH7 (Track 2 via POT2=2 - self centering stick)
+    false, // CH8 (Blade via MODE1=3 - NOT self centering)
     false, // CH9
     false, // CH10
     false, // CH11
@@ -396,7 +400,7 @@ boolean channelAutoZero[17] = {
 
 // Channels signal range calibration -----
 const uint16_t pulseNeutral = 30;
-const uint16_t pulseSpan = 480;
+const uint16_t pulseSpan = 400;
 
 // Automatic or manual modes -----
 // #define AUTO_LIGHTS
@@ -416,12 +420,12 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 3
-#define GEARBOX 2
+#define STEERING 4
+#define GEARBOX 7
 #define THROTTLE 5
 #define HORN 6
-#define FUNCTION_R 1
-#define FUNCTION_L 2
+#define FUNCTION_R 9
+#define FUNCTION_L 6
 #define POT2 0
 #define MODE1 0
 #define MODE2 0
@@ -477,7 +481,7 @@ boolean channelAutoZero[17] = {
 
 // Channels signal range calibration -----
 const uint16_t pulseNeutral = 30;
-const uint16_t pulseSpan = 480;
+const uint16_t pulseSpan = 400;
 
 // Automatic or manual modes -----
 // #define AUTO_LIGHTS
@@ -496,12 +500,12 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 3
-#define GEARBOX 2
+#define STEERING 4
+#define GEARBOX 7
 #define THROTTLE 5
 #define HORN 6
-#define FUNCTION_R 1
-#define FUNCTION_L 2
+#define FUNCTION_R 9
+#define FUNCTION_L 6
 #define POT2 0
 #define MODE1 0
 #define MODE2 0
@@ -557,7 +561,7 @@ boolean channelAutoZero[17] = {
 
 // Channels signal range calibration -----
 const uint16_t pulseNeutral = 30;
-const uint16_t pulseSpan = 480;
+const uint16_t pulseSpan = 400;
 
 // Automatic or manual modes -----
 // #define AUTO_LIGHTS
@@ -576,12 +580,12 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 3
-#define GEARBOX 2
+#define STEERING 4
+#define GEARBOX 7
 #define THROTTLE 5
 #define HORN 6
-#define FUNCTION_R 1
-#define FUNCTION_L 2
+#define FUNCTION_R 9
+#define FUNCTION_L 6
 #define POT2 0
 #define MODE1 0
 #define MODE2 0
@@ -637,7 +641,7 @@ boolean channelAutoZero[17] = {
 
 // Channels signal range calibration -----
 const uint16_t pulseNeutral = 30;
-const uint16_t pulseSpan = 480;
+const uint16_t pulseSpan = 400;
 
 // Automatic or manual modes -----
 // #define AUTO_LIGHTS
@@ -656,12 +660,12 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel (pulseWidth[x]) ##########################################
-#define STEERING 3
-#define GEARBOX 2
+#define STEERING 4
+#define GEARBOX 7
 #define THROTTLE 5
 #define HORN 6
-#define FUNCTION_R 1
-#define FUNCTION_L 2
+#define FUNCTION_R 9
+#define FUNCTION_L 6
 #define POT2 0
 #define MODE1 0
 #define MODE2 0
@@ -717,7 +721,7 @@ boolean channelAutoZero[17] = {
 
 // Channels signal range calibration -----
 const uint16_t pulseNeutral = 30;
-const uint16_t pulseSpan = 480;
+const uint16_t pulseSpan = 400;
 
 // Automatic or manual modes -----
 // #define AUTO_LIGHTS
@@ -736,12 +740,12 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 3
-#define GEARBOX 2
+#define STEERING 4
+#define GEARBOX 7
 #define THROTTLE 5
 #define HORN 6
-#define FUNCTION_R 1
-#define FUNCTION_L 2
+#define FUNCTION_R 9
+#define FUNCTION_L 6
 #define POT2 0
 #define MODE1 0
 #define MODE2 0
@@ -797,7 +801,7 @@ boolean channelAutoZero[17] = {
 
 // Channels signal range calibration -----
 const uint16_t pulseNeutral = 30;
-const uint16_t pulseSpan = 480;
+const uint16_t pulseSpan = 400;
 
 // Automatic or manual modes -----
 // #define AUTO_LIGHTS
@@ -840,12 +844,12 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 3
-#define GEARBOX 2
+#define STEERING 4
+#define GEARBOX 7
 #define THROTTLE 5
 #define HORN 6
-#define FUNCTION_R 1
-#define FUNCTION_L 2
+#define FUNCTION_R 9
+#define FUNCTION_L 6
 #define POT2 0
 #define MODE1 0
 #define MODE2 0
@@ -901,7 +905,7 @@ boolean channelAutoZero[17] = {
 
 // Channels signal range calibration -----
 const uint16_t pulseNeutral = 30;
-const uint16_t pulseSpan = 480;
+const uint16_t pulseSpan = 400;
 
 // Automatic or manual modes -----
 // #define AUTO_LIGHTS
@@ -939,12 +943,12 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 3
-#define GEARBOX 2
+#define STEERING 4
+#define GEARBOX 7
 #define THROTTLE 5
 #define HORN 6
-#define FUNCTION_R 1
-#define FUNCTION_L 2
+#define FUNCTION_R 9
+#define FUNCTION_L 6
 #define POT2 0
 #define MODE1 0
 #define MODE2 0
@@ -1000,7 +1004,7 @@ boolean channelAutoZero[17] = {
 
 // Channels signal range calibration -----
 const uint16_t pulseNeutral = 30;
-const uint16_t pulseSpan = 480;
+const uint16_t pulseSpan = 400;
 
 // Automatic or manual modes -----
 // #define AUTO_LIGHTS
@@ -1017,12 +1021,12 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 3
-#define GEARBOX 2
+#define STEERING 4
+#define GEARBOX 7
 #define THROTTLE 5
 #define HORN 6
-#define FUNCTION_R 1
-#define FUNCTION_L 2
+#define FUNCTION_R 9
+#define FUNCTION_L 6
 #define POT2 0
 #define MODE1 0
 #define MODE2 0
@@ -1078,7 +1082,7 @@ boolean channelAutoZero[17] = {
 
 // Channels signal range calibration -----
 const uint16_t pulseNeutral = 30;
-const uint16_t pulseSpan = 480;
+const uint16_t pulseSpan = 400;
 
 // Automatic or manual modes -----
 // #define AUTO_LIGHTS
@@ -1095,12 +1099,12 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 3
-#define GEARBOX 2
+#define STEERING 4
+#define GEARBOX 7
 #define THROTTLE 5
 #define HORN 6
-#define FUNCTION_R 1
-#define FUNCTION_L 2
+#define FUNCTION_R 9
+#define FUNCTION_L 6
 #define POT2 0
 #define MODE1 0
 #define MODE2 0
@@ -1156,7 +1160,7 @@ boolean channelAutoZero[17] = {
 
 // Channels signal range calibration -----
 const uint16_t pulseNeutral = 30;
-const uint16_t pulseSpan = 480;
+const uint16_t pulseSpan = 400;
 
 // Automatic or manual modes -----
 // #define AUTO_LIGHTS
@@ -1173,12 +1177,12 @@ boolean sbusInverted = true; // false = non standard (inverted) SBUS signal
 
 // Channel assignment (use NONE for non existing channels!)
 // Remote channel #######   // Sound controller channel ##########################################
-#define STEERING 3
-#define GEARBOX 2
+#define STEERING 4
+#define GEARBOX 7
 #define THROTTLE 5
 #define HORN 6
-#define FUNCTION_R 1
-#define FUNCTION_L 2
+#define FUNCTION_R 9
+#define FUNCTION_L 6
 #define POT2 0
 #define MODE1 0
 #define MODE2 0
@@ -1234,7 +1238,7 @@ boolean channelAutoZero[17] = {
 
 // Channels signal range calibration -----
 const uint16_t pulseNeutral = 30;
-const uint16_t pulseSpan = 480;
+const uint16_t pulseSpan = 400;
 
 // Automatic or manual modes -----
 // #define AUTO_LIGHTS

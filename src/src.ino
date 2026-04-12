@@ -2432,6 +2432,16 @@ void readIbusCommands()
   pulseWidthRaw[12] = iBus.readChannel(INDICATOR_LEFT - 1);  // CH12
   pulseWidthRaw[13] = iBus.readChannel(INDICATOR_RIGHT - 1); // CH13
 
+  // Extra iBUS reads for passthrough mode (blade, ripper, etc.)
+#ifdef SERVOS_PASSTHROUGH
+#ifdef PT_IBUS_CH3
+  pulseWidthRaw[14] = iBus.readChannel(PT_IBUS_CH3 - 1); // Passthrough CH3
+#endif
+#ifdef PT_IBUS_CH4
+  pulseWidthRaw[15] = iBus.readChannel(PT_IBUS_CH4 - 1); // Passthrough CH4
+#endif
+#endif
+
   if (ibusInit)
   {
     // Normalize, auto zero and reverse channels
@@ -2770,7 +2780,7 @@ bool beaconControl(uint8_t pulses)
 
 void mcpwmOutput()
 {
-#if not defined SERVOS_EXCAVATOR && not defined SERVOS_HYDRAULIC_EXCAVATOR && not defined SERVOS_CRANE // Servo outputs, if not used in special vehicle servo mode **********************
+#if not defined SERVOS_EXCAVATOR && not defined SERVOS_HYDRAULIC_EXCAVATOR && not defined SERVOS_CRANE && not defined SERVOS_PASSTHROUGH // Servo outputs, if not used in special vehicle servo mode **********************
 
   if (autoZeroDone) // Only generate servo signals, if auto zero was successful!
   {
@@ -2963,6 +2973,15 @@ void mcpwmOutput()
   mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B, pulseWidth[14]); // CH14
   mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_B, pulseWidth[15]); // CH15
   mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, pulseWidth[16]); // CH16
+
+#elif defined SERVOS_PASSTHROUGH // Raw passthrough: iBUS channels go directly to output pins, no ramps or limits *************************************
+  if (autoZeroDone)
+  {
+    mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, pulseWidth[PT_CH1]); // CH1 pin (GPIO13) - Track 1
+    mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B, pulseWidth[PT_CH2]); // CH2 pin (GPIO12) - Track 2
+    mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_B, pulseWidth[PT_CH3]); // CH3 pin (GPIO14) - Blade
+    mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, pulseWidth[PT_CH4]); // CH4 pin (GPIO27) - Ripper
+  }
 
 #else // Servo outputs, if used in excavator servo mode. Including delay to simulate inertia **********************************************************
   if (autoZeroDone) // Only generate servo signals, if auto zero was successful!
@@ -6060,7 +6079,14 @@ void excavatorControl()
 #endif
 
     // Hydraulic calculations ---
-    hydraulicPumpVolumeInternalUndelayed = constrain(hydraulicPumpVolumeInternal[1] + hydraulicPumpVolumeInternal[2] + hydraulicPumpVolumeInternal[5] + hydraulicPumpVolumeInternal[6] + hydraulicPumpVolumeInternal[7] + hydraulicPumpVolumeInternal[8], 0, 100) * map(currentRpm, 0, 500, 30, 100) / 100;
+    if (engineRunning)
+    {
+      hydraulicPumpVolumeInternalUndelayed = constrain(hydraulicPumpVolumeInternal[1] + hydraulicPumpVolumeInternal[2] + hydraulicPumpVolumeInternal[5] + hydraulicPumpVolumeInternal[6] + hydraulicPumpVolumeInternal[7] + hydraulicPumpVolumeInternal[8], 0, 100) * map(currentRpm, 0, 500, 30, 100) / 100;
+    }
+    else
+    {
+      hydraulicPumpVolumeInternalUndelayed = 0;
+    }
 
     if (hydraulicPumpVolumeInternalUndelayed < hydraulicPumpVolume)
       hydraulicPumpVolume--;
@@ -6069,7 +6095,7 @@ void excavatorControl()
 
     // Calculate cylinder speed dependent hydraulic flow volume ----
     // Boom (downwards) ---
-    if (pulseWidth[5] > pulseMaxNeutral[5])
+    if (engineRunning && pulseWidth[5] > pulseMaxNeutral[5])
       hydraulicFlowVolumeInternalUndelayed = map(pulseWidth[5], pulseMaxNeutral[5], (pulseMax[5] - 200), 0, 100);
     else
       hydraulicFlowVolumeInternalUndelayed = 0;

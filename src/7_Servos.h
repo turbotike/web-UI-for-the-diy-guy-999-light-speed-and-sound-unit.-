@@ -32,9 +32,10 @@
 // #define SERVOS_MECCANO_DUMPER
 // #define SERVOS_OPEN_RC_TRACTOR
 // NOTICE: The following profiles are for EXCAVATOR_MODE only! ---------------------
- #define SERVOS_EXCAVATOR // For excavators with electric actuators
+// #define SERVOS_EXCAVATOR // For excavators with electric actuators
 // #define SERVOS_HYDRAULIC_EXCAVATOR // For hydraulic excavators
 // #define SERVOS_CRANE // For Mushroom3D rough terrain crane (servo outputs used as outrigger channels SBUS decoder)
+ #define SERVOS_PASSTHROUGH // Raw passthrough: iBUS channels output directly to CH1-CH4 pins (no ramps, no limits)
 
 // Default servo configuration profile -------------------------------------------------------------------------------------------
 #ifdef SERVOS_DEFAULT
@@ -287,6 +288,40 @@ uint16_t CH1_RAMP_TIME = 0; // 0 = fastest speed, enlarge it to around 3000 for 
 uint16_t CH2_RAMP_TIME = 100;
 uint16_t CH3_RAMP_TIME = 1000;
 uint16_t CH4_RAMP_TIME = 2000;
+
+#endif
+
+// Raw passthrough servo configuration (for dozers, etc. with direct ESC/actuator control) --------------------------------
+#ifdef SERVOS_PASSTHROUGH
+
+boolean boomDownwardsHydraulic = true; // needed for hydraulic sound code
+boolean reverseBoomSoundDirection = false;
+
+// Servo frequency
+const uint8_t SERVO_FREQUENCY = 50;
+
+// WARNING: never connect receiver PWM signals to the "CH" pins in BUS communication mode!
+
+// CH limits (used by sound code for hydraulic pump volume calculations, not for output clamping)
+uint16_t CH1L = 1000, CH1C = 1500, CH1R = 2000; // CH1 Track 1
+uint16_t CH2L = 1000, CH2C = 1500, CH2R = 2000; // CH2 Track 2
+uint16_t CH3L = 1000, CH3C = 1500, CH3R = 2000; // CH3 Blade
+uint16_t CH4L = 1000, CH4C = 1500, CH4R = 2000; // CH4 Ripper
+
+// Ramp times (not used in passthrough mode, but needed for compilation)
+uint16_t CH1_RAMP_TIME = 0;
+uint16_t CH2_RAMP_TIME = 0;
+uint16_t CH3_RAMP_TIME = 0;
+uint16_t CH4_RAMP_TIME = 0;
+uint16_t STEERING_RAMP_TIME = 0;
+
+// Passthrough channel mapping: which pulseWidth[] index drives each output pin
+// pulseWidth[1] = STEERING channel, pulseWidth[2] = GEARBOX channel
+// pulseWidth[14] and [15] are extra iBUS reads (PT_IBUS_CH3 / PT_IBUS_CH4 from 2_Remote.h)
+#define PT_CH1 1   // CH1 pin (GPIO13) <- pulseWidth[1] (Track 1)
+#define PT_CH2 2   // CH2 pin (GPIO12) <- pulseWidth[2] (Track 2)
+#define PT_CH3 14  // CH3 pin (GPIO14) <- pulseWidth[14] (Blade)
+#define PT_CH4 15  // CH4 pin (GPIO27) <- pulseWidth[15] (Ripper)
 
 #endif
 

@@ -36,8 +36,8 @@ volatile const uint16_t idleVolumeProportionPercentage = 80; // The idle sound v
 
 // #include "sounds/CAT730Rev.h" // CAT 730
 // #include "sounds/RevDummy.h" // silent placeholder (disabled)
-// #include "sounds/CaterpillarD11h_copyRev.h" // CaterpillarD11h_copyRev (custom)
-#include "sounds/CaterpillarD11h_copyRev2.h" // CaterpillarD11h_copyRev2 (custom)
+#include "sounds/CaterpillarD11h_copyRev.h" // CaterpillarD11h_copyRev (custom)
+// #include "sounds/CaterpillarD11h_copyRev2.h" // CaterpillarD11h_copyRev2 (custom)
 #endif
 
 // Choose the jake brake sound (uncomment the one you want) --------
@@ -124,7 +124,7 @@ volatile int sound1VolumePercentage = 100; // Adjust the sound1 volume (usually 
 #include "sounds/door.h" // opening and closing the door
 
 // Choose the reversing beep sound --------
-volatile int reversingVolumePercentage = 0; // Adjust the reversing sound volume (usually = 70%)
+volatile int reversingVolumePercentage = 95; // Adjust the reversing sound volume (usually = 70%)
 #include "sounds/TruckReversingBeep.h" // 1000Hz peep sound
 // #include "sounds/RevDummy.h" // silent placeholder (disabled)
 
