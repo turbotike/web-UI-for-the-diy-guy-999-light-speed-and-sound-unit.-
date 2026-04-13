@@ -4,13 +4,45 @@ A browser-based GUI for the ESP32 RC engine sound & light controller. Change eve
 
 ---
 
+## Prerequisites (one-time setup)
+
+You need two things installed before you start. Everything else is automatic.
+
+### 1. Python 3
+
+| Platform | How to install |
+|----------|---------------|
+| **Windows** | Download from [python.org/downloads](https://www.python.org/downloads/) — **check "Add Python to PATH"** during install |
+| **Mac** | Open Terminal and run: `brew install python3` (requires [Homebrew](https://brew.sh)) — or download from [python.org/downloads](https://www.python.org/downloads/) |
+| **Linux** | `sudo apt install python3` (Ubuntu/Debian) or `sudo dnf install python3` (Fedora) |
+
+### 2. Arduino IDE 2.x
+
+Download from **[arduino.cc/en/software](https://www.arduino.cc/en/software)** and install it. That's it — you don't need to open it or configure anything. The web UI uses its bundled compiler automatically.
+
+> The first time you hit Build, the web UI will auto-install the ESP32 toolchain. This takes a couple minutes on the first build only.
+
+---
+
 ## Quick Start
 
-1. **Double-click `start_webui.bat`** (Windows) or run `python3 configure.py` (Mac/Linux)
-2. Browser opens to `http://localhost:8080`
-3. Pick your vehicle, adjust settings, hit **Compile & Flash**
+### Windows
+1. Download this repo → [**Download ZIP**](../../archive/refs/heads/main.zip) → extract the folder
+2. Double-click **`start_webui.bat`**
+3. Browser opens to `http://localhost:8080`
+4. Pick your vehicle, change settings, plug in your ESP32 (battery disconnected!), hit **Flash**
 
-> If Python isn't installed, the launcher will offer to install it.
+### Mac
+1. Download this repo → [**Download ZIP**](../../archive/refs/heads/main.zip) → extract the folder
+2. Double-click **`start_webui.command`**
+   - If macOS says "unidentified developer": right-click → Open → Open
+3. Browser opens to `http://localhost:8080`
+4. Pick your vehicle, change settings, plug in your ESP32 (battery disconnected!), hit **Flash**
+
+### Linux
+1. Clone or download and extract
+2. Open a terminal in the folder and run: `python3 configure.py`
+3. Open `http://localhost:8080` in your browser
 
 ---
 
@@ -157,17 +189,28 @@ ESP-NOW wireless trailer sound and light sync.
 
 ## Compile & Flash
 
-The web UI has a **Compile & Flash** button that:
-1. Auto-installs the ESP32 toolchain if needed (first time only)
-2. Compiles the firmware
-3. Uploads the binary to the ESP32 over USB
+The web UI has **Build** and **Flash** buttons:
 
-**Requirements:**
-- **Arduino IDE 2.x** installed ([download](https://www.arduino.cc/en/software)) — the web UI uses its bundled compiler
-- ESP32 connected via USB
-- **Disconnect battery before flashing** (GPIO12 held high sets flash voltage to 1.8V and upload fails)
+- **Build** — compiles the firmware (no upload). Use this to check for errors.
+- **Flash** — compiles AND uploads to the ESP32 over USB.
 
-If the build fails, a troubleshooting popup will appear with common fixes.
+On first build, the ESP32 toolchain is installed automatically (takes a couple minutes once).
+
+**Before flashing:**
+- **Disconnect the battery** — GPIO12 pulled high sets flash voltage to 1.8V and the upload will fail
+- ESP32 must be connected via USB
+- Click the **Connect** button in the web UI to detect the board
+
+### Troubleshooting
+
+| Problem | Fix |
+|---------|-----|
+| "Arduino IDE not found" | Install [Arduino IDE 2.x](https://www.arduino.cc/en/software) and restart the web UI |
+| Upload fails / times out | Disconnect battery, unplug and replug USB, try again |
+| Board not detected | Install the USB driver for your board (CP2102 or CH340 — Google your board name + "driver") |
+| Build fails | Try **Reset Vehicle** to restore original profile, then rebuild |
+| Mac: "unidentified developer" | Right-click `start_webui.command` → Open → Open |
+| Mac: "permission denied" | Open Terminal, run: `chmod +x start_webui.command` |
 
 ---
 
@@ -204,7 +247,8 @@ Schematics and PCB files are in the `hardware/` folder.
 
 ```
 ├── start_webui.bat        ← Double-click to launch (Windows)
-├── configure.py           ← Web configurator server
+├── start_webui.command    ← Double-click to launch (Mac)
+├── configure.py           ← Web configurator server (or run directly on Linux)
 ├── src/
 │   ├── src.ino            ← Main firmware
 │   ├── 0_generalSettings.h ... 10_Trailer.h  ← Config tabs
