@@ -158,11 +158,12 @@ ESP-NOW wireless trailer sound and light sync.
 ## Compile & Flash
 
 The web UI has a **Compile & Flash** button that:
-1. Runs PlatformIO to compile the firmware
-2. Uploads the binary to the ESP32 over USB
+1. Auto-installs the ESP32 toolchain if needed (first time only)
+2. Compiles the firmware
+3. Uploads the binary to the ESP32 over USB
 
 **Requirements:**
-- PlatformIO Core installed (the launcher checks for this)
+- **Arduino IDE 2.x** installed ([download](https://www.arduino.cc/en/software)) — the web UI uses its bundled compiler
 - ESP32 connected via USB
 - **Disconnect battery before flashing** (GPIO12 held high sets flash voltage to 1.8V and upload fails)
 
