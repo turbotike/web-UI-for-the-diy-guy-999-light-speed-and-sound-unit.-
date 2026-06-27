@@ -15,7 +15,12 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 
-ROOT = os.path.dirname(os.path.abspath(__file__))
+if getattr(sys, "frozen", False):
+    # Packaged as a one-file .exe — anchor to the folder the .exe lives in,
+    # NOT PyInstaller's temporary extraction dir, so we find src/ and web/.
+    ROOT = os.path.dirname(sys.executable)
+else:
+    ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(ROOT, "src")
 TOOLS = os.path.join(ROOT, "tools")
 WEB = os.path.join(ROOT, "web")
@@ -6139,17 +6144,36 @@ def _get_local_ip():
 class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
     daemon_threads = True
 
+def _open_browser(url):
+    # Only auto-open when packaged as a .exe — in dev the launcher opens it.
+    if getattr(sys, "frozen", False):
+        try:
+            import webbrowser
+            webbrowser.open(url)
+        except Exception:
+            pass
+
+
 def main():
-    server = ThreadedHTTPServer(("0.0.0.0", PORT), Handler)
+    url = "http://localhost:%d" % PORT
+    try:
+        server = ThreadedHTTPServer(("0.0.0.0", PORT), Handler)
+    except OSError:
+        # Port already in use — almost certainly a second double-click.
+        # Just open the page that's already running, then exit.
+        print("Configurator is already running. Opening %s" % url)
+        _open_browser(url)
+        return
 
     lan_ip = _get_local_ip()
     print("\nRC Engine Sound ESP32 Configurator")
     print("===================================")
-    print("Local:   http://localhost:%d" % PORT)
+    print("Local:   %s" % url)
     print("Network: http://%s:%d" % (lan_ip, PORT))
     print("\nOpen either URL in any browser (Windows, Mac, phone, etc.)")
-    print("Ctrl+C to stop\n")
+    print("Close this window to stop.\n")
 
+    _open_browser(url)
     try:
         server.serve_forever()
     except KeyboardInterrupt:

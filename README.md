@@ -17,24 +17,23 @@ A **browser app** for setting up and flashing the [TheDIYGuy999 RC engine sound 
 
 ## 🟢 Before you start (one-time)
 
-You need **two** things:
+**Windows:** you only need **Google Chrome or Microsoft Edge** ([Chrome](https://www.google.com/chrome/) · [Edge](https://www.microsoft.com/edge)) — used for USB flashing (Firefox/Safari can't do it). **No Python, no Arduino IDE** — the app is a single `.exe` that brings everything with it.
 
-| # | What | How |
-|---|------|-----|
-| 1 | **Python 3** | Download from **[python.org/downloads](https://www.python.org/downloads/)**. On Windows, **tick "Add Python to PATH"** during install. |
-| 2 | **Google Chrome or Microsoft Edge** | [Chrome](https://www.google.com/chrome/) or [Edge](https://www.microsoft.com/edge). Needed for USB flashing (Firefox/Safari can't do it). |
+**Mac / Linux:** you need **Chrome/Edge** *and* **[Python 3](https://www.python.org/downloads/)** (on Mac, `brew install python3` works too). The `.exe` is Windows-only, so Mac/Linux run the included launcher script instead.
 
-That's it. The configurator downloads its own compiler the first time you build — **you do *not* need to install the Arduino IDE.**
+The first time you build, the app downloads its own compiler automatically — **you never install the Arduino IDE.**
 
 ---
 
 ## 🚀 Quick Start
 
-### Windows
+### Windows (the easy way — no Python)
 1. **Download this project** → green **`Code`** button → **Download ZIP** → unzip it somewhere (e.g. your Desktop).
-2. Double-click **`start_webui.bat`**.
-   - If Windows shows a blue "Windows protected your PC" box: click **More info → Run anyway**.
-3. Your browser opens to **`http://localhost:8080`**. **If it opens in Firefox/Safari, copy that address into Chrome or Edge.**
+2. Double-click **`RC Sound Configurator.exe`**.
+   - If Windows shows a blue **"Windows protected your PC"** box, that's just because the app isn't code-signed: click **More info → Run anyway**.
+3. Your browser opens automatically to **`http://localhost:8080`**. **If it opens in Firefox/Safari, copy that address into Chrome or Edge.**
+
+> Prefer to run it with your own Python instead? Double-click **`start_webui.bat`** — same app.
 
 ### Mac
 1. **Download this project** → green **`Code`** button → **Download ZIP** → unzip it.
@@ -48,7 +47,7 @@ python3 configure.py
 ```
 Then open **`http://localhost:8080`** in Chrome/Edge.
 
-> To stop the app, just close the little black terminal window (or press `Ctrl+C` in it).
+> To stop the app, just close the little black window it opens (or press `Ctrl+C` in it).
 
 ---
 
@@ -115,7 +114,8 @@ Schematics & PCB files are in the **[`hardware/`](hardware/)** folder.
 ## 📁 What's in here
 
 ```
-start_webui.bat / .command   ← double-click to launch
+RC Sound Configurator.exe    ← Windows: double-click this (no Python needed)
+start_webui.bat / .command   ← launch with your own Python (Win / Mac)
 configure.py                 ← the local web server (runs the whole thing)
 web/                         ← the browser app (UI + in-browser flasher)
 src/                         ← the ESP32 firmware
