@@ -396,6 +396,7 @@ volatile boolean dieselKnockTrigger = false;      // Trigger Diesel ignition "kn
 volatile boolean trackRattle2Trigger = false;     // Trigger for track rattling sound 2 (only in excavator mode)
 volatile boolean dieselKnockTriggerFirst = false; // The first Diesel ignition "knock" per sequence
 volatile boolean airBrakeTrigger = false;         // Trigger for air brake noise
+volatile boolean airDryerTrigger = false;         // Trigger for periodic air dryer purge noise
 volatile boolean parkingBrakeTrigger = false;     // Trigger for air parking brake noise
 volatile boolean shiftingTrigger = false;         // Trigger for shifting noise
 volatile boolean hornTrigger = false;             // Trigger for horn on / off
@@ -992,6 +993,7 @@ void IRAM_ATTR fixedPlaybackTimer()
   static uint32_t curIndicatorSample = 0;                       // Index of currently loaded indicator tick sample
   static uint32_t curWastegateSample = 0;                       // Index of currently loaded wastegate sample
   static uint32_t curBrakeSample = 0;                           // Index of currently loaded brake sound sample
+  static uint32_t curAirDryerSample = 0;                        // Index of currently loaded air dryer sample
   static uint32_t curParkingBrakeSample = 0;                    // Index of currently loaded brake sound sample
   static uint32_t curShiftingSample = 0;                        // Index of currently loaded shifting sample
   static uint32_t curDieselKnockSample = 0;                     // Index of currently loaded Diesel knock sample
@@ -1004,7 +1006,7 @@ void IRAM_ATTR fixedPlaybackTimer()
   static uint32_t curTireSquealSample = 0;                      // Index of currently loaded tire squeal sample
   static uint32_t curOutOfFuelSample = 0;                       // Index of currently loaded out of fuel sample
   static int32_t a, a1, a2 = 0;                                 // Input signals "a" for mixer
-  static int32_t b, b0, b1, b2, b3, b4, b5, b6, b7, b8, b9 = 0; // Input signals "b" for mixer
+  static int32_t b, b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10 = 0; // Input signals "b" for mixer
   static int32_t c, c1, c2, c3, c4 = 0;                         // Input signals "c" for mixer
   static int32_t d, d1, d2 = 0;                                 // Input signals "d" for mixer
   static boolean knockSilent = 0;                               // This knock will be more silent
@@ -1182,6 +1184,25 @@ void IRAM_ATTR fixedPlaybackTimer()
   {
     b4 = 0;
     curBrakeSample = 0; // ensure, next sound will start @ first sample
+  }
+
+  // Air dryer purge sound, triggered periodically while running (reuses the air brake hiss) -------
+  if (airDryerTrigger)
+  {
+    if (curAirDryerSample < brakeSampleCount - 1)
+    {
+      b10 = (brakeSamples[curAirDryerSample] * airDryerVolumePercentage / 100);
+      curAirDryerSample++;
+    }
+    else
+    {
+      airDryerTrigger = false;
+    }
+  }
+  else
+  {
+    b10 = 0;
+    curAirDryerSample = 0; // ensure, next sound will start @ first sample
   }
 
   // Air parking brake attaching sound, triggered after engine off --------------------------------
@@ -1452,7 +1473,7 @@ void IRAM_ATTR fixedPlaybackTimer()
   // Mixing sounds together **********************************************************************
   a = a1 + a2; // Horn & siren
   // if (a < 2 && a > -2) a = 0; // Remove noise floor TODO, experimental
-  b = b0 * 5 + b1 + b2 / 2 + b3 + b4 + b5 + b6 + b7 + b8 + b9; // Other sounds
+  b = b0 * 5 + b1 + b2 / 2 + b3 + b4 + b5 + b6 + b7 + b8 + b9 + b10; // Other sounds
   c = c1 + c2 + c3 + c4;                                       // Excavator sounds
   d = d1 + d2;                                                 // Additional sounds
 
@@ -2432,16 +2453,6 @@ void readIbusCommands()
   pulseWidthRaw[12] = iBus.readChannel(INDICATOR_LEFT - 1);  // CH12
   pulseWidthRaw[13] = iBus.readChannel(INDICATOR_RIGHT - 1); // CH13
 
-  // Extra iBUS reads for passthrough mode (blade, ripper, etc.)
-#ifdef SERVOS_PASSTHROUGH
-#ifdef PT_IBUS_CH3
-  pulseWidthRaw[14] = iBus.readChannel(PT_IBUS_CH3 - 1); // Passthrough CH3
-#endif
-#ifdef PT_IBUS_CH4
-  pulseWidthRaw[15] = iBus.readChannel(PT_IBUS_CH4 - 1); // Passthrough CH4
-#endif
-#endif
-
   if (ibusInit)
   {
     // Normalize, auto zero and reverse channels
@@ -2780,7 +2791,7 @@ bool beaconControl(uint8_t pulses)
 
 void mcpwmOutput()
 {
-#if not defined SERVOS_EXCAVATOR && not defined SERVOS_HYDRAULIC_EXCAVATOR && not defined SERVOS_CRANE && not defined SERVOS_PASSTHROUGH // Servo outputs, if not used in special vehicle servo mode **********************
+#if not defined SERVOS_EXCAVATOR && not defined SERVOS_HYDRAULIC_EXCAVATOR && not defined SERVOS_CRANE // Servo outputs, if not used in special vehicle servo mode **********************
 
   if (autoZeroDone) // Only generate servo signals, if auto zero was successful!
   {
@@ -2973,15 +2984,6 @@ void mcpwmOutput()
   mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B, pulseWidth[14]); // CH14
   mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_B, pulseWidth[15]); // CH15
   mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, pulseWidth[16]); // CH16
-
-#elif defined SERVOS_PASSTHROUGH // Raw passthrough: iBUS channels go directly to output pins, no ramps or limits *************************************
-  if (autoZeroDone)
-  {
-    mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_A, pulseWidth[PT_CH1]); // CH1 pin (GPIO13) - Track 1
-    mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B, pulseWidth[PT_CH2]); // CH2 pin (GPIO12) - Track 2
-    mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_B, pulseWidth[PT_CH3]); // CH3 pin (GPIO14) - Blade
-    mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, pulseWidth[PT_CH4]); // CH4 pin (GPIO27) - Ripper
-  }
 
 #else // Servo outputs, if used in excavator servo mode. Including delay to simulate inertia **********************************************************
   if (autoZeroDone) // Only generate servo signals, if auto zero was successful!
@@ -6448,6 +6450,33 @@ void trailerControl()
 
 //
 // =======================================================================================================
+// AIR DRYER (periodic air-system purge "pfft", reuses the air brake hiss sound)
+// =======================================================================================================
+//
+
+void airDryer()
+{
+  static uint32_t lastDryerTime = 0;
+
+  if (airDryerInterval == 0)
+    return; // Air dryer disabled
+
+  if (engineState != RUNNING)
+  {
+    lastDryerTime = millis(); // Hold off while the engine isn't running
+    return;
+  }
+
+  if (millis() - lastDryerTime >= (uint32_t)airDryerInterval * 1000)
+  {
+    lastDryerTime = millis();
+    if (!airDryerTrigger)
+      airDryerTrigger = true; // Fire one purge
+  }
+}
+
+//
+// =======================================================================================================
 // MAIN LOOP, RUNNING ON CORE 1
 // =======================================================================================================
 //
@@ -6580,6 +6609,9 @@ void Task1code(void *pvParameters)
 
     // Switch engine on or off
     engineOnOff();
+
+    // Air dryer periodic purge
+    airDryer();
 
     // LED control
     if (autoZeroDone)

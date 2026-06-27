@@ -18,6 +18,7 @@ from socketserver import ThreadingMixIn
 ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(ROOT, "src")
 TOOLS = os.path.join(ROOT, "tools")
+WEB = os.path.join(ROOT, "web")
 PRESETS = os.path.join(ROOT, "presets")
 BACKUPS = os.path.join(ROOT, "backups")
 PORT = 8080
@@ -291,6 +292,8 @@ SLIDER_FIELDS = {
     # ── Sound ──
     "numberOfVolumeSteps":             (1, 10, 1, ""),
     "masterVolumeCrawlerThreshold":    (0, 255, 5, ""),
+    "airDryerInterval":                (0, 300, 5, " s"),
+    "airDryerVolumePercentage":        (0, 200, 5, "%"),
     # ── Dashboard ──
     "dashRotation":                    (0, 3, 1, ""),
     "MAX_REAL_SPEED":                  (0, 300, 10, ""),
@@ -411,6 +414,8 @@ FRIENDLY_NAMES = {
     # ── Sound Settings ──
     "numberOfVolumeSteps": "Volume Steps",
     "masterVolumeCrawlerThreshold": "Crawler Volume Trigger",
+    "airDryerInterval": "Air Dryer Interval",
+    "airDryerVolumePercentage": "Air Dryer Volume",
     # ── Dashboard ──
     "dashRotation": "Display Orientation",
     "MAX_REAL_SPEED": "Max Speed Display",
@@ -686,6 +691,8 @@ FRIENDLY_DESCRIPTIONS = {
     # ── Sound Settings ──
     "numberOfVolumeSteps": "How many volume levels the remote cycles through.",
     "masterVolumeCrawlerThreshold": "Volume level that activates crawler mode.",
+    "airDryerInterval": "Seconds between air dryer purges while the engine runs. 0 = off.",
+    "airDryerVolumePercentage": "Volume of the air dryer purge (reuses the air brake hiss sound).",
     # ── Dashboard ──
     "dashRotation": "Screen orientation. 1 = flipped, 3 = normal.",
     "MAX_REAL_SPEED": "Top speed shown on the dashboard speedometer.",
@@ -1014,6 +1021,31 @@ SOUND_CATEGORY_KEYWORDS = {
     "bucketrattle": ["bucketrattle", "bucket"],
     "supercharger": ["supercharger", "charger"],
 }
+
+# Maps a sound slot's firmware variable prefix to the library category tag used
+# by categorize_sound_file(). Lets the sound picker show only relevant sounds.
+# None / missing => the picker shows all sounds (no reliable category).
+PREFIX_TO_SOUND_CATEGORY = {
+    "": "idle",
+    "rev": "rev",
+    "start": "start",
+    "knock": "knock",
+    "jakeBrake": "jakebrake",
+    "horn": "horn",
+    "siren": "siren",
+    "brake": "airbrake",
+    "parkingBrake": "parking",
+    "shifting": "shifting",
+    "reversing": "reversing",
+    "indicator": "indicator",
+    "coupling": "coupling",
+    "hydraulicPump": "hydraulicpump",
+    "hydraulicFlow": "hydraulicflow",
+    "trackRattle": "trackrattle",
+    "trackRattle2": "trackrattle",
+    "bucketRattle": "bucketrattle",
+}
+
 
 def categorize_sound_file(filename):
     """Guess a sound category from filename."""
@@ -1545,17 +1577,20 @@ def apply_changes(rel_path, changes):
 
     for name, val in changes.items():
         if isinstance(val, bool):
+            # (.*)$ preserves any trailing comment on the #define line.
             if val:
+                # Uncomment: strip a leading // from "// #define NAME ..."
                 text = re.sub(
-                    r"^(\s*)//+\s*(#define\s+" + re.escape(name) + r"\s*)$",
-                    r"\1\2",
+                    r"^(\s*)//+\s*(#define\s+" + re.escape(name) + r"\b)(.*)$",
+                    r"\1\2\3",
                     text,
                     flags=re.MULTILINE,
                 )
             else:
+                # Comment out an active "#define NAME ..." (not already commented)
                 text = re.sub(
-                    r"^(\s*)(#define\s+" + re.escape(name) + r"\s*)$",
-                    r"\1// \2",
+                    r"^(\s*)(#define\s+" + re.escape(name) + r"\b)(.*)$",
+                    r"\1// \2\3",
                     text,
                     flags=re.MULTILINE,
                 )
@@ -1673,6 +1708,160 @@ def find_arduino_cli():
     return None
 
 
+# Local fallback compiler, downloaded on demand so users don't need Arduino IDE.
+VENDORED_CLI_DIR = os.path.join(TOOLS, "arduino-cli")
+
+
+def vendored_cli_path():
+    name = "arduino-cli.exe" if os.name == "nt" else "arduino-cli"
+    p = os.path.join(VENDORED_CLI_DIR, name)
+    return p if os.path.isfile(p) else None
+
+
+def _arduino_cli_download_url():
+    """(url, archive_kind) for the official standalone arduino-cli build."""
+    import platform
+    base = "https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_"
+    machine = platform.machine().lower()
+    if os.name == "nt":
+        return base + "Windows_64bit.zip", "zip"
+    if sys.platform == "darwin":
+        if machine in ("arm64", "aarch64"):
+            return base + "macOS_ARM64.tar.gz", "tar"
+        return base + "macOS_64bit.tar.gz", "tar"
+    # Linux
+    if machine in ("aarch64", "arm64"):
+        return base + "Linux_ARM64.tar.gz", "tar"
+    if machine.startswith("arm"):
+        return base + "Linux_ARMv7.tar.gz", "tar"
+    return base + "Linux_64bit.tar.gz", "tar"
+
+
+def ensure_arduino_cli(chunk_fn=None):
+    """Return a path to arduino-cli. Prefers Arduino IDE / PATH; otherwise
+    downloads the standalone binary once into tools/arduino-cli/."""
+    def msg(t):
+        if chunk_fn:
+            chunk_fn(t + "\n")
+
+    found = find_arduino_cli()
+    if found:
+        return found
+    vp = vendored_cli_path()
+    if vp:
+        return vp
+
+    url, kind = _arduino_cli_download_url()
+    msg("Arduino IDE not found — downloading the Arduino compiler (one-time, ~25 MB)…")
+    os.makedirs(VENDORED_CLI_DIR, exist_ok=True)
+    tmp = os.path.join(VENDORED_CLI_DIR, "_download.tmp")
+    try:
+        import urllib.request
+        urllib.request.urlretrieve(url, tmp)
+    except Exception as e:
+        msg("ERROR: download failed: %s" % e)
+        return None
+
+    try:
+        if kind == "zip":
+            import zipfile
+            with zipfile.ZipFile(tmp) as z:
+                for n in z.namelist():
+                    if os.path.basename(n) in ("arduino-cli.exe", "arduino-cli"):
+                        dest = os.path.join(VENDORED_CLI_DIR, os.path.basename(n))
+                        with z.open(n) as src, open(dest, "wb") as out:
+                            out.write(src.read())
+        else:
+            import tarfile
+            with tarfile.open(tmp) as t:
+                for m in t.getmembers():
+                    if os.path.basename(m.name) == "arduino-cli":
+                        m.name = "arduino-cli"
+                        t.extract(m, VENDORED_CLI_DIR)
+                        os.chmod(os.path.join(VENDORED_CLI_DIR, "arduino-cli"), 0o755)
+    except Exception as e:
+        msg("ERROR: could not extract arduino-cli: %s" % e)
+        return None
+    finally:
+        try:
+            os.remove(tmp)
+        except OSError:
+            pass
+
+    vp = vendored_cli_path()
+    if vp:
+        msg("Arduino compiler ready.")
+    else:
+        msg("ERROR: arduino-cli not found in the downloaded archive.")
+    return vp
+
+
+# --------------- WebSerial firmware packaging ---------------
+#
+# Standard ESP32 (classic) flash layout. The Arduino build produces three of
+# these; boot_app0.bin ships with the installed core. The browser flasher
+# (esptool-js over WebSerial) writes each image at its offset.
+ESP32_FLASH_LAYOUT = [
+    (0x1000,  "src.ino.bootloader.bin"),   # 2nd-stage bootloader
+    (0x8000,  "src.ino.partitions.bin"),   # partition table
+    (0xe000,  "__BOOT_APP0__"),            # OTA data initializer (from core)
+    (0x10000, "src.ino.bin"),              # the application
+]
+
+
+def find_boot_app0():
+    """Locate boot_app0.bin inside the installed esp32 2.0.17 core."""
+    roots = []
+    for env in ("LOCALAPPDATA", "HOME", "USERPROFILE"):
+        d = os.environ.get(env)
+        if d:
+            roots.append(os.path.join(d, "Arduino15"))
+    # macOS / Linux default arduino-cli/IDE data dirs
+    roots.append(os.path.expanduser("~/Library/Arduino15"))
+    roots.append(os.path.expanduser("~/.arduino15"))
+    for root in roots:
+        cand = os.path.join(
+            root, "packages", "esp32", "hardware", "esp32",
+            REQUIRED_CORE_VERSION, "tools", "partitions", "boot_app0.bin",
+        )
+        if os.path.isfile(cand):
+            return cand
+    # Last resort: walk for any esp32-core boot_app0.bin
+    for root in roots:
+        base = os.path.join(root, "packages", "esp32", "hardware", "esp32")
+        if not os.path.isdir(base):
+            continue
+        for dirpath, _dirs, files in os.walk(base):
+            if "boot_app0.bin" in files:
+                return os.path.join(dirpath, "boot_app0.bin")
+    return None
+
+
+def build_firmware_manifest():
+    """Package the compiled build/ images for the browser flasher.
+
+    Returns (manifest_dict, error_str). manifest_dict is JSON-serializable:
+        {"chip": "esp32", "parts": [{"offset": int, "data": base64str, "size": int}, ...]}
+    """
+    import base64
+    build_path = os.path.join(ROOT, "build")
+    boot_app0 = find_boot_app0()
+    parts = []
+    for offset, name in ESP32_FLASH_LAYOUT:
+        path = boot_app0 if name == "__BOOT_APP0__" else os.path.join(build_path, name)
+        if not path or not os.path.isfile(path):
+            label = "boot_app0.bin (esp32 core)" if name == "__BOOT_APP0__" else name
+            return None, "Firmware image missing: %s. Run Build first." % label
+        with open(path, "rb") as f:
+            data = f.read()
+        parts.append({
+            "offset": offset,
+            "data": base64.b64encode(data).decode("ascii"),
+            "size": len(data),
+        })
+    return {"chip": "esp32", "flashSize": "keep", "parts": parts}, None
+
+
 REQUIRED_CORE = "esp32:esp32"
 REQUIRED_CORE_VERSION = "2.0.17"
 ESP32_BOARD_URL = "https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json"
@@ -1716,7 +1905,9 @@ def ensure_esp32_core(cli, chunk_fn=None):
             capture_output=True, text=True, shell=(os.name == "nt"), check=False
         )
         if proc.returncode == 0:
-            cores = json.loads(proc.stdout)
+            parsed = json.loads(proc.stdout)
+            # arduino-cli <1.0 returned a flat list; >=1.0 returns {"platforms":[...]}.
+            cores = parsed.get("platforms", []) if isinstance(parsed, dict) else parsed
             for c in cores:
                 cid = c.get("id", "")
                 ver = c.get("installed_version", "") or c.get("installed", "")
@@ -4888,6 +5079,130 @@ def build_page():
     return PAGE_TEMPLATE.replace("__SECTIONS__", build_sections_html())
 
 
+# =======================================================================================================
+# JSON SCHEMA API  (drives the modern SPA frontend in web/)
+# =======================================================================================================
+#
+# The new UI renders entirely from this schema and writes back through the
+# existing /save endpoint. Each control declares a `saveKind` matching the
+# /save contract: "flag" | "bool_var" | "define_val" | "text_var".
+
+def schema_item(item):
+    """Normalize one parse_items() entry into a UI control descriptor."""
+    name = item.get("name", "")
+    kind = item.get("kind", "")
+    if not name:
+        return None
+
+    out = {
+        "name": name,
+        "label": friendly_name(name),
+        "desc": FRIENDLY_DESCRIPTIONS.get(name) or simplify_description(item.get("description", "")),
+    }
+
+    if kind == "define_flag":
+        out["saveKind"] = "flag"
+        out["control"] = "toggle"
+        out["enabled"] = bool(item.get("enabled"))
+        return out
+
+    if kind == "define_val":
+        out["saveKind"] = "define_val"
+        out["enabled"] = bool(item.get("enabled"))
+        out["value"] = "" if item.get("value") is None else str(item.get("value"))
+    elif kind == "text_var":
+        val = "" if item.get("value") is None else str(item.get("value")).strip()
+        if item.get("vtype") in ("bool", "boolean") or val.lower() in ("true", "false"):
+            out["saveKind"] = "bool_var"
+            out["control"] = "toggle"
+            out["enabled"] = val.lower() == "true"
+            return out
+        out["saveKind"] = "text_var"
+        out["value"] = val
+    else:
+        return None
+
+    # Value-bearing control: slider if we have a range, else number/text.
+    if name in SLIDER_FIELDS:
+        mn, mx, st, suf = SLIDER_FIELDS[name]
+        out.update({"control": "slider", "min": mn, "max": mx, "step": st, "suffix": suf})
+    else:
+        v = str(out.get("value", "")).strip()
+        out["control"] = "number" if re.match(r"^-?[\d.]+$", v) else "text"
+    return out
+
+
+def _controls_for_file(rel_path):
+    controls = []
+    for it in parse_items(rel_path):
+        c = schema_item(it)
+        if c:
+            controls.append(c)
+    return controls
+
+
+def build_config_schema():
+    """Full configuration as JSON for the SPA: vehicles, the active vehicle's
+    tuning, and the General/Remote/ESC/... setting tabs."""
+    current = get_current_vehicle()
+
+    tabs = []
+    for fname in CONFIG_FILES:
+        if fname == "1_Vehicle.h":
+            continue  # vehicle choice is handled by the picker, not a tab
+        controls = _controls_for_file(fname)
+        if controls:
+            tabs.append({
+                "file": fname,
+                "label": FILE_LABELS.get(fname, fname),
+                "controls": controls,
+            })
+
+    vehicle_tab = None
+    sound_choices = []
+    if current:
+        controls = _controls_for_file("vehicles/" + current)
+        vehicle_tab = {
+            "file": "vehicles/" + current,
+            "label": "Vehicle Tuning",
+            "controls": controls,
+        }
+        try:
+            sound_choices = parse_sound_choices("vehicles/" + current)
+            for g in sound_choices:
+                t = g.get("title", "")
+                t = re.sub(r"(?i)\(\s*uncomment[^)]*\)?", "", t)  # "(uncomment the ones you want)"
+                t = re.sub(r"(?i)\buncomment.*$", "", t)          # leftover "uncomment ..."
+                t = re.sub(r"\s*\([^)]*$", "", t)                 # trailing unclosed "(played..."
+                t = re.sub(r"(?i)^the\s+", "", t).strip(" -,:\"")
+                if len(t) > 60:
+                    t = t[:57].rsplit(" ", 1)[0] + "…"
+                g["title"] = (t[:1].upper() + t[1:]) if t else "Sound"
+                # Firmware variable prefix for this slot (None if unknown) — lets
+                # the browser name WAV-imported variables correctly.
+                prefix = get_var_prefix_for_key(g.get("key", ""))
+                g["varPrefix"] = prefix
+                # Sound-library category for this slot, so the picker can show only
+                # relevant sounds (matches categorize_sound_file tags). None = show all.
+                g["category"] = PREFIX_TO_SOUND_CATEGORY.get(prefix)
+        except Exception:
+            sound_choices = []
+
+    try:
+        presets = list_vehicle_presets(current) if current else []
+    except Exception:
+        presets = []
+
+    return {
+        "vehicles": get_vehicle_list(),
+        "currentVehicle": current,
+        "vehicleTab": vehicle_tab,
+        "soundChoices": sound_choices,
+        "presets": presets,
+        "tabs": tabs,
+    }
+
+
 class Handler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         pass
@@ -4945,7 +5260,22 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "error": str(e)}, 500)
             return
 
+        # Modern SPA is the default page; legacy UI stays at /legacy.
         if self.path in ("/", "/index.html"):
+            spa = os.path.join(WEB, "index.html")
+            if os.path.isfile(spa):
+                with open(spa, "rb") as fh:
+                    body = fh.read()
+            else:
+                body = build_page().encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+            return
+
+        if self.path in ("/legacy", "/legacy.html"):
             try:
                 body = build_page().encode("utf-8")
             except Exception as e:
@@ -4980,6 +5310,51 @@ class Handler(BaseHTTPRequestHandler):
             self.send_header("Content-Length", str(len(data)))
             self.end_headers()
             self.wfile.write(data)
+            return
+
+        # --- Static files for the modern WebSerial flasher frontend ---
+        if self.path.startswith("/web/"):
+            rel = self.path[len("/web/"):].split("?", 1)[0].replace("\\", "/").lstrip("/")
+            if not rel or ".." in rel:
+                self.send_response(400); self.end_headers(); return
+            full = os.path.join(WEB, rel)
+            if not os.path.isfile(full):
+                self.send_response(404); self.end_headers(); return
+            ext = os.path.splitext(full)[1].lower()
+            mime = {
+                ".js": "text/javascript; charset=utf-8",
+                ".mjs": "text/javascript; charset=utf-8",
+                ".css": "text/css; charset=utf-8",
+                ".html": "text/html; charset=utf-8",
+                ".json": "application/json; charset=utf-8",
+                ".svg": "image/svg+xml",
+                ".png": "image/png",
+                ".ico": "image/x-icon",
+            }.get(ext, "application/octet-stream")
+            with open(full, "rb") as fh:
+                data = fh.read()
+            self.send_response(200)
+            self.send_header("Content-Type", mime)
+            self.send_header("Content-Length", str(len(data)))
+            self.end_headers()
+            self.wfile.write(data)
+            return
+
+        # --- Full config schema for the modern SPA ---
+        if self.path == "/api/schema":
+            try:
+                self.send_json({"ok": True, "schema": build_config_schema()})
+            except Exception as e:
+                self.send_json({"ok": False, "error": str(e)}, 500)
+            return
+
+        # --- Compiled firmware images for the browser flasher ---
+        if self.path == "/api/firmware":
+            manifest, err = build_firmware_manifest()
+            if err:
+                self.send_json({"ok": False, "error": err}, 400)
+            else:
+                self.send_json({"ok": True, "firmware": manifest})
             return
 
         if self.path == "/ports":
@@ -5032,6 +5407,21 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"ok": True, "sounds": all_s})
             except Exception as e:
                 self.send_json({"ok": False, "error": str(e), "sounds": []})
+            return
+
+        if self.path.startswith("/sound_text/"):
+            fn = os.path.basename(urllib.parse.unquote(self.path[len("/sound_text/"):]))
+            if not fn.endswith(".h"):
+                self.send_json({"ok": False, "error": "Not a .h file"}, 400)
+                return
+            fpath = os.path.join(SRC, "vehicles", "sounds", fn)
+            if not os.path.isfile(fpath):
+                self.send_json({"ok": False, "error": "File not found"}, 404)
+                return
+            try:
+                self.send_json({"ok": True, "file": fn, "text": read_text(fpath)})
+            except Exception as e:
+                self.send_json({"ok": False, "error": str(e)})
             return
 
         if self.path.startswith("/sound_pcm/"):
@@ -5194,6 +5584,33 @@ class Handler(BaseHTTPRequestHandler):
 
                 apply_vehicle(vehicle)
                 self.send_json({"ok": True, "vehicle": vehicle})
+            except Exception as e:
+                self.send_json({"ok": False, "error": str(e)}, 500)
+            return
+
+        if self.path == "/import_vehicle":
+            try:
+                payload = json.loads(body)
+                raw_name = str(payload.get("filename", "")).strip()
+                content = payload.get("content", "")
+                if not content or not isinstance(content, str):
+                    self.send_json({"ok": False, "error": "File content is required"}, 400)
+                    return
+                # Sanitize to a safe .h filename
+                base = os.path.basename(raw_name)
+                base = re.sub(r"\.h$", "", base, flags=re.IGNORECASE)
+                safe = re.sub(r"[^A-Za-z0-9_-]", "_", base).strip("_") or "ImportedVehicle"
+                new_file = safe + ".h"
+                dest = os.path.join(SRC, "vehicles", new_file)
+                # Avoid clobbering an existing profile — add a numeric suffix.
+                n = 2
+                while os.path.exists(dest):
+                    new_file = "%s_%d.h" % (safe, n)
+                    dest = os.path.join(SRC, "vehicles", new_file)
+                    n += 1
+                write_text(dest, content)
+                apply_vehicle(new_file)
+                self.send_json({"ok": True, "vehicle": new_file})
             except Exception as e:
                 self.send_json({"ok": False, "error": str(e)}, 500)
             return
@@ -5600,14 +6017,6 @@ class Handler(BaseHTTPRequestHandler):
                 if req_vehicle:
                     apply_vehicle(req_vehicle)
 
-                cli = find_arduino_cli()
-                if not cli:
-                    self.send_json(
-                        {"ok": False, "error": "Arduino IDE not found. Install Arduino IDE 2.x from https://www.arduino.cc/en/software — no other setup needed."},
-                        500,
-                    )
-                    return
-
                 sketch = os.path.join(SRC, "src.ino")
                 if not os.path.isfile(sketch):
                     self.send_json({"ok": False, "error": "Sketch not found: %s" % sketch}, 500)
@@ -5637,6 +6046,16 @@ class Handler(BaseHTTPRequestHandler):
                     self.wfile.write(data)
                     self.wfile.write(b"\r\n")
                     self.wfile.flush()
+
+                # Resolve a compiler: Arduino IDE / PATH, else auto-download arduino-cli.
+                cli = ensure_arduino_cli(chunk)
+                if not cli:
+                    chunk("\nERROR: No Arduino compiler available and auto-download failed.\n")
+                    chunk("Install Arduino IDE 2.x from https://www.arduino.cc/en/software, or check your internet connection.\n")
+                    chunk("\n--- DONE (exit 1) ---\n")
+                    self.wfile.write(b"0\r\n\r\n")
+                    self.wfile.flush()
+                    return
 
                 # Auto-setup: install correct ESP32 core if needed
                 chunk("Checking ESP32 toolchain...\n")

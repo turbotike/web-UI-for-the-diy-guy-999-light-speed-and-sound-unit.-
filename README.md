@@ -1,267 +1,138 @@
-# RC Engine Sound ESP32 — Web Configurator
+# 🚜 RC Engine Sound ESP32 — Web Configurator & Flasher
 
-A browser-based GUI for the ESP32 RC engine sound & light controller. Change every setting from your browser — no code editing required.
+A **browser app** for setting up and flashing the [TheDIYGuy999 RC engine sound & light controller](https://github.com/TheDIYGuy999/Rc_Engine_Sound_ESP32). Pick your truck, tweak the sounds and lights with sliders, and flash it to your ESP32 **straight from your browser** — no code editing, no Arduino IDE, no driver hunting.
 
----
-
-## Prerequisites (one-time setup)
-
-You need two things installed before you start. Everything else is automatic.
-
-### 1. Python 3
-
-| Platform | How to install |
-|----------|---------------|
-| **Windows** | Download from [python.org/downloads](https://www.python.org/downloads/) — **check "Add Python to PATH"** during install |
-| **Mac** | Open Terminal and run: `brew install python3` (requires [Homebrew](https://brew.sh)) — or download from [python.org/downloads](https://www.python.org/downloads/) |
-| **Linux** | `sudo apt install python3` (Ubuntu/Debian) or `sudo dnf install python3` (Fedora) |
-
-### 2. Arduino IDE 2.x
-
-Download from **[arduino.cc/en/software](https://www.arduino.cc/en/software)** and install it. That's it — you don't need to open it or configure anything. The web UI uses its bundled compiler automatically.
-
-> The first time you hit Build, the web UI will auto-install the ESP32 toolchain. This takes a couple minutes on the first build only.
+> New here? Jump to **[Quick Start](#-quick-start)**. It's three steps.
 
 ---
 
-## Quick Start
+## ✨ What you can do
+
+- 🎚️ **Configure everything with sliders & switches** — engine, ESC, transmission, lights, servos, sounds (80+ vehicle profiles included)
+- 🔊 **Sound Forge** — preview any of 580+ engine/horn/brake sounds in your browser, swap them per slot, or **upload your own WAV** (it's converted automatically)
+- ⚡ **Flash over USB from the browser** — uses WebSerial, so there's nothing extra to install and no COM-port driver drama
+- 💾 **Presets, import/export, copy & reset** — never lose a setup you like
+
+---
+
+## 🟢 Before you start (one-time)
+
+You need **two** things:
+
+| # | What | How |
+|---|------|-----|
+| 1 | **Python 3** | Download from **[python.org/downloads](https://www.python.org/downloads/)**. On Windows, **tick "Add Python to PATH"** during install. |
+| 2 | **Google Chrome or Microsoft Edge** | [Chrome](https://www.google.com/chrome/) or [Edge](https://www.microsoft.com/edge). Needed for USB flashing (Firefox/Safari can't do it). |
+
+That's it. The configurator downloads its own compiler the first time you build — **you do *not* need to install the Arduino IDE.**
+
+---
+
+## 🚀 Quick Start
 
 ### Windows
-1. Download this repo → [**Download ZIP**](../../archive/refs/heads/main.zip) → extract the folder
-2. Double-click **`start_webui.bat`**
-3. Browser opens to `http://localhost:8080`
-4. Pick your vehicle, change settings, plug in your ESP32 (battery disconnected!), hit **Flash**
+1. **Download this project** → green **`Code`** button → **Download ZIP** → unzip it somewhere (e.g. your Desktop).
+2. Double-click **`start_webui.bat`**.
+   - If Windows shows a blue "Windows protected your PC" box: click **More info → Run anyway**.
+3. Your browser opens to **`http://localhost:8080`**. **If it opens in Firefox/Safari, copy that address into Chrome or Edge.**
 
 ### Mac
-1. Download this repo → [**Download ZIP**](../../archive/refs/heads/main.zip) → extract the folder
-2. Double-click **`start_webui.command`**
-   - If macOS says "unidentified developer": right-click → Open → Open
-3. Browser opens to `http://localhost:8080`
-4. Pick your vehicle, change settings, plug in your ESP32 (battery disconnected!), hit **Flash**
+1. **Download this project** → green **`Code`** button → **Download ZIP** → unzip it.
+2. Double-click **`start_webui.command`**.
+   - If macOS says "unidentified developer": **right-click it → Open → Open**.
+3. Your browser opens to **`http://localhost:8080`** (use Chrome or Edge).
 
 ### Linux
-1. Clone or download and extract
-2. Open a terminal in the folder and run: `python3 configure.py`
-3. Open `http://localhost:8080` in your browser
+```bash
+python3 configure.py
+```
+Then open **`http://localhost:8080`** in Chrome/Edge.
+
+> To stop the app, just close the little black terminal window (or press `Ctrl+C` in it).
 
 ---
 
-## Web UI Sections
+## 🧭 Using the app (a quick tour)
 
-### Vehicle
+The page is split into **tabs** along the top.
 
-Select the active vehicle sound profile from the dropdown. The configurator loads all `.h` files from `src/vehicles/`. Over 80 profiles are included (trucks, crawlers, muscle cars, heavy equipment, military, tractors, etc.).
+| Tab | What it's for |
+|-----|---------------|
+| **Vehicle** dropdown (top bar) | Pick which truck/machine you're building. Everything else updates to match. |
+| **Vehicle Tuning** | The chosen vehicle's own settings — engine volumes, RPM, knock, turbo, etc. Also **Copy / Reset / Export / Import** and **Presets**. |
+| **General, Remote, ESC, Transmission, Shaker, Lights, Servos, Sound, Dashboard, Trailer** | All the board settings, as friendly sliders and on/off switches. Hover any item for a plain-English explanation. |
+| **🔊 Sound Forge** | Master volume, and a **＋ Change** button on each sound slot to browse/preview sounds or upload your own WAV. |
+| **⚡ Flash** | Build the firmware and send it to your board (see below). |
 
-- **Copy Vehicle** — duplicate the current profile so you can customize without touching the original
-- **Reset Vehicle** — restore the profile to its factory state (from backup)
-- **Export .h** — download the current config as a `.h` file (bakes in your current RPM, loop points, and pitch settings)
-- **Import .h** — upload a previously exported config
-- **Presets** — save and load named snapshots of the current vehicle config
-
-### Sound Forge
-
-The live sound builder. Load any engine sound, preview it in the browser, and dial in the sound character before flashing.
-
-- **Sound browser** — browse all included sounds by category, preview with one click
-- **Install** — copy a sound into the active vehicle profile
-- **Loop start / Loop end** — set the sample loop region (where the engine sound repeats)
-- **Crossfade** — blend between loop start and end for seamless looping
-- **Smoothing** — reduce pops and clicks in the looped audio
-- **RPM** — simulate engine RPM to preview how the sound behaves at different speeds
-- **Pitch** — adjust base pitch of the idle and rev sounds
-
-> Export bakes in your current RPM, loop points, and pitch settings.
-
-### General Settings (`0_generalSettings.h`)
-
-Board-level options:
-
-| Setting | What it does |
-|---------|-------------|
-| **Communication** | PWM, PPM, SBUS, or IBUS — match your receiver type |
-| **Board version** | Select your PCB revision |
-| **Battery protection** | Low voltage cutoff to protect LiPo cells |
-| **Neopixel** | Enable WS2812 LED strip on GPIO0 |
-| **Debug** | Serial debug output (leave off for normal use) |
-
-### Remote / Communication (`2_Remote.h`)
-
-Maps your transmitter's channels to firmware functions.
-
-| Setting | What it does |
-|---------|-------------|
-| **Remote profile** | Pre-made profiles for Flysky FS-i6X, FS-i6S, etc. |
-| **Channel assignments** | STEERING, GEARBOX, THROTTLE, HORN, FUNCTION_R/L, etc. |
-| **Channel reverse** | Flip direction of any channel |
-| **Auto-zero** | Enable only for self-centering sticks (NOT switches or pots) |
-| **Pulse calibration** | Neutral width and span — tune if your sticks don't center at 1500µs |
-| **Exponential curves** | Non-linear throttle/steering for more precision near center |
-
-### ESC (`3_ESC.h`)
-
-Electronic speed controller output on GPIO33.
-
-| Setting | What it does |
-|---------|-------------|
-| **ESC pulse span** | Total servo pulse range (match your ESC) |
-| **Takeoff punch** | Extra throttle burst when starting from standstill |
-| **Ramp time** | Acceleration/deceleration smoothing per gear |
-| **Braking steps** | How aggressively the ESC brakes |
-| **Crawler ESC ramp** | Separate ramp for crawler mode |
-| **Reverse plus** | Extra reverse authority |
-| **Dragon / Quicrun** | Enable specific ESC brand support |
-
-### Transmission (`4_Transmission.h`)
-
-Simulated gearbox that syncs with engine sounds.
-
-| Setting | What it does |
-|---------|-------------|
-| **Transmission type** | Manual 3-speed, automatic with torque converter, or double-clutch |
-| **Gear ratios** | RPM thresholds for each gear |
-| **Shifting time** | How long each gear change takes |
-| **Clutch engage RPM** | Below this RPM, engine revs freely (virtual clutch) |
-| **Crawler mode** | Minimal inertia for slow precision crawling |
-
-### Shaker Motor (`5_Shaker.h`)
-
-Vibration motor with eccentric weight for engine vibration feel.
-
-| Setting | What it does |
-|---------|-------------|
-| **Shaker start** | Vibration intensity during engine cranking (0–255) |
-| **Shaker idle** | Vibration intensity at idle (0–255) |
-| **Shaker running** | Vibration intensity while revving (0–255) |
-| **Shaker stop** | Duration of vibration when engine shuts off |
-
-### Lights and Neopixel (`6_Lights.h`)
-
-Up to 12 light outputs plus Neopixel strip.
-
-| Setting | What it does |
-|---------|-------------|
-| **Headlights** | High beam, low beam, fog lights |
-| **Tail / brake lights** | Auto-activate on braking |
-| **Indicators** | Turn signals, hazard flasher |
-| **Roof / cab lights** | Interior and roof bar lights |
-| **Reversing light** | Auto-on in reverse |
-| **Blue lights** | Emergency flasher patterns |
-| **Xenon flash** | Simulated HID startup flicker |
-| **Neopixel** | WS2812 RGB LED effects on GPIO0 |
-
-### Servos (`7_Servos.h`)
-
-Output mode for the 4 servo/PWM channels (GPIO13, 12, 14, 27).
-
-| Mode | What it does |
-|------|-------------|
-| **SERVOS_DEFAULT** | Standard truck — steering, shifting, aux |
-| **SERVOS_EXCAVATOR** | Excavator arm — bucket, dipper, boom, swing with ramps |
-| **SERVOS_CRANE** | Crane — raw passthrough (no ramps or limits) |
-| **SERVOS_PASSTHROUGH** | Full raw passthrough — sticks map directly to outputs. Good for dozers, dual-track vehicles, or anything needing direct control |
-
-Each mode has per-channel limits (min/max µs) and ramp rates. Passthrough mode sets full range (1000–2000) with zero ramp.
-
-### Sound (`8_Sound.h`)
-
-Master volume and per-sound volume controls.
-
-| Setting | What it does |
-|---------|-------------|
-| **Master volume** | Overall volume (0–250%) |
-| **Engine volumes** | Separate idle, rev, turbo, wastegate, knock volumes |
-| **Horn / siren** | Volume and variable-length loop support |
-| **Jake brake** | Pneumatic engine brake sound volume |
-| **Reversing beep** | Beep volume when in reverse |
-| **Air / parking brake** | Brake sound volumes |
-| **Track rattle** | Chain drive rattle volume (excavator/dozer mode) |
-| **Hydraulic pump** | Pump whine volume (excavator/dozer mode) |
-
-### Dashboard (`9_Dashboard.h`)
-
-Optional LCD dashboard on SPI (ST7735).
-
-### Trailer (`10_Trailer.h`)
-
-ESP-NOW wireless trailer sound and light sync.
+**Saving:** changes you make show "● unsaved changes" at the top. Click **Save** to write them. (Flashing saves automatically first.)
 
 ---
 
-## Compile & Flash
+## ⚡ Flashing your ESP32
 
-The web UI has **Build** and **Flash** buttons:
+1. Open the **⚡ Flash** tab.
+2. **Disconnect the battery** from the controller. *(This matters — a connected battery pulls GPIO12 high and the upload will fail.)*
+3. Plug the ESP32 into your computer with a USB **data** cable (not a charge-only cable).
+4. Click **⚡ Build & Flash**.
+   - First build takes a few minutes while it downloads the toolchain — later builds are quick.
+5. A little window pops up asking for a serial port — pick the one that looks like **"CP2102"**, **"CH340"**, or **"USB Serial"**, and click **Connect**.
+6. Watch the progress bar. When it says **✓ Done**, reconnect the battery. 🎉
 
-- **Build** — compiles the firmware (no upload). Use this to check for errors.
-- **Flash** — compiles AND uploads to the ESP32 over USB.
+**If it won't connect:** switch the **Speed** dropdown to **115200 (safe)** and try again, or unplug/replug the USB cable.
 
-On first build, the ESP32 toolchain is installed automatically (takes a couple minutes once).
+---
 
-**Before flashing:**
-- **Disconnect the battery** — GPIO12 pulled high sets flash voltage to 1.8V and the upload will fail
-- ESP32 must be connected via USB
-- Click the **Connect** button in the web UI to detect the board
-
-### Troubleshooting
+## 🆘 Troubleshooting
 
 | Problem | Fix |
 |---------|-----|
-| "Arduino IDE not found" | Install [Arduino IDE 2.x](https://www.arduino.cc/en/software) and restart the web UI |
-| Upload fails / times out | Disconnect battery, unplug and replug USB, try again |
-| Board not detected | Install the USB driver for your board (CP2102 or CH340 — Google your board name + "driver") |
-| Build fails | Try **Reset Vehicle** to restore original profile, then rebuild |
-| Mac: "unidentified developer" | Right-click `start_webui.command` → Open → Open |
-| Mac: "permission denied" | Open Terminal, run: `chmod +x start_webui.command` |
+| Browser says flashing isn't supported | You're not in Chrome/Edge. Open `http://localhost:8080` in one of those. |
+| "Python is not installed" | Install [Python 3](https://www.python.org/downloads/) and **tick "Add Python to PATH"**, then run the launcher again. |
+| Page won't open | Make sure the black terminal window is still running. Re-run `start_webui.bat` / `start_webui.command`. |
+| Upload fails / times out | **Battery disconnected?** Then unplug/replug USB, pick **115200 (safe)** speed, try again. |
+| Board not detected in the port list | Install your board's USB driver (Google your board name + **"CP2102 driver"** or **"CH340 driver"**). |
+| A setting looks broken | On the **Vehicle Tuning** tab, click **Reset** to restore that profile, then redo your changes. |
+| Mac: "permission denied" | Open Terminal in the folder and run `chmod +x start_webui.command`. |
 
 ---
 
-## Tips
-
-- **Always disconnect battery before flashing** — GPIO12 interference will corrupt the upload
-- **Center sticks at power-on** — channels with auto-zero calibrate during the first few seconds
-- **Don't use auto-zero on switches** — only enable it for self-centering sticks
-- **Export before experimenting** — you can always import your last known-good config
-- **Reset Vehicle** if things get weird — restores the original profile from backup
-
----
-
-## Hardware
+## 🔌 Hardware (pin reference)
 
 ESP32-WROOM-32 (30-pin) on the TheDIYGuy999 sound & light controller board.
 
 | Pin | Function |
 |-----|----------|
-| GPIO25/26 | Audio out (to PAM8403 amp via 10kΩ resistors + pot) |
-| GPIO33 | ESC servo signal output |
-| GPIO13 | Servo CH1 output |
-| GPIO12 | Servo CH2 output |
-| GPIO14 | Servo CH3 output |
-| GPIO27 | Servo CH4 output |
+| GPIO25 / 26 | Audio out (to PAM8403 amp) |
+| GPIO33 | ESC signal |
+| GPIO13 / 12 / 14 / 27 | Servo CH1–CH4 |
 | GPIO0 | Neopixel data |
 | GPIO34 | Receiver input (PWM/PPM/SBUS/IBUS) |
 
-Schematics and PCB files are in the `hardware/` folder.
+Schematics & PCB files are in the **[`hardware/`](hardware/)** folder.
 
 ---
 
-## Project Structure
+## 📁 What's in here
 
 ```
-├── start_webui.bat        ← Double-click to launch (Windows)
-├── start_webui.command    ← Double-click to launch (Mac)
-├── configure.py           ← Web configurator server (or run directly on Linux)
-├── src/
-│   ├── src.ino            ← Main firmware
-│   ├── 0_generalSettings.h ... 10_Trailer.h  ← Config tabs
-│   └── vehicles/          ← 80+ vehicle sound profiles
-├── hardware/              ← Eagle schematic & PCB files
-└── tools/                 ← WAV↔header converters
+start_webui.bat / .command   ← double-click to launch
+configure.py                 ← the local web server (runs the whole thing)
+web/                         ← the browser app (UI + in-browser flasher)
+src/                         ← the ESP32 firmware
+  ├── src.ino                   main firmware
+  ├── 0_… 10_….h                the setting "tabs"
+  └── vehicles/                 80+ vehicle profiles + sound library
+tools/                       ← WAV ↔ header converters
+hardware/                    ← schematic & PCB files
 ```
 
 ---
 
-## Credits
+## 🙌 Credits
 
 | | |
 |---|---|
-| **Web Configurator** | turbotike |
-| **Original Firmware** | [TheDIYGuy999](https://github.com/TheDIYGuy999/Rc_Engine_Sound_ESP32) |
+| **Web Configurator & Flasher** | [turbotike](https://github.com/turbotike) |
+| **Original firmware** | [TheDIYGuy999](https://github.com/TheDIYGuy999/Rc_Engine_Sound_ESP32) |
+
+This tool stands on the shoulders of TheDIYGuy999's incredible firmware — go give that project a ⭐.

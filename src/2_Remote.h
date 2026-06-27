@@ -352,10 +352,6 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 #define CH_15 15
 #define CH_16 16
 
-// Passthrough extra iBUS channel reads (for SERVOS_PASSTHROUGH mode)
-#define PT_IBUS_CH3 3       // iBUS CH3 -> pulseWidth[14] -> Blade
-#define PT_IBUS_CH4 4       // iBUS CH4 -> pulseWidth[15] -> Ripper
-
 // Channels reversed or not
 boolean channelReversed[17] = {
     false, // CH0 (unused)

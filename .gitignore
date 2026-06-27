@@ -26,3 +26,9 @@ __pycache__/
 backups/
 presets/
 *.wav
+
+# Claude Code internal notes (not part of the project)
+memory/
+
+# Auto-downloaded compiler (fetched on first build if Arduino IDE is absent)
+tools/arduino-cli/
