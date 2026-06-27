@@ -4,6 +4,17 @@ A **browser app** for setting up and flashing the [TheDIYGuy999 RC engine sound 
 
 > New here? Jump to **[Quick Start](#-quick-start)**. It's three steps.
 
+## ⬇️ Download the app
+
+Grab the ready-to-run app from the **[Releases page](../../releases/latest)** — no Python, no install:
+
+| Your computer | Download |
+|---|---|
+| **Windows** | `RC-Sound-Configurator-Windows.zip` |
+| **Mac** (Intel or Apple Silicon) | `RC-Sound-Configurator-macOS.zip` |
+
+Unzip it, then double-click the app inside (details in [Quick Start](#-quick-start) below).
+
 ---
 
 ## ✨ What you can do
@@ -28,18 +39,20 @@ The first time you build, the app downloads its own compiler automatically — *
 ## 🚀 Quick Start
 
 ### Windows (the easy way — no Python)
-1. **Download this project** → green **`Code`** button → **Download ZIP** → unzip it somewhere (e.g. your Desktop).
+1. Download **`RC-Sound-Configurator-Windows.zip`** from the **[Releases page](../../releases/latest)** and unzip it somewhere (e.g. your Desktop).
 2. Double-click **`RC Sound Configurator.exe`**.
    - If Windows shows a blue **"Windows protected your PC"** box, that's just because the app isn't code-signed: click **More info → Run anyway**.
 3. Your browser opens automatically to **`http://localhost:8080`**. **If it opens in Firefox/Safari, copy that address into Chrome or Edge.**
 
 > Prefer to run it with your own Python instead? Double-click **`start_webui.bat`** — same app.
 
-### Mac
-1. **Download this project** → green **`Code`** button → **Download ZIP** → unzip it.
-2. Double-click **`start_webui.command`**.
-   - If macOS says "unidentified developer": **right-click it → Open → Open**.
+### Mac (the easy way — no Python)
+1. Download **`RC-Sound-Configurator-macOS.zip`** from the **[Releases page](../../releases/latest)** and unzip it.
+2. Double-click **`Start RC Sound Configurator.command`**.
+   - macOS will say "unidentified developer" (the app isn't signed): **right-click it → Open → Open**. You only do this once.
 3. Your browser opens to **`http://localhost:8080`** (use Chrome or Edge).
+
+> Prefer your own Python? Double-click **`start_webui.command`** instead — same app.
 
 ### Linux
 ```bash
