@@ -39,8 +39,8 @@ The first time you build, the app downloads its own compiler automatically — *
 ## 🚀 Quick Start
 
 ### Windows (the easy way — no Python)
-1. Download **`RC-Sound-Configurator-Windows.zip`** from the **[Releases page](../../releases/latest)** and unzip it somewhere (e.g. your Desktop).
-2. Double-click **`RC Sound Configurator.exe`**.
+1. Download **`RC-Sound-Configurator-Windows.zip`** from the **[Releases page](../../releases/latest)**, then **right-click it → Extract All…** to unzip it to a real folder (e.g. your Desktop). ⚠️ **Don't run it from inside the zip** — extract it first, or the app can't find its files.
+2. Open the **extracted folder** and double-click **`RC Sound Configurator.exe`**.
    - If Windows shows a blue **"Windows protected your PC"** box, that's just because the app isn't code-signed: click **More info → Run anyway**.
 3. Your browser opens automatically to **`http://localhost:8080`**. **If it opens in Firefox/Safari, copy that address into Chrome or Edge.**
 

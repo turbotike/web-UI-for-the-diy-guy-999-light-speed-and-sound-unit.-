@@ -5084,6 +5084,40 @@ def build_page():
     return PAGE_TEMPLATE.replace("__SECTIONS__", build_sections_html())
 
 
+# Shown when web/ isn't found next to the app — i.e. someone ran the .exe
+# straight from inside the downloaded .zip. Fully self-contained (web/ CSS
+# won't load in this situation).
+MISSING_FILES_PAGE = """<!DOCTYPE html><html><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Almost there — please extract the zip</title>
+<style>
+  body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;
+    font:16px/1.6 "Trebuchet MS","Segoe UI",system-ui,sans-serif;color:#f3ffe6;
+    background:radial-gradient(900px 500px at 20% -10%,rgba(57,255,20,.25),transparent 60%),
+      radial-gradient(900px 600px at 100% 0,rgba(250,255,0,.18),transparent 55%),
+      linear-gradient(160deg,#0a1206,#112011);padding:24px}
+  .card{max-width:620px;background:rgba(18,38,12,.75);border:2px solid #39ff14;border-radius:22px;
+    padding:30px 34px;box-shadow:0 0 24px rgba(57,255,20,.4)}
+  h1{margin:0 0 6px;color:#faff00;text-shadow:0 0 12px rgba(250,255,0,.6);font-size:24px}
+  p{color:#bdec97}
+  ol{padding-left:22px} li{margin:10px 0}
+  b{color:#39ff14} .big{font-size:18px;color:#f3ffe6}
+  .note{margin-top:18px;font-size:13px;color:#8fbf6a;font-style:italic}
+</style></head><body>
+  <div class="card">
+    <h1>⚠️ Almost there!</h1>
+    <p class="big">It looks like you opened the app straight from <b>inside the ZIP</b>, so it can't find its files.</p>
+    <p>Quick fix:</p>
+    <ol>
+      <li>Close this window.</li>
+      <li>Find the downloaded <b>.zip</b> file, <b>right-click it &rarr; Extract All…</b> (Mac: double-click to unzip).</li>
+      <li>Open the <b>extracted folder</b> and start the app <b>from there</b>.</li>
+    </ol>
+    <p class="note">The app needs the <code>web</code> and <code>src</code> folders sitting next to it — extracting the whole zip keeps them together.</p>
+  </div>
+</body></html>"""
+
+
 # =======================================================================================================
 # JSON SCHEMA API  (drives the modern SPA frontend in web/)
 # =======================================================================================================
@@ -5272,7 +5306,10 @@ class Handler(BaseHTTPRequestHandler):
                 with open(spa, "rb") as fh:
                     body = fh.read()
             else:
-                body = build_page().encode("utf-8")
+                # web/ isn't next to the app — almost always because it was run
+                # from *inside* the .zip. Guide the user instead of silently
+                # showing the old built-in page (whose flashing needs pyserial).
+                body = MISSING_FILES_PAGE.encode("utf-8")
             self.send_response(200)
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.send_header("Content-Length", str(len(body)))
