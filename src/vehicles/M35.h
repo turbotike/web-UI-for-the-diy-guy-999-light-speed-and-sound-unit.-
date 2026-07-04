@@ -111,7 +111,7 @@ volatile int hornVolumePercentage = 120; // Adjust the horn volume (usually = 10
 //#include "sounds/CaboverCAThorn.h" // Cabover with CAT engine horn
 //#include "sounds/MackSuperLinerHorn.h" // MACK Super Liner horn
 //#include "sounds/ScaniaV8trainHorn.h" // Scania with train horn
-#include "sounds/M35horn.h" // AM General M35 Truck
+#include "sounds/2ToneTruckHorn.h" // AM General M35 Truck
 
 // Choose the siren / additional horn sound (uncomment the one you want) --------
 volatile int sirenVolumePercentage = 100; // Adjust the siren volume (usually = 100%)

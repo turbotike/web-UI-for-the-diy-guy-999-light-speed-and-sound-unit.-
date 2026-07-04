@@ -14,7 +14,7 @@ volatile int engineIdleVolumePercentage = 60; // the engine volume will be throt
 volatile int fullThrottleVolumePercentage = 140; // Volume Percentage while full throttle (for rev sound as well)
 //#include "sounds/3408CatIdle.h" // CAT 3408 V8 Diesel idle (Kenworth W900A)
 //#include "sounds/3408CatIdleLowpass.h" // CAT 3408 V8 Diesel idle (Kenworth W900A, 1.5kHz lowpass filtered)
-#include "sounds/3408CatIdle2.h" // CAT 3408 V8 Diesel idle (Kenworth W900A, b+7, h-7)
+#include "sounds/Cat3408Idle.h" // CAT 3408 V8 Diesel idle (Kenworth W900A, b+7, h-7)
 
 // Choose the motor revving sound (uncomment the one you want) --------
 #define REV_SOUND // uncomment this, if you want to use the separate, optional rev sound

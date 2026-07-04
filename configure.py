@@ -6107,7 +6107,10 @@ class Handler(BaseHTTPRequestHandler):
                     self.wfile.flush()
                     return
 
-                fqbn = "esp32:esp32:esp32"
+                # PartitionScheme MUST be set on the FQBN — the build.partitions
+                # build-property is ignored, which silently capped the app at the
+                # 1.25 MB default (huge_app gives 3 MB, matching platformio.ini).
+                fqbn = "esp32:esp32:esp32:PartitionScheme=huge_app"
                 build_path = os.path.join(ROOT, "build")
 
                 # Base compile command
@@ -6116,7 +6119,6 @@ class Handler(BaseHTTPRequestHandler):
                     "--fqbn", fqbn,
                     "--build-path", build_path,
                     "--build-property", "build.extra_flags=" + get_build_flags(),
-                    "--build-property", "build.partitions=huge_app",
                 ]
 
                 # Add library paths
