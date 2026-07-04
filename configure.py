@@ -6183,12 +6183,53 @@ class ThreadedHTTPServer(ThreadingMixIn, HTTPServer):
 
 def _open_browser(url):
     # Only auto-open when packaged as a .exe — in dev the launcher opens it.
-    if getattr(sys, "frozen", False):
-        try:
-            import webbrowser
-            webbrowser.open(url)
-        except Exception:
-            pass
+    if not getattr(sys, "frozen", False):
+        return
+
+    import subprocess
+    import shutil
+
+    # Prefer Chrome, then Edge — both support WebSerial (needed to flash).
+    # Fall back to the system default browser only if neither is found.
+    try:
+        if sys.platform == "darwin":
+            for app in ("Google Chrome", "Microsoft Edge"):
+                try:
+                    subprocess.Popen(["open", "-a", app, url])
+                    return
+                except Exception:
+                    pass
+        elif os.name == "nt":
+            pf = os.environ.get("PROGRAMFILES", r"C:\Program Files")
+            pfx = os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)")
+            lad = os.environ.get("LOCALAPPDATA", "")
+            candidates = [
+                os.path.join(pf, r"Google\Chrome\Application\chrome.exe"),
+                os.path.join(pfx, r"Google\Chrome\Application\chrome.exe"),
+                os.path.join(lad, r"Google\Chrome\Application\chrome.exe"),
+                os.path.join(pfx, r"Microsoft\Edge\Application\msedge.exe"),
+                os.path.join(pf, r"Microsoft\Edge\Application\msedge.exe"),
+            ]
+            for exe in candidates:
+                if exe and os.path.isfile(exe):
+                    subprocess.Popen([exe, url])
+                    return
+        else:  # Linux
+            for name in ("google-chrome", "google-chrome-stable", "chromium",
+                         "chromium-browser", "microsoft-edge"):
+                path = shutil.which(name)
+                if path:
+                    subprocess.Popen([path, url])
+                    return
+    except Exception:
+        pass
+
+    # Fallback: whatever the OS default browser is.
+    try:
+        import webbrowser
+        webbrowser.open(url)
+    except Exception:
+        pass
 
 
 def main():
