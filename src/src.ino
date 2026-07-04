@@ -5994,6 +5994,16 @@ void updateRGBLEDs()
 // =======================================================================================================
 //
 
+// Track-drive tuning defaults. The tracked dozers declare their own values and
+// set TRACK_DRIVE_CUSTOM; every other EXCAVATOR_MODE vehicle falls back to these
+// so excavatorControl() always compiles (fixes "not declared in this scope").
+#if defined(EXCAVATOR_MODE) && !defined(TRACK_DRIVE_CUSTOM)
+const uint16_t pwmStrokeChainDriveTopSpeed = 255;
+const uint16_t pwmStrokeChainDriveStartRotation = 70;
+const uint16_t trackRattleIntervalMin = 160;
+const uint16_t trackRattleIntervalMax = 500;
+#endif
+
 void excavatorControl()
 {
 #if defined EXCAVATOR_MODE
