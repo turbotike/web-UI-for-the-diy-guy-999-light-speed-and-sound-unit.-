@@ -1760,11 +1760,43 @@ def ensure_arduino_cli(chunk_fn=None):
     msg("Arduino IDE not found — downloading the Arduino compiler (one-time, ~25 MB)…")
     os.makedirs(VENDORED_CLI_DIR, exist_ok=True)
     tmp = os.path.join(VENDORED_CLI_DIR, "_download.tmp")
+
+    import urllib.request
+    import ssl
+    import shutil
+
+    # Packaged Python on macOS (and sometimes Windows) has no CA certificates,
+    # which makes HTTPS fail with "CERTIFICATE_VERIFY_FAILED". Try certifi's
+    # bundle first, then the system context, then (last resort) unverified so a
+    # quirky network/cert setup still works.
+    contexts = []
     try:
-        import urllib.request
-        urllib.request.urlretrieve(url, tmp)
-    except Exception as e:
-        msg("ERROR: download failed: %s" % e)
+        import certifi
+        contexts.append(ssl.create_default_context(cafile=certifi.where()))
+    except Exception:
+        pass
+    try:
+        contexts.append(ssl.create_default_context())
+    except Exception:
+        pass
+    try:
+        contexts.append(ssl._create_unverified_context())
+    except Exception:
+        pass
+
+    last_err = None
+    downloaded = False
+    for ctx in contexts:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "DIYGuy999-Configurator"})
+            with urllib.request.urlopen(req, context=ctx, timeout=180) as resp, open(tmp, "wb") as out:
+                shutil.copyfileobj(resp, out)
+            downloaded = True
+            break
+        except Exception as e:
+            last_err = e
+    if not downloaded:
+        msg("ERROR: download failed: %s" % last_err)
         return None
 
     try:
