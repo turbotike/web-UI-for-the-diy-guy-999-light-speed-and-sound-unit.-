@@ -45,10 +45,21 @@ async function fetchFirmwareImages() {
   return j.firmware.parts.map((p) => ({ data: atob(p.data), address: p.offset }));
 }
 
+// Ask the user to pick a serial port. MUST be called directly from a click
+// handler (before any long await like the build) — Chrome only shows the port
+// picker while the click's "user gesture" is still active.
+export async function requestSerialPort() {
+  if (!hasWebSerial) {
+    throw new Error("This browser can't flash. Use Chrome or Edge on desktop.");
+  }
+  return navigator.serial.requestPort();
+}
+
 // Flash the already-compiled firmware over WebSerial.
+// Pass `port` (from requestSerialPort) so the picker isn't shown after the build.
 // Callbacks: onStatus(text, kind), onLog(text), onProgress(pct 0..100).
 export async function flashFirmware({
-  baud = 921600, eraseAll = false,
+  port = null, baud = 921600, eraseAll = false,
   onStatus = noop, onLog = noop, onProgress = noop,
 } = {}) {
   if (!hasWebSerial) {
@@ -68,8 +79,12 @@ export async function flashFirmware({
     const totalBytes = fileArray.reduce((n, f) => n + f.data.length, 0);
     onLog(`Firmware: ${fileArray.length} images, ${(totalBytes / 1024).toFixed(0)} KB total.\n`);
 
-    onStatus("Select your board's serial port in the prompt…", "work");
-    const port = await navigator.serial.requestPort();
+    if (!port) {
+      // Fallback (e.g. standalone page) — may fail after a long build due to
+      // the browser's user-gesture rule; the SPA passes `port` from the click.
+      onStatus("Select your board's serial port in the prompt…", "work");
+      port = await navigator.serial.requestPort();
+    }
     transport = new Transport(port, true);
 
     const loader = new ESPLoader({

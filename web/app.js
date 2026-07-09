@@ -2,7 +2,7 @@
 // Renders from /api/schema, writes via /save and friends, flashes via the
 // shared WebSerial flasher core.
 
-import { streamBuild, flashFirmware, flashErrorHint, hasWebSerial } from "/web/flasher.js";
+import { streamBuild, flashFirmware, requestSerialPort, flashErrorHint, hasWebSerial } from "/web/flasher.js";
 
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, html) => {
@@ -567,10 +567,22 @@ function wireFlashPane() {
   }
   $("doBuild").onclick = doBuild;
   $("doFlash").onclick = async () => {
+    if (!hasWebSerial) { setStatus("⚠ Use Chrome or Edge to flash over USB.", "err"); return; }
+    // Pick the serial port NOW, during the click. The browser only shows the
+    // picker while the click's user gesture is active, and the (long) build
+    // would otherwise consume it → "Must be handling a user gesture" error.
+    let port;
+    try {
+      setStatus("Select your board's port in the popup…", "work");
+      port = await requestSerialPort();
+    } catch (e) {
+      setStatus("Cancelled — no port selected. Plug in the board and try again.", "");
+      return;
+    }
     if (!(await doBuild())) return;
     busy(true);
     try {
-      await flashFirmware({ baud: $("baud").value, eraseAll: $("erase").checked, onStatus: setStatus, onLog: log, onProgress: setProgress });
+      await flashFirmware({ port, baud: $("baud").value, eraseAll: $("erase").checked, onStatus: setStatus, onLog: log, onProgress: setProgress });
     } catch (err) { log("ERROR: " + ((err && err.message) || err) + "\n"); const h = flashErrorHint(err); setStatus(h.text, h.kind); }
     finally { busy(false); }
   };

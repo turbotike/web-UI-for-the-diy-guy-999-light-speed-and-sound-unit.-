@@ -1,5 +1,5 @@
 // Standalone flasher page logic — thin wrapper over the shared flasher core.
-import { streamBuild, flashFirmware, flashErrorHint, hasWebSerial } from "/web/flasher.js";
+import { streamBuild, flashFirmware, requestSerialPort, flashErrorHint, hasWebSerial } from "/web/flasher.js";
 
 const $ = (id) => document.getElementById(id);
 const logEl = $("log"), statusEl = $("status"), barEl = $("bar");
@@ -30,11 +30,16 @@ async function build() {
 }
 
 async function buildAndFlash() {
+  if (!hasWebSerial) { setStatus("Use Chrome or Edge to flash over USB.", "err"); return; }
+  // Grab the port on the click (before the long build) — user-gesture rule.
+  let port;
+  try { setStatus("Select your board's port…", "work"); port = await requestSerialPort(); }
+  catch (e) { setStatus("Cancelled — no port selected.", ""); return; }
   if (!(await build())) return;
   busy(true);
   try {
     await flashFirmware({
-      baud: baudSel.value, eraseAll: eraseChk.checked,
+      port, baud: baudSel.value, eraseAll: eraseChk.checked,
       onStatus: setStatus, onLog: log, onProgress: setProgress,
     });
   } catch (err) {
