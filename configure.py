@@ -1874,6 +1874,39 @@ def find_boot_app0():
     return None
 
 
+def _is_ascii(s):
+    try:
+        s.encode("ascii")
+        return True
+    except UnicodeEncodeError:
+        return False
+
+
+def build_dir():
+    """Directory arduino-cli compiles into. The xtensa/gcc toolchain can't handle
+    a non-ASCII build path (e.g. a Japanese username or folder), so if ROOT isn't
+    pure ASCII we build in an ASCII-only temp location instead."""
+    default = os.path.join(ROOT, "build")
+    if _is_ascii(default):
+        return default
+    import tempfile
+    candidates = []
+    if os.name == "nt":
+        candidates.append(os.path.join(os.environ.get("PUBLIC", r"C:\Users\Public"), "DIYGuy999Build"))
+        candidates.append(r"C:\DIYGuy999Build")
+    else:
+        candidates.append("/tmp/DIYGuy999Build")
+    candidates.append(os.path.join(tempfile.gettempdir(), "DIYGuy999Build"))
+    for cand in candidates:
+        if _is_ascii(cand):
+            try:
+                os.makedirs(cand, exist_ok=True)
+                return cand
+            except Exception:
+                pass
+    return default
+
+
 def build_firmware_manifest():
     """Package the compiled build/ images for the browser flasher.
 
@@ -1881,7 +1914,7 @@ def build_firmware_manifest():
         {"chip": "esp32", "parts": [{"offset": int, "data": base64str, "size": int}, ...]}
     """
     import base64
-    build_path = os.path.join(ROOT, "build")
+    build_path = build_dir()
     boot_app0 = find_boot_app0()
     parts = []
     for offset, name in ESP32_FLASH_LAYOUT:
@@ -6143,7 +6176,7 @@ class Handler(BaseHTTPRequestHandler):
                 # build-property is ignored, which silently capped the app at the
                 # 1.25 MB default (huge_app gives 3 MB, matching platformio.ini).
                 fqbn = "esp32:esp32:esp32:PartitionScheme=huge_app"
-                build_path = os.path.join(ROOT, "build")
+                build_path = build_dir()  # ASCII-safe (handles Japanese/non-ASCII app paths)
 
                 # Base compile command
                 acli_cmd = [
