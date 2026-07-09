@@ -52,7 +52,7 @@ jobs:
           set -e
           mkdir staging
           # Everything the app needs at runtime, plus a Python fallback launcher.
-          cp -r src web tools data README.md configure.py start_webui.bat start_webui.command staging/ 2>/dev/null || true
+          cp -r src web tools data libraries README.md configure.py start_webui.bat start_webui.command staging/ 2>/dev/null || true
           cp "dist/${{ matrix.binary }}" staging/
           if [ "${{ runner.os }}" = "macOS" ]; then
             chmod +x "staging/${{ matrix.binary }}"

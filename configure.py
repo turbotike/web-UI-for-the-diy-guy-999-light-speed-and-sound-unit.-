@@ -1664,6 +1664,8 @@ def list_serial_ports():
                 cwd=ROOT,
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",
                 shell=(os.name == "nt"),
                 check=False,
             )
@@ -1882,21 +1884,21 @@ def _is_ascii(s):
         return False
 
 
-def build_dir():
-    """Directory arduino-cli compiles into. The xtensa/gcc toolchain can't handle
-    a non-ASCII build path (e.g. a Japanese username or folder), so if ROOT isn't
-    pure ASCII we build in an ASCII-only temp location instead."""
-    default = os.path.join(ROOT, "build")
-    if _is_ascii(default):
-        return default
+def _work_root():
+    """An ASCII-safe working directory. ROOT if it's pure ASCII, otherwise an
+    ASCII-only temp location. The xtensa/gcc toolchain fails on non-ASCII build
+    or library paths (e.g. a Japanese username/folder), so we never compile
+    under a non-ASCII ROOT."""
+    if _is_ascii(ROOT):
+        return ROOT
     import tempfile
     candidates = []
     if os.name == "nt":
-        candidates.append(os.path.join(os.environ.get("PUBLIC", r"C:\Users\Public"), "DIYGuy999Build"))
-        candidates.append(r"C:\DIYGuy999Build")
+        candidates.append(os.path.join(os.environ.get("PUBLIC", r"C:\Users\Public"), "DIYGuy999"))
+        candidates.append(r"C:\DIYGuy999")
     else:
-        candidates.append("/tmp/DIYGuy999Build")
-    candidates.append(os.path.join(tempfile.gettempdir(), "DIYGuy999Build"))
+        candidates.append("/tmp/DIYGuy999")
+    candidates.append(os.path.join(tempfile.gettempdir(), "DIYGuy999"))
     for cand in candidates:
         if _is_ascii(cand):
             try:
@@ -1904,7 +1906,12 @@ def build_dir():
                 return cand
             except Exception:
                 pass
-    return default
+    return ROOT
+
+
+def build_dir():
+    """ASCII-safe directory arduino-cli compiles into."""
+    return os.path.join(_work_root(), "build")
 
 
 def build_firmware_manifest():
@@ -1954,7 +1961,7 @@ def ensure_esp32_core(cli, chunk_fn=None):
     try:
         proc = subprocess.run(
             [cli, "config", "dump", "--format", "json"],
-            capture_output=True, text=True, shell=(os.name == "nt"), check=False
+            capture_output=True, text=True, encoding="utf-8", errors="replace", shell=(os.name == "nt"), check=False
         )
         if proc.returncode == 0:
             cfg = json.loads(proc.stdout)
@@ -1963,7 +1970,7 @@ def ensure_esp32_core(cli, chunk_fn=None):
                 msg("Adding ESP32 board index URL...")
                 subprocess.run(
                     [cli, "config", "add", "board_manager.additional_urls", ESP32_BOARD_URL],
-                    capture_output=True, text=True, shell=(os.name == "nt"), check=False
+                    capture_output=True, text=True, encoding="utf-8", errors="replace", shell=(os.name == "nt"), check=False
                 )
     except Exception:
         pass
@@ -1972,7 +1979,7 @@ def ensure_esp32_core(cli, chunk_fn=None):
     try:
         proc = subprocess.run(
             [cli, "core", "list", "--format", "json"],
-            capture_output=True, text=True, shell=(os.name == "nt"), check=False
+            capture_output=True, text=True, encoding="utf-8", errors="replace", shell=(os.name == "nt"), check=False
         )
         if proc.returncode == 0:
             parsed = json.loads(proc.stdout)
@@ -2009,15 +2016,39 @@ def ensure_esp32_core(cli, chunk_fn=None):
 
 
 def get_library_paths():
-    """Return list of --library flags for arduino-cli pointing to bundled libs."""
-    libdeps = os.path.join(ROOT, ".pio", "libdeps", "esp32dev")
-    libs = []
-    if os.path.isdir(libdeps):
-        for entry in os.listdir(libdeps):
-            full = os.path.join(libdeps, entry)
-            if os.path.isdir(full):
-                libs.append(full)
-    return libs
+    """Library dirs for arduino-cli. Prefer the bundled ROOT/libraries that
+    ships with the app (so a fresh machine with no Arduino IDE can still build);
+    fall back to .pio/libdeps for dev checkouts. If the app sits in a non-ASCII
+    path, mirror the libraries into an ASCII location once so the compiler can
+    resolve their headers."""
+    base = None
+    for cand in (os.path.join(ROOT, "libraries"),
+                 os.path.join(ROOT, ".pio", "libdeps", "esp32dev")):
+        if os.path.isdir(cand):
+            base = cand
+            break
+    if not base:
+        return []
+    dirs = [os.path.join(base, e) for e in sorted(os.listdir(base))
+            if os.path.isdir(os.path.join(base, e))]
+    if not dirs:
+        return []
+    if all(_is_ascii(d) for d in dirs):
+        return dirs
+
+    # Non-ASCII app path: copy the libraries into an ASCII dir (once).
+    import shutil
+    ascii_libs = os.path.join(_work_root(), "libraries")
+    out = []
+    for d in dirs:
+        dest = os.path.join(ascii_libs, os.path.basename(d))
+        if not os.path.isdir(dest):
+            try:
+                shutil.copytree(d, dest)
+            except Exception:
+                dest = d
+        out.append(dest)
+    return out
 
 
 def get_build_flags():
@@ -6205,6 +6236,8 @@ class Handler(BaseHTTPRequestHandler):
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     text=True,
+                    encoding="utf-8",   # arduino-cli emits UTF-8; don't let a
+                    errors="replace",   # Japanese (cp932) locale crash the read
                     bufsize=1,
                     shell=(os.name == "nt"),
                 )
