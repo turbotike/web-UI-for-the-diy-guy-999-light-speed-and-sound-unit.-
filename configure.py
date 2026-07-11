@@ -53,7 +53,10 @@ CONNECTED_PORT = None
 # process left running that you'd have to kill in Task Manager.
 LAST_PING = 0.0
 CLIENT_SEEN = False
-IDLE_SHUTDOWN_SECS = 10
+# Generous so a backgrounded browser tab (whose heartbeat gets throttled to
+# ~once/minute) doesn't get killed while the user is on another tab. Closing the
+# tab still auto-stops the app within this window; the ⏻ Quit button is instant.
+IDLE_SHUTDOWN_SECS = 90
 
 FILE_LABELS = {
     "0_generalSettings.h": "General Settings",
@@ -6335,9 +6338,14 @@ class Handler(BaseHTTPRequestHandler):
 
                 acli_cmd.append(SRC)  # sketch directory
 
-                action = "Compiling + Uploading" if cmd_type == "flash" else "Compiling"
-                chunk("%s with Arduino CLI...\n" % action)
-                chunk("$ " + " ".join(acli_cmd) + "\n\n")
+                # Friendly, non-scary status. (The full arduino-cli command with all
+                # its -D flags and library paths is intentionally NOT dumped — it just
+                # confused people. Compiler errors still stream below for troubleshooting.)
+                if cmd_type == "flash":
+                    chunk("Compiling firmware, then uploading to %s...\n" % flash_port)
+                    chunk("The first flash can take a few minutes while the compiler sets up — later ones are quick.\n\n")
+                else:
+                    chunk("Compiling firmware...\n\n")
 
                 proc = subprocess.Popen(
                     acli_cmd,

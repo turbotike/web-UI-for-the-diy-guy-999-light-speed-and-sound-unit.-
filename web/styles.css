@@ -183,6 +183,18 @@ input[type=range]::-moz-range-thumb {
 .status.work { color: var(--work); border-color: var(--work); box-shadow: 0 0 14px rgba(0,240,255,.4); }
 .progress { height: 14px; background: rgba(8,16,6,.8); border-radius: 999px; overflow: hidden; margin-top: 14px; border: 2px solid var(--line); }
 .progress > div { height: 100%; width: 0; background: linear-gradient(90deg, var(--green), var(--yellow), var(--green2)); transition: width .2s; box-shadow: var(--glow-green); }
+/* "working…" animation while compiling (no real % yet) */
+#bar.indeterminate { width: 34%; transition: none; animation: barslide 1s ease-in-out infinite alternate; }
+@keyframes barslide { from { margin-left: 0; } to { margin-left: 66%; } }
+.logwrap { margin-top: 14px; }
+.logwrap > summary {
+  cursor: pointer; color: var(--muted); font-size: 13px; font-weight: 700;
+  padding: 8px 12px; border: 2px solid var(--line); border-radius: 999px;
+  display: inline-block; list-style: none; user-select: none;
+}
+.logwrap > summary::-webkit-details-marker { display: none; }
+.logwrap > summary:hover { color: var(--green2); border-color: var(--green); }
+.logwrap[open] > summary { margin-bottom: 12px; }
 pre.log {
   background: rgba(4,10,2,.85); border: 2px solid var(--line); border-radius: 16px; padding: 16px;
   height: 300px; overflow: auto; margin: 0; font: 12.5px/1.45 "Cascadia Code", Consolas, monospace;

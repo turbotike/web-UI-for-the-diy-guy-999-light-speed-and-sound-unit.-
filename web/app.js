@@ -473,7 +473,9 @@ function renderFlashPane() {
 
     <div id="status" class="status">Ready. Disconnect the battery, plug in USB, then Detect board.</div>
     <div class="progress"><div id="bar"></div></div>
-    <div class="card"><pre id="log" class="log">Log output appears here…</pre></div>`;
+    <details class="logwrap"><summary>Show details (for troubleshooting)</summary>
+      <div class="card"><pre id="log" class="log">Log output appears here…</pre></div>
+    </details>`;
   return pane;
 }
 
@@ -541,20 +543,30 @@ function wireFlashPane() {
   const setProgress = (p) => { barEl.style.width = Math.max(0, Math.min(100, p)) + "%"; };
   const resetLog = () => { logEl.textContent = ""; };
   const busy = (on) => {
-    for (const id of ["doBuild", "saveBtn", "detectBtn", "nativeFlash"]) {
+    // Lock everything that could interfere mid-flash — including the port
+    // dropdown and the header Flash button — so nothing gets changed underneath.
+    for (const id of ["doBuild", "saveBtn", "detectBtn", "nativeFlash", "nativePort", "flashBtnTop"]) {
       const b = $(id); if (b) b.disabled = on;
     }
   };
+  const setIndeterminate = (on) => {
+    if (on) { barEl.classList.add("indeterminate"); barEl.style.width = ""; }
+    else { barEl.classList.remove("indeterminate"); }
+  };
+  // auto-open the collapsed details panel (so errors are never hidden)
+  const showDetails = () => { const d = document.querySelector(".logwrap"); if (d) d.open = true; };
 
   async function doBuild() {
     if (isDirty() && !(await save())) return false;
-    busy(true); resetLog(); setStatus("Compiling firmware…", "work"); setProgress(0); log("=== BUILD ===\n");
+    busy(true); resetLog(); setStatus("🔧 Compiling firmware…", "work"); setProgress(0); setIndeterminate(true); log("Compiling…\n");
     try {
       const ok = await streamBuild({ vehicle: "", onLog: log });
-      setStatus(ok ? "Build OK — ready to flash." : "Build failed — see log.", ok ? "ok" : "err");
+      setIndeterminate(false); setProgress(ok ? 100 : 0);
+      setStatus(ok ? "✓ Build OK — ready to flash." : "Build failed — check the details below.", ok ? "ok" : "err");
+      if (!ok) showDetails();
       return ok;
-    } catch (err) { log("ERROR: " + err.message + "\n"); setStatus("Build failed: " + err.message, "err"); return false; }
-    finally { busy(false); }
+    } catch (err) { setIndeterminate(false); log("ERROR: " + err.message + "\n"); setStatus("Build failed: " + err.message, "err"); showDetails(); return false; }
+    finally { busy(false); setIndeterminate(false); }
   }
   $("doBuild").onclick = doBuild;
 
@@ -579,17 +591,36 @@ function wireFlashPane() {
     const port = $("nativePort").value;
     if (!port) { setStatus("Click Detect board and pick your board first.", "err"); return; }
     if (isDirty() && !(await save())) return;
-    busy(true); resetLog(); setStatus("Flashing " + port + " via cable — do not unplug…", "work"); setProgress(0);
-    log("=== FLASH via cable (" + port + ") ===\n");
+    busy(true); resetLog();
+    setStatus("🔧 Compiling firmware… first flash can take a few minutes", "work");
+    setProgress(0); setIndeterminate(true);
+    log("Flashing " + port + " via USB cable…\n");
+    let phase = "compile";
     try {
       const res = await fetch("/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cmd: "flash", port, vehicle: "" }) });
       if (!res.ok) { let m = "HTTP " + res.status; try { const e = await res.json(); if (e.error) m = e.error; } catch (_) {} throw new Error(m); }
       const reader = res.body.getReader(), dec = new TextDecoder(); let all = "";
-      while (true) { const { value, done } = await reader.read(); if (done) break; const c = dec.decode(value, { stream: true }); all += c; log(c); }
-      if (all.includes("--- DONE (exit 0) ---")) { setProgress(100); setStatus("✓ Flashed! Reconnect the battery.", "ok"); }
-      else { setStatus("Flash failed — see log. (Battery disconnected? Right port? Driver installed?)", "err"); }
-    } catch (err) { log("ERROR: " + ((err && err.message) || err) + "\n"); setStatus("Flash failed: " + ((err && err.message) || err), "err"); }
-    finally { busy(false); }
+      while (true) {
+        const { value, done } = await reader.read(); if (done) break;
+        const c = dec.decode(value, { stream: true }); all += c; log(c);
+        // Compile → Upload transition (esptool starts talking to the board)
+        if (phase === "compile" && /esptool|Connecting\.|Chip is|Writing at|Uploading stub/.test(c)) {
+          phase = "upload"; setIndeterminate(false);
+          setStatus("⬆ Uploading to your board — keep it plugged in…", "work");
+        }
+        // Upload % — esptool prints "(NN %)" with a space; the "(24%)" sketch-size
+        // line has no space, so this won't be fooled by it.
+        const pcts = c.match(/\((\d+)\s+%\)/g);
+        if (pcts && phase === "upload") {
+          const n = parseInt(pcts[pcts.length - 1].match(/\d+/)[0], 10);
+          if (!isNaN(n)) setProgress(n);
+        }
+      }
+      setIndeterminate(false);
+      if (all.includes("--- DONE (exit 0) ---")) { setProgress(100); setStatus("✓ Flashed! Reconnect the battery. 🎉", "ok"); }
+      else { setStatus("Flash failed — check the details below. (Battery disconnected? Right port? USB driver installed?)", "err"); showDetails(); }
+    } catch (err) { log("ERROR: " + ((err && err.message) || err) + "\n"); setStatus("Flash failed: " + ((err && err.message) || err), "err"); showDetails(); }
+    finally { busy(false); setIndeterminate(false); }
   };
 
 }
@@ -644,6 +675,9 @@ window.addEventListener("beforeunload", (e) => { if (isDirty()) { e.preventDefau
 const ping = () => fetch("/ping").catch(() => {});
 ping();
 setInterval(ping, 3000);
+// ping the moment the tab regains focus, so a throttled background tab
+// re-checks in immediately instead of waiting for the next interval
+document.addEventListener("visibilitychange", () => { if (!document.hidden) ping(); });
 
 (async function init() {
   try { await loadSchema(); renderVehicleSelect(); render(); }
