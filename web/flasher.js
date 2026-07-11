@@ -92,10 +92,13 @@ export async function flashFirmware({
   // cable/port can corrupt data mid-write ("Failed to write... Invalid head of
   // packet") — slower and uncompressed is the most reliable, so we fall back to
   // it automatically instead of failing.
-  const plan = [[chosen, true]];
-  for (const b of [230400, 115200]) if (b < chosen) plan.push([b, true]);
-  plan.push([115200, false]); // last resort: slowest + uncompressed
-  const attempts = plan.filter((p, i) => i === 0 || p[0] !== plan[i - 1][0] || p[1] !== plan[i - 1][1]);
+  const attempts = [];
+  const addAttempt = (b, compress) => {
+    if (!attempts.some((a) => a[0] === b && a[1] === compress)) attempts.push([b, compress]);
+  };
+  addAttempt(chosen, true);            // chosen speed, compressed (fast path)
+  if (chosen > 230400) addAttempt(230400, true); // a bit slower, still compressed
+  addAttempt(115200, false);           // bulletproof: slow + UNCOMPRESSED
   const isRetryable = (e) =>
     /invalid head|packet|Timed out|Failed to connect|corruption|not in flashing|Failed to write|to flash|status \d/i
       .test(String((e && e.message) || e));
