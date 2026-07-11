@@ -30,8 +30,8 @@ Unzip it, then run the app inside (details in [Quick Start](#-quick-start) below
 
 - 🎚️ **Configure everything with sliders & switches** — engine, ESC, transmission, lights, servos, sounds (80+ vehicle profiles included)
 - 🔊 **Sound Forge** — preview any of 580+ engine/horn/brake sounds, swap them per slot, or **upload your own WAV** (converted automatically)
-- 🔌 **Flash over USB in one click** — uses the built-in **native uploader** (the same reliable tool the command line uses), so it works on any board
-- 💾 **Presets, import/export, copy & reset** — never lose a setup you like
+- 🔌 **Flash over USB in one click** — hit **Flash** and it finds your board and uploads; uses the built-in **native uploader** (the same reliable tool the command line uses), so it works on any board
+- 💾 **Save, load & share vehicle files** — export any vehicle to a `.h` file, hand it to a friend, and they load it in one click
 
 ---
 
@@ -79,7 +79,7 @@ Tabs run along the top:
 | Tab | What it's for |
 |-----|---------------|
 | **Vehicle** dropdown (top bar) | Pick which truck/machine you're building — everything updates to match. |
-| **Vehicle Tuning** | The chosen vehicle's own settings (engine volumes, RPM, knock, turbo…). Also **Copy / Reset / Export / Import** and **Presets**. |
+| **Vehicle Tuning** | The chosen vehicle's own settings (engine volumes, RPM, knock, turbo…). Three buttons up top: **💾 Save vehicle** (export a shareable `.h`), **📂 Load vehicle** (import one), **↺ Reset vehicle** (back to factory). |
 | **General, Remote, ESC, Transmission, Shaker, Lights, Servos, Sound, Dashboard, Trailer** | All the board settings as friendly sliders and switches. Hover any item for a plain-English explanation. |
 | **🔊 Sound Forge** | Master volume + a **＋ Change** button on each sound slot to browse/preview sounds or upload your own WAV. |
 | **⚡ Flash** | Compile and upload to your board (see below). |
@@ -90,12 +90,19 @@ Tabs run along the top:
 
 ## ⚡ Flashing your ESP32
 
-1. Open the **⚡ Flash** tab.
-2. **Disconnect the battery** from the controller. *(Important — a connected battery pulls GPIO12 high and the upload fails.)*
-3. Plug the ESP32 into USB with a **data** cable (not charge-only), straight into the computer (no hub).
-4. Click **🔍 Detect board** → pick your board's port from the dropdown (the one marked **✅**) → **🔌 Flash**.
+1. **Disconnect the battery** from the controller. *(Important — a connected battery pulls GPIO12 high and the upload fails.)*
+2. Plug the ESP32 into USB with a **data** cable (not charge-only), straight into the computer (no hub).
+3. Click the big **⚡ Flash** button (top-right). It finds your board, compiles, and uploads — all in one click.
    - First flash takes a few minutes while it downloads the toolchain — later ones are quick.
-5. Watch the log write to **100%** and reset. When it says **✓ Flashed**, reconnect the battery. 🎉
+4. Watch the log write to **100%**. When it says **✓ Flashed**, reconnect the battery. 🎉
+
+> Got more than one board plugged in? Open the **⚡ Flash** tab, click **🔍 Detect board**, pick the right port (marked **✅**), then **🔌 Flash**.
+
+---
+
+## 🤝 Share a vehicle setup
+
+Dialed in a truck you love? On **Vehicle Tuning**, click **💾 Save vehicle** to download its `.h` file. Send that file to anyone — they click **📂 Load vehicle**, pick it, and they've got your exact setup. Changed your mind? **↺ Reset vehicle** puts it back to factory.
 
 ---
 
