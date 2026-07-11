@@ -10,29 +10,34 @@
 <body>
 <header>
   <div class="brand">
-    <svg class="logo" viewBox="0 0 388 56" role="img" aria-label="The DIYGuy999 Light Sound and Speed Controller">
+    <svg class="logo" viewBox="0 0 436 70" role="img" aria-label="The DIYGuy999 Light Sound and Speed Controller">
       <defs>
-        <linearGradient id="lgGreen" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#b6ff7a"/><stop offset="1" stop-color="#22e000"/>
+        <linearGradient id="flame" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0" stop-color="#fff24d"/>
+          <stop offset=".38" stop-color="#ff9d00"/>
+          <stop offset=".72" stop-color="#ff2e00"/>
+          <stop offset="1" stop-color="#a80000"/>
         </linearGradient>
-        <linearGradient id="lgYellow" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stop-color="#fffb8a"/><stop offset="1" stop-color="#ffcf00"/>
+        <linearGradient id="chrome" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#ffffff"/>
+          <stop offset=".47" stop-color="#eef8ff"/>
+          <stop offset=".53" stop-color="#a6d1ff"/>
+          <stop offset="1" stop-color="#ffffff"/>
         </linearGradient>
-        <filter id="lglow" x="-30%" y="-50%" width="160%" height="200%">
-          <feGaussianBlur stdDeviation="1.5" result="b"/>
+        <filter id="fglow" x="-15%" y="-40%" width="130%" height="200%">
+          <feGaussianBlur stdDeviation="1.2" result="b"/>
           <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
       </defs>
-      <!-- bolt emblem -->
-      <g filter="url(#lglow)">
-        <rect x="3" y="7" width="44" height="44" rx="13" fill="rgba(10,22,8,.55)" stroke="#39ff14" stroke-width="2.5"/>
-        <path d="M27 12 L15 31 h7 l-4 14 18-21 h-7 l4-12 z" fill="url(#lgYellow)" stroke="#39ff14" stroke-width="1"/>
-      </g>
-      <!-- wordmark -->
-      <g filter="url(#lglow)" font-family="'Comic Sans MS','Trebuchet MS',system-ui,sans-serif" font-weight="800" font-style="italic">
-        <text x="59" y="33" font-size="28" fill="url(#lgGreen)">DIY<tspan fill="url(#lgYellow)">Guy</tspan>999</text>
-      </g>
-      <text x="61" y="49" font-family="'Trebuchet MS',system-ui,sans-serif" font-size="9.3" letter-spacing="1.9" font-weight="700" fill="#faff00">LIGHT &#183; SOUND &#183; SPEED CONTROLLER</text>
+      <!-- tall licking tongues behind the text -->
+      <path fill="url(#flame)" opacity=".92" d="M96 40 C86 18 104 20 100 2 C112 16 108 30 116 34 Z M232 40 C222 16 240 18 236 0 C248 14 244 30 252 34 Z M356 42 C346 20 364 22 360 4 C372 18 368 32 376 36 Z"/>
+      <!-- main flame band -->
+      <path filter="url(#fglow)" fill="url(#flame)" d="M34 60 C48 30 56 48 68 16 C82 44 92 30 104 10 C120 42 130 28 144 18 C160 44 170 22 186 8 C204 44 216 30 230 16 C248 44 260 26 274 12 C292 44 304 38 318 20 C336 44 348 22 362 10 C380 42 392 40 414 60 Z"/>
+      <!-- wordmark: chrome with dark outline, sitting over the flames -->
+      <text x="46" y="46" font-family="'Arial Black',Impact,'Trebuchet MS',sans-serif" font-size="35" font-weight="900" font-style="italic" letter-spacing="-1"
+            fill="url(#chrome)" stroke="#5a0000" stroke-width="2.8" paint-order="stroke" stroke-linejoin="round">DIYGuy999</text>
+      <!-- tagline -->
+      <text x="49" y="66" font-family="'Arial Narrow','Trebuchet MS',system-ui,sans-serif" font-size="9.6" letter-spacing="2" font-weight="700" fill="#ffcf00">LIGHT &#183; SOUND &#183; SPEED CONTROLLER</text>
     </svg>
   </div>
   <div class="veh">

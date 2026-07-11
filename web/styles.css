@@ -60,7 +60,7 @@ header {
   box-shadow: 0 4px 24px rgba(57,255,20,.30);
 }
 .brand { display: flex; align-items: center; }
-.logo { display: block; height: 46px; width: auto; max-width: 58vw; }
+.logo { display: block; height: 52px; width: auto; max-width: 60vw; }
 .veh { display: flex; align-items: center; gap: 8px; }
 .veh label { color: var(--yellow); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
 .spacer { flex: 1; }
