@@ -87,18 +87,14 @@ export async function flashFirmware({
   // Try the chosen speed, then progressively slower ones. Many USB-serial chips
   // (notably CP2102) throw "Invalid head of packet" at 921600 but flash fine at
   // a lower baud — so we retry automatically instead of failing.
-  const chosen = parseInt(baud, 10) || 460800;
-  // Progressively more conservative [baud, compress] attempts. A flaky USB
-  // cable/port can corrupt data mid-write ("Failed to write... Invalid head of
-  // packet") — slower and uncompressed is the most reliable, so we fall back to
-  // it automatically instead of failing.
-  const attempts = [];
-  const addAttempt = (b, compress) => {
-    if (!attempts.some((a) => a[0] === b && a[1] === compress)) attempts.push([b, compress]);
-  };
-  addAttempt(chosen, true);            // chosen speed, compressed (fast path)
-  if (chosen > 230400) addAttempt(230400, true); // a bit slower, still compressed
-  addAttempt(115200, false);           // bulletproof: slow + UNCOMPRESSED
+  const chosen = parseInt(baud, 10) || 115200;
+  // We always flash COMPRESSED — esptool-js 0.6.0 throws "Yet to handle Non
+  // Compressed writes" for uncompressed. Many USB-serial chips (CP2102) also
+  // corrupt on a *baud switch* but are rock-solid at 115200 with no switch, so
+  // 115200 is the safe default. Try the chosen speed, then retry once at 115200.
+  const attempts = [[chosen, true]];
+  if (chosen !== 115200) attempts.push([115200, true]);
+  attempts.push([115200, true]); // one extra retry at the safe speed
   const isRetryable = (e) =>
     /invalid head|packet|Timed out|Failed to connect|corruption|not in flashing|Failed to write|to flash|status \d/i
       .test(String((e && e.message) || e));
