@@ -474,14 +474,6 @@ function renderFlashPane() {
         <button id="doFlash" class="primary">⚡ Build &amp; Flash</button>
         <button id="doBuild">Build only</button>
         <div class="spacer"></div>
-        <label class="opt">Speed
-          <select id="baud">
-            <option value="460800" selected>460800 (recommended)</option>
-            <option value="921600">921600 (fastest)</option>
-            <option value="230400">230400</option>
-            <option value="115200">115200 (most compatible)</option>
-          </select>
-        </label>
         <label class="opt"><input type="checkbox" id="erase"> Erase all flash</label>
       </div>
       <div id="status" class="status">Ready. ${hasWebSerial ? "Connect your board and press Build &amp; Flash." : "⚠ Use Chrome or Edge — this browser can't flash."}</div>
@@ -582,7 +574,7 @@ function wireFlashPane() {
     if (!(await doBuild())) return;
     busy(true);
     try {
-      await flashFirmware({ port, baud: $("baud").value, eraseAll: $("erase").checked, onStatus: setStatus, onLog: log, onProgress: setProgress });
+      await flashFirmware({ port, baud: 115200, eraseAll: $("erase").checked, onStatus: setStatus, onLog: log, onProgress: setProgress });
     } catch (err) { log("ERROR: " + ((err && err.message) || err) + "\n"); const h = flashErrorHint(err); setStatus(h.text, h.kind); }
     finally { busy(false); }
   };

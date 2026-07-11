@@ -3,7 +3,7 @@ import { streamBuild, flashFirmware, requestSerialPort, flashErrorHint, hasWebSe
 
 const $ = (id) => document.getElementById(id);
 const logEl = $("log"), statusEl = $("status"), barEl = $("bar");
-const flashBtn = $("flashBtn"), buildBtn = $("buildBtn"), baudSel = $("baud"), eraseChk = $("erase");
+const flashBtn = $("flashBtn"), buildBtn = $("buildBtn"), eraseChk = $("erase");
 
 function log(t) { logEl.textContent += t; logEl.scrollTop = logEl.scrollHeight; }
 function setStatus(t, k = "") { statusEl.textContent = t; statusEl.className = "status " + k; }
@@ -39,7 +39,7 @@ async function buildAndFlash() {
   busy(true);
   try {
     await flashFirmware({
-      port, baud: baudSel.value, eraseAll: eraseChk.checked,
+      port, baud: 115200, eraseAll: eraseChk.checked,
       onStatus: setStatus, onLog: log, onProgress: setProgress,
     });
   } catch (err) {
