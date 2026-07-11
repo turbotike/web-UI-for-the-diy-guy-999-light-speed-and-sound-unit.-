@@ -15,10 +15,28 @@ import urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from socketserver import ThreadingMixIn
 
+# On Windows, a windowless (--noconsole) build spawns a flashing black console
+# window for EVERY child process (arduino-cli compile/upload, board list, ...).
+# Patch Popen once so all subprocess.run/Popen calls run with CREATE_NO_WINDOW.
+# Output is still captured through pipes, so streaming the build log is unaffected.
+if os.name == "nt":
+    _CREATE_NO_WINDOW = 0x08000000
+    _orig_popen_init = subprocess.Popen.__init__
+    def _popen_init_no_window(self, *args, **kwargs):
+        kwargs["creationflags"] = kwargs.get("creationflags", 0) | _CREATE_NO_WINDOW
+        _orig_popen_init(self, *args, **kwargs)
+    subprocess.Popen.__init__ = _popen_init_no_window
+
 if getattr(sys, "frozen", False):
     # Packaged as a one-file .exe — anchor to the folder the .exe lives in,
     # NOT PyInstaller's temporary extraction dir, so we find src/ and web/.
     ROOT = os.path.dirname(sys.executable)
+    # Windowless (--noconsole) builds have no console: sys.stdout/stderr are None,
+    # so any print() would crash the app. Route them to a throwaway sink.
+    if sys.stdout is None:
+        sys.stdout = open(os.devnull, "w")
+    if sys.stderr is None:
+        sys.stderr = open(os.devnull, "w")
 else:
     ROOT = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(ROOT, "src")
@@ -5731,6 +5749,21 @@ class Handler(BaseHTTPRequestHandler):
 
         length = int(self.headers.get("Content-Length", "0"))
         body = self.rfile.read(length)
+
+        if self.path == "/quit":
+            # Clean shutdown from the web UI. The Windows app runs windowless
+            # (no console to close), so this is how the user stops it.
+            self.send_json({"ok": True})
+            try:
+                self.wfile.flush()
+            except Exception:
+                pass
+            import threading
+            def _bye():
+                time.sleep(0.4)
+                os._exit(0)
+            threading.Thread(target=_bye, daemon=True).start()
+            return
 
         if self.path == "/connect":
             try:

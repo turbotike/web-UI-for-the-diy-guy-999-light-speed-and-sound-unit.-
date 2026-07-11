@@ -27,7 +27,9 @@ jobs:
             label: Windows
             binary: RC Sound Configurator.exe
             bundle: RC-Sound-Configurator-Windows
-            pyi_args: ""
+            # --noconsole: no black terminal window; the app runs in the background
+            # and the browser tab is the UI (Quit button stops it).
+            pyi_args: "--noconsole"
           - os: macos-latest        # Apple Silicon runner; universal2 build runs on Intel too
             label: macOS
             binary: RC Sound Configurator

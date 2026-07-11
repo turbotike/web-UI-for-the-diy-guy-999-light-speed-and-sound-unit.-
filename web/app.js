@@ -622,6 +622,19 @@ $("flashBtnTop").onclick = async () => {
     statusEl.textContent = "Couldn't detect the board: " + ((e && e.message) || e); statusEl.className = "status err";
   }
 };
+$("quitBtn").onclick = async () => {
+  if (isDirty() && !confirm("You have unsaved changes. Quit anyway?")) return;
+  try { await fetch("/quit", { method: "POST" }); } catch (_) {}
+  document.title = "Closed";
+  document.body.innerHTML =
+    "<div style='min-height:100vh;display:flex;align-items:center;justify-content:center;" +
+    "flex-direction:column;gap:14px;text-align:center;font-family:system-ui,sans-serif;" +
+    "background:#000;color:#39ff14'>" +
+    "<div style='font-size:42px'>⏻</div>" +
+    "<div style='font-size:22px;font-weight:700'>Configurator closed.</div>" +
+    "<div style='color:#9aa'>You can close this tab. Re-open the app anytime to start again.</div>" +
+    "</div>";
+};
 $("importFile").onchange = (e) => { if (e.target.files[0]) importVehicle(e.target.files[0]); e.target.value = ""; };
 $("wavFile").onchange = (e) => { if (e.target.files[0]) handleWavFile(e.target.files[0]); e.target.value = ""; };
 window.addEventListener("beforeunload", (e) => { if (isDirty()) { e.preventDefault(); e.returnValue = ""; } });

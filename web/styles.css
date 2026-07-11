@@ -91,6 +91,8 @@ button.primary {
   box-shadow: var(--glow-green);
 }
 button.primary:hover:not(:disabled) { box-shadow: 0 0 18px rgba(57,255,20,.9), 0 0 34px rgba(250,255,0,.55); }
+button.quit { background: transparent; border-color: #5a2130; color: #ff6b81; padding: 9px 14px; }
+button.quit:hover:not(:disabled) { border-color: #ff4d6d; box-shadow: 0 0 14px rgba(255,77,109,.6); color: #ff4d6d; }
 
 /* ---- Tabs ---- */
 nav {

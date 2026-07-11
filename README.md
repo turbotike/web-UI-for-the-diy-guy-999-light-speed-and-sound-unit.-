@@ -52,7 +52,7 @@ Any modern web browser works (Chrome, Edge, Firefox, Safari). The first time you
 1. Download **`RC-Sound-Configurator-Windows.zip`** from the **[Releases page](../../releases/latest)**, then **right-click it → Extract All…** ⚠️ **Don't run it from inside the zip** — extract it to a real folder (e.g. your Desktop) first, or the app can't find its files.
 2. Open the **extracted folder** and double-click **`RC Sound Configurator.exe`**.
    - If Windows shows **"Windows protected your PC"** (it isn't code-signed): **More info → Run anyway**.
-3. Your browser opens to **`http://localhost:8080`**.
+3. Your browser opens to **`http://localhost:8080`**. *(No terminal/console window pops up — that's normal; the app runs quietly in the background.)*
 
 > Prefer your own Python? Double-click **`start_webui.bat`** — same app.
 
@@ -68,7 +68,7 @@ python3 configure.py
 ```
 Then open **`http://localhost:8080`**.
 
-> To stop the app, close the little window it opens (or press `Ctrl+C` in it).
+> To stop the app, click **⏻ Quit** in the top-right corner. (On Mac/Linux you can also close its Terminal window.)
 
 ---
 
@@ -113,7 +113,7 @@ Dialed in a truck you love? On **Vehicle Tuning**, click **💾 Save vehicle** t
 | **Board not detected** / not in the port list | Try a different **USB data cable** and a port **directly on the computer** (no hub). Install your board's USB driver (Google your board name + **"CP2102 driver"** or **"CH340 driver"**). |
 | **Upload fails partway** | **Battery disconnected?** Swap the USB cable (a weak cable is the #1 cause), avoid hubs, then retry. |
 | **"Python is not installed"** (Mac/Linux) | Install [Python 3](https://www.python.org/downloads/); on Windows, tick **"Add Python to PATH"** if you use the `.bat`. |
-| **Page won't open** | Make sure the little app window is still running. Re-launch it. |
+| **Page won't open** | Re-launch the app and give it a few seconds. If a page is already open, use **⏻ Quit** first, then start it again. |
 | **Ran from inside the zip** (old built-in page shows) | Close it, **Extract All** first, then run the app from the extracted folder. |
 | **A setting looks broken** | On **Vehicle Tuning**, click **Reset** to restore that profile, then redo your changes. |
 | **Mac: "permission denied"** | Terminal in the folder → `chmod +x "Start RC Sound Configurator.command"`. |
