@@ -1876,6 +1876,44 @@ def find_boot_app0():
     return None
 
 
+def native_serial_ports():
+    """Serial ports via `arduino-cli board list` (no pyserial needed). Used for
+    the reliable native-uploader flash path. Likely-ESP32 USB-serial chips are
+    flagged and sorted first."""
+    cli = find_arduino_cli() or vendored_cli_path()
+    if not cli:
+        return []
+    try:
+        p = subprocess.run(
+            [cli, "board", "list", "--format", "json"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace",
+            shell=(os.name == "nt"), check=False,
+        )
+        data = json.loads(p.stdout or "[]")
+    except Exception:
+        return []
+    entries = data if isinstance(data, list) else data.get("detected_ports", [])
+    esp_vids = ("0X10C4", "0X1A86", "0X0403", "0X303A", "0X067B")  # CP210x, CH34x, FTDI, ESP32-S USB, PL2303
+    out = []
+    for e in entries:
+        port = e.get("port", e) if isinstance(e, dict) else {}
+        if port.get("protocol") != "serial":
+            continue
+        props = port.get("properties") or {}
+        vid = str(props.get("vid") or "").upper()
+        addr = port.get("address")
+        if not addr:
+            continue
+        likely = vid in esp_vids
+        out.append({
+            "address": addr,
+            "label": port.get("label") or addr,
+            "likely": likely,
+        })
+    out.sort(key=lambda x: (not x["likely"], x["address"]))
+    return out
+
+
 def _is_ascii(s):
     try:
         s.encode("ascii")
@@ -5486,6 +5524,11 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "error": str(e)}, 500)
             return
 
+        # --- Serial ports for the native (arduino-cli) flash path ---
+        if self.path == "/native_ports":
+            self.send_json({"ok": True, "ports": native_serial_ports()})
+            return
+
         # --- Compiled firmware images for the browser flasher ---
         if self.path == "/api/firmware":
             manifest, err = build_firmware_manifest()
@@ -6168,8 +6211,12 @@ class Handler(BaseHTTPRequestHandler):
                 # Auto-fix any broken sound sections before building
                 validate_and_fix_vehicle(active)
 
-                if cmd_type == "flash" and not CONNECTED_PORT:
-                    self.send_json({"ok": False, "error": "Board is not connected"}, 400)
+                # Native flash uses arduino-cli --upload to a serial port. The
+                # port comes from the request (native_ports), or the legacy
+                # CONNECTED_PORT global.
+                flash_port = (req.get("port") or "").strip() or CONNECTED_PORT
+                if cmd_type == "flash" and not flash_port:
+                    self.send_json({"ok": False, "error": "No serial port selected. Click Detect board first."}, 400)
                     return
 
                 # Stream output from here
@@ -6222,7 +6269,7 @@ class Handler(BaseHTTPRequestHandler):
                     acli_cmd += ["--library", lib_path]
 
                 if cmd_type == "flash":
-                    acli_cmd += ["--upload", "--port", CONNECTED_PORT]
+                    acli_cmd += ["--upload", "--port", flash_port]
 
                 acli_cmd.append(SRC)  # sketch directory
 

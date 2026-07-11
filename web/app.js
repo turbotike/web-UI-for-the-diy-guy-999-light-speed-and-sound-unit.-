@@ -462,23 +462,34 @@ function wireForgePane() {
 function renderFlashPane() {
   const pane = el("div", "tabpane");
   pane.innerHTML = `
-    <h2 class="pane-title">⚡ Build &amp; Flash</h2>
-    <p class="pane-sub">Compiles the current config and flashes it straight from this browser — no drivers.</p>
+    <h2 class="pane-title">⚡ Flash your board</h2>
     <ol class="steps">
       <li><span class="warn">Disconnect the battery</span> from the controller (GPIO12 must be free).</li>
       <li>Plug the ESP32 into USB with a <em>data</em> cable.</li>
-      <li>Press <strong>Build &amp; Flash</strong> and pick the board's port in the popup.</li>
     </ol>
+
     <div class="card">
+      <div style="font-weight:800;color:var(--yellow)">🔌 Flash via USB cable — recommended</div>
+      <p class="pane-sub" style="margin:2px 0 12px">Uses the built-in native uploader (the same one command-line tools use). Most reliable.</p>
       <div class="row">
+        <button id="detectBtn">🔍 Detect board</button>
+        <select id="nativePort" style="min-width:190px"><option value="">— click Detect board —</option></select>
+        <button id="nativeFlash" class="primary">🔌 Flash via cable</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div style="font-weight:700">🌐 Flash from the browser <span class="pane-sub" style="font-weight:400">— alternative (WebSerial)</span></div>
+      <div class="row" style="margin-top:10px">
         <button id="doFlash" class="primary">⚡ Build &amp; Flash</button>
         <button id="doBuild">Build only</button>
         <div class="spacer"></div>
         <label class="opt"><input type="checkbox" id="erase"> Erase all flash</label>
       </div>
-      <div id="status" class="status">Ready. ${hasWebSerial ? "Connect your board and press Build &amp; Flash." : "⚠ Use Chrome or Edge — this browser can't flash."}</div>
-      <div class="progress"><div id="bar"></div></div>
     </div>
+
+    <div id="status" class="status">Ready. Disconnect the battery, plug in USB, then Detect board.</div>
+    <div class="progress"><div id="bar"></div></div>
     <div class="card"><pre id="log" class="log">Log output appears here…</pre></div>`;
   return pane;
 }
@@ -545,7 +556,11 @@ function wireFlashPane() {
   const log = (t) => { logEl.textContent += t; logEl.scrollTop = logEl.scrollHeight; };
   const setStatus = (t, k = "") => { statusEl.textContent = t; statusEl.className = "status " + k; };
   const setProgress = (p) => { barEl.style.width = Math.max(0, Math.min(100, p)) + "%"; };
-  const busy = (on) => { $("doFlash").disabled = on; $("doBuild").disabled = on; $("saveBtn").disabled = on; };
+  const busy = (on) => {
+    for (const id of ["doFlash", "doBuild", "saveBtn", "detectBtn", "nativeFlash"]) {
+      const b = $(id); if (b) b.disabled = on;
+    }
+  };
 
   async function doBuild() {
     if (isDirty() && !(await save())) return false;
@@ -558,6 +573,41 @@ function wireFlashPane() {
     finally { busy(false); }
   }
   $("doBuild").onclick = doBuild;
+
+  // --- Native flash via USB cable (arduino-cli uploader — the reliable path) ---
+  $("detectBtn").onclick = async () => {
+    const sel = $("nativePort");
+    sel.innerHTML = "<option value=''>Detecting…</option>";
+    try {
+      const j = await (await fetch("/native_ports")).json();
+      sel.innerHTML = "";
+      const ports = (j.ports || []);
+      if (!ports.length) { sel.innerHTML = "<option value=''>No serial ports found — check USB/driver</option>"; setStatus("No board detected. Check the USB cable/driver.", "err"); return; }
+      for (const p of ports) {
+        const o = el("option"); o.value = p.address;
+        o.textContent = p.address + (p.likely ? "  ✅ (board)" : "");
+        sel.appendChild(o);
+      }
+      setStatus("Found " + ports.length + " port(s). Pick your board, then Flash via cable.", "ok");
+    } catch (e) { sel.innerHTML = "<option value=''>Detect failed</option>"; setStatus("Detect failed: " + e.message, "err"); }
+  };
+  $("nativeFlash").onclick = async () => {
+    const port = $("nativePort").value;
+    if (!port) { setStatus("Click Detect board and pick your board first.", "err"); return; }
+    if (isDirty() && !(await save())) return;
+    busy(true); setStatus("Flashing " + port + " via cable — do not unplug…", "work"); setProgress(0);
+    log("\n=== FLASH via cable (" + port + ") ===\n");
+    try {
+      const res = await fetch("/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ cmd: "flash", port, vehicle: "" }) });
+      if (!res.ok) { let m = "HTTP " + res.status; try { const e = await res.json(); if (e.error) m = e.error; } catch (_) {} throw new Error(m); }
+      const reader = res.body.getReader(), dec = new TextDecoder(); let all = "";
+      while (true) { const { value, done } = await reader.read(); if (done) break; const c = dec.decode(value, { stream: true }); all += c; log(c); }
+      if (all.includes("--- DONE (exit 0) ---")) { setProgress(100); setStatus("✓ Flashed! Reconnect the battery.", "ok"); }
+      else { setStatus("Flash failed — see log. (Battery disconnected? Right port? Driver installed?)", "err"); }
+    } catch (err) { log("ERROR: " + ((err && err.message) || err) + "\n"); setStatus("Flash failed: " + ((err && err.message) || err), "err"); }
+    finally { busy(false); }
+  };
+
   $("doFlash").onclick = async () => {
     if (!hasWebSerial) { setStatus("⚠ Use Chrome or Edge to flash over USB.", "err"); return; }
     // Pick the serial port NOW, during the click. The browser only shows the
