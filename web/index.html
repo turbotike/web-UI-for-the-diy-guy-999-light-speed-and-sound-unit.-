@@ -29,10 +29,18 @@
           <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
       </defs>
-      <!-- tall licking tongues behind the text -->
-      <path fill="url(#flame)" opacity=".92" d="M96 40 C86 18 104 20 100 2 C112 16 108 30 116 34 Z M232 40 C222 16 240 18 236 0 C248 14 244 30 252 34 Z M356 42 C346 20 364 22 360 4 C372 18 368 32 376 36 Z"/>
-      <!-- main flame band -->
-      <path filter="url(#fglow)" fill="url(#flame)" d="M34 60 C48 30 56 48 68 16 C82 44 92 30 104 10 C120 42 130 28 144 18 C160 44 170 22 186 8 C204 44 216 30 230 16 C248 44 260 26 274 12 C292 44 304 38 318 20 C336 44 348 22 362 10 C380 42 392 40 414 60 Z"/>
+      <!-- flames: pointed tongues licking up from a base band -->
+      <g fill="url(#flame)" filter="url(#fglow)">
+        <rect x="44" y="52" width="366" height="12" rx="5"/>
+        <path d="M-11,0 C-15,-15 -8,-27 2,-43 C-2,-24 12,-17 11,0 Z" transform="translate(72,60) scale(1.1,1.2)"/>
+        <path d="M-11,0 C-15,-15 -8,-27 2,-43 C-2,-24 12,-17 11,0 Z" transform="translate(112,60) scale(.82,.78)"/>
+        <path d="M-11,0 C-15,-15 -8,-27 2,-43 C-2,-24 12,-17 11,0 Z" transform="translate(156,60) scale(1.12,1.32)"/>
+        <path d="M-11,0 C-15,-15 -8,-27 2,-43 C-2,-24 12,-17 11,0 Z" transform="translate(202,60) scale(.9,.95)"/>
+        <path d="M-11,0 C-15,-15 -8,-27 2,-43 C-2,-24 12,-17 11,0 Z" transform="translate(248,60) scale(1.1,1.18)"/>
+        <path d="M-11,0 C-15,-15 -8,-27 2,-43 C-2,-24 12,-17 11,0 Z" transform="translate(292,60) scale(.82,.76)"/>
+        <path d="M-11,0 C-15,-15 -8,-27 2,-43 C-2,-24 12,-17 11,0 Z" transform="translate(336,60) scale(1.12,1.28)"/>
+        <path d="M-11,0 C-15,-15 -8,-27 2,-43 C-2,-24 12,-17 11,0 Z" transform="translate(382,60) scale(.95,1)"/>
+      </g>
       <!-- wordmark: chrome with dark outline, sitting over the flames -->
       <text x="46" y="46" font-family="'Arial Black',Impact,'Trebuchet MS',sans-serif" font-size="35" font-weight="900" font-style="italic" letter-spacing="-1"
             fill="url(#chrome)" stroke="#5a0000" stroke-width="2.8" paint-order="stroke" stroke-linejoin="round">DIYGuy999</text>
