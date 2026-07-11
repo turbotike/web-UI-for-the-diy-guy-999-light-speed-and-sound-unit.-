@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="web/logo.jpg" alt="TheDIYGuy999 — Light, Sound &amp; Speed Controller" width="680">
+  <img src="web/logo.png" alt="TheDIYGuy999 — Light, Sound &amp; Speed Controller" width="680">
 </p>
 
 <h1 align="center">Light, Sound &amp; Speed Controller — Configurator &amp; Flasher</h1>

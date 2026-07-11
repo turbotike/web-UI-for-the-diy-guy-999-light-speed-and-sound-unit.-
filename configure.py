@@ -10,6 +10,7 @@ import os
 import re
 import subprocess
 import sys
+import threading
 import time
 import urllib.parse
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -46,6 +47,13 @@ PRESETS = os.path.join(ROOT, "presets")
 BACKUPS = os.path.join(ROOT, "backups")
 PORT = 8080
 CONNECTED_PORT = None
+
+# Auto-shutdown watchdog: the open page sends /ping heartbeats. When they stop
+# (browser tab/window closed), the server exits on its own — no orphaned Python
+# process left running that you'd have to kill in Task Manager.
+LAST_PING = 0.0
+CLIENT_SEEN = False
+IDLE_SHUTDOWN_SECS = 10
 
 FILE_LABELS = {
     "0_generalSettings.h": "General Settings",
@@ -5407,6 +5415,14 @@ class Handler(BaseHTTPRequestHandler):
         self.wfile.write(body)
 
     def do_GET(self):
+        if self.path == "/ping":
+            # Heartbeat from the open page — keeps the auto-shutdown watchdog happy.
+            global LAST_PING, CLIENT_SEEN
+            LAST_PING = time.time()
+            CLIENT_SEEN = True
+            self.send_json({"ok": True})
+            return
+
         if self.path.startswith("/download_vehicle"):
             try:
                 parsed = urllib.parse.urlparse(self.path)
@@ -6443,6 +6459,15 @@ def main():
     print("Network: http://%s:%d" % (lan_ip, PORT))
     print("\nOpen either URL in any browser (Windows, Mac, phone, etc.)")
     print("Close this window to stop.\n")
+
+    # Watchdog: once a browser has connected, exit if its heartbeats stop
+    # (tab closed). A refresh only pauses pings briefly, so it survives that.
+    def _idle_watchdog():
+        while True:
+            time.sleep(3)
+            if CLIENT_SEEN and (time.time() - LAST_PING) > IDLE_SHUTDOWN_SECS:
+                os._exit(0)
+    threading.Thread(target=_idle_watchdog, daemon=True).start()
 
     _open_browser(url)
     try:

@@ -639,6 +639,12 @@ $("importFile").onchange = (e) => { if (e.target.files[0]) importVehicle(e.targe
 $("wavFile").onchange = (e) => { if (e.target.files[0]) handleWavFile(e.target.files[0]); e.target.value = ""; };
 window.addEventListener("beforeunload", (e) => { if (isDirty()) { e.preventDefault(); e.returnValue = ""; } });
 
+// Heartbeat: lets the server auto-close itself when this tab goes away, so no
+// stray Python process is left running. A refresh only pauses it for a moment.
+const ping = () => fetch("/ping").catch(() => {});
+ping();
+setInterval(ping, 3000);
+
 (async function init() {
   try { await loadSchema(); renderVehicleSelect(); render(); }
   catch (err) { $("content").innerHTML = `<div class="empty">Failed to load: ${esc(err.message)}<br><br>Is the server running? Try refreshing.</div>`; }
