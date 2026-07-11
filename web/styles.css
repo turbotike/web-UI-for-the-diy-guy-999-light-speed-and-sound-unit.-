@@ -54,13 +54,13 @@ h1, h2, .brand { font-family: "Comic Sans MS", "Trebuchet MS", system-ui, sans-s
 /* ---- Header ---- */
 header {
   display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-  padding: 10px 20px; position: sticky; top: 0; z-index: 10;
+  padding: 4px 20px; position: sticky; top: 0; z-index: 10;
   background: #000; /* matches the logo's black background so it blends seamlessly */
   border-bottom: 2px solid var(--green);
   box-shadow: 0 4px 24px rgba(57,255,20,.30);
 }
 .brand { display: flex; align-items: center; }
-.logo { display: block; height: 78px; width: auto; max-width: 70vw; }
+.logo { display: block; height: 108px; width: auto; max-width: 72vw; }
 .veh { display: flex; align-items: center; gap: 8px; }
 .veh label { color: var(--yellow); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
 .spacer { flex: 1; }

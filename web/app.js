@@ -132,32 +132,25 @@ function vehicleToolbar() {
   const bar = el("div", "toolbar");
   const v = state.schema.currentVehicle;
 
-  const copy = el("button", null, "📋 Copy");
-  copy.title = "Duplicate this profile under a new name";
-  copy.onclick = async () => {
-    const name = prompt("Name for the copy:", v.replace(/\.h$/, "") + "_custom");
-    if (!name) return;
-    try { const j = await post("/export_vehicle", { vehicle: v, newName: name }); toast("Created " + j.newFile, "ok"); await reloadKeepTab(); }
-    catch (e) { toast(e.message, "err"); }
-  };
+  // Save your vehicle to a shareable .h file.
+  const save = el("button", null, "💾 Save vehicle");
+  save.title = "Download this vehicle as a .h file you can share with others";
+  save.onclick = () => { window.location = "/download_vehicle?vehicle=" + encodeURIComponent(v); };
 
-  const reset = el("button", null, "↺ Reset");
-  reset.title = "Restore this profile to its original (from backup)";
+  // Load a vehicle .h file someone shared with you.
+  const load = el("button", null, "📂 Load vehicle");
+  load.title = "Load a vehicle .h file (yours or one someone shared)";
+  load.onclick = () => $("importFile").click();
+
+  const reset = el("button", null, "↺ Reset vehicle");
+  reset.title = "Restore this vehicle to its original factory settings";
   reset.onclick = async () => {
-    if (!confirm("Reset " + v + " to its original factory settings?")) return;
+    if (!confirm("Reset " + v.replace(/\.h$/, "") + " to its original factory settings?")) return;
     try { await post("/reset_vehicle", { vehicle: v }); toast("Reset to factory.", "ok"); await reloadKeepTab(); }
     catch (e) { toast(e.message, "err"); }
   };
 
-  const dl = el("button", null, "⬇ Export .h");
-  dl.title = "Download this profile as a .h file";
-  dl.onclick = () => { window.location = "/download_vehicle?vehicle=" + encodeURIComponent(v); };
-
-  const imp = el("button", null, "⬆ Import .h");
-  imp.title = "Upload a .h profile";
-  imp.onclick = () => $("importFile").click();
-
-  bar.append(copy, reset, dl, imp);
+  bar.append(save, load, reset);
   return bar;
 }
 
@@ -229,7 +222,6 @@ function renderSettingsPane(tab) {
   pane.appendChild(el("p", "pane-sub", esc(tab.file)));
   if (state.schema.vehicleTab && tab.file === state.schema.vehicleTab.file) {
     pane.appendChild(vehicleToolbar());
-    pane.appendChild(presetBar());
   }
   if (!tab.controls.length) { pane.appendChild(el("div", "empty", "No adjustable settings here.")); return pane; }
   for (const c of tab.controls) pane.appendChild(controlRow(tab.file, c));
@@ -605,7 +597,31 @@ function wireFlashPane() {
 // ---------- boot ----------
 $("vehicleSel").onchange = (e) => changeVehicle(e.target.value);
 $("saveBtn").onclick = save;
-$("flashBtnTop").onclick = () => { state.activeTab = FLASH; render(); };
+// The header "Flash" button is one-click: jump to the Flash tab, auto-detect the
+// board, and start flashing it. (Previously it only switched tabs, so clicking the
+// big obvious "Flash" button appeared to do nothing — "stuck", log never moved.)
+$("flashBtnTop").onclick = async () => {
+  state.activeTab = FLASH; render();
+  const sel = $("nativePort"), flashBtn = $("nativeFlash"), statusEl = $("status");
+  if (!sel || !flashBtn || !statusEl) return;
+  statusEl.textContent = "🔍 Looking for your board…"; statusEl.className = "status work";
+  try {
+    const j = await (await fetch("/native_ports")).json();
+    const ports = j.ports || [];
+    sel.innerHTML = "";
+    for (const p of ports) {
+      const o = el("option"); o.value = p.address;
+      o.textContent = p.address + (p.likely ? "  ✅ (board)" : "");
+      sel.appendChild(o);
+    }
+    const pick = ports.find((p) => p.likely) || (ports.length === 1 ? ports[0] : null);
+    if (pick) { sel.value = pick.address; flashBtn.click(); }        // -> resets log + streams
+    else if (ports.length) { statusEl.textContent = "Several ports found — pick your board below, then Flash."; statusEl.className = "status"; }
+    else { statusEl.textContent = "No board found. Plug the ESP32 in with a USB data cable, then click Flash again."; statusEl.className = "status err"; }
+  } catch (e) {
+    statusEl.textContent = "Couldn't detect the board: " + ((e && e.message) || e); statusEl.className = "status err";
+  }
+};
 $("importFile").onchange = (e) => { if (e.target.files[0]) importVehicle(e.target.files[0]); e.target.value = ""; };
 $("wavFile").onchange = (e) => { if (e.target.files[0]) handleWavFile(e.target.files[0]); e.target.value = ""; };
 window.addEventListener("beforeunload", (e) => { if (isDirty()) { e.preventDefault(); e.returnValue = ""; } });
