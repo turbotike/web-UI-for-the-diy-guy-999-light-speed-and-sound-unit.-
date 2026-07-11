@@ -33,7 +33,7 @@
 // #include "vehicles/Scania143.h" // SCANIA 143 V8 - the legend! The best sounding in my opinion
 // #include "vehicles/ScaniaV8Firetruck.h" // SCANIA V8 firetruck, automatic Allison 6 speed transmission with torque converter, "Martinshorn" siren
 // #include "vehicles/VolvoFH16_750.h" // Volvo FH16 750 truck. Inline 6, 750 horses, open pipes!
-// #include "vehicles/VolvoFH16_OpenPipe.h" // Volvo FH truck. Inline 6, open pipes, alternative version
+#include "vehicles/VolvoFH16_OpenPipe.h" // Volvo FH truck. Inline 6, open pipes, alternative version
 // #include "vehicles/ManTgx.h" // MAN TGX 680 V8 truck
 // #include "vehicles/ManKat.h" // MAN KAT V8 Diesel German Bundeswehr military truck
 // #include "vehicles/MagirusDeutz256.h" // Magirus Deutz 256 air cooled V8 Diesel truck
@@ -125,4 +125,5 @@
 
 // Generic Diesels --------
 // #include "vehicles/generic6zylDiesel.h" // Generic inline 6 Diesel, no turbo, manual transmission (optimised for smaller speakers)
-#include "vehicles/CaterpillarD11h_copy.h"
+// #include "vehicles/CaterpillarD11h_copy.h"
+// #include "vehicles/Volvo_EC550ElExcavator.h"

@@ -25,6 +25,8 @@
   --glow-green: 0 0 12px rgba(57,255,20,.7), 0 0 24px rgba(57,255,20,.35);
   --glow-yellow: 0 0 12px rgba(250,255,0,.7), 0 0 24px rgba(250,255,0,.35);
   --glow-pink: 0 0 12px rgba(255,46,151,.75), 0 0 24px rgba(255,46,151,.4);
+  /* bold, aggressive display font (like the logo) — cross-platform (Win + Mac) */
+  --display: "Impact", "Haettenschweiler", "Franklin Gothic Heavy", "Arial Narrow", system-ui, sans-serif;
   --radius: 22px;
 }
 * { box-sizing: border-box; }
@@ -50,7 +52,7 @@ body::before {
   mask-image: linear-gradient(transparent, #000 35%);
 }
 
-h1, h2, .brand { font-family: "Comic Sans MS", "Trebuchet MS", system-ui, sans-serif; }
+h1, h2, .brand { font-family: var(--display); letter-spacing: .5px; }
 
 /* ---- Header ---- */
 header {
@@ -66,7 +68,7 @@ header {
 .logo { display: block; height: 104px; width: auto; max-width: 56vw;
         filter: drop-shadow(0 3px 10px rgba(0,0,0,.55)); }
 .veh { display: flex; align-items: center; gap: 8px; }
-.veh label { color: var(--pink); text-shadow: var(--glow-pink); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+.veh label { font-family: var(--display); color: var(--pink); text-shadow: var(--glow-pink); font-size: 18px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; }
 .spacer { flex: 1; }
 .dirty { color: var(--pink); font-size: 13px; font-weight: 700; text-shadow: var(--glow-pink); }
 .legacy-link { color: var(--muted); font-size: 13px; text-decoration: none; padding: 7px 11px; border-radius: 999px; border: 2px solid transparent; }
@@ -81,8 +83,9 @@ select:focus, input:focus { outline: none; border-color: var(--green); box-shado
 select { max-width: 280px; }
 
 button {
-  border: 0; border-radius: 999px; padding: 11px 20px; font-size: 14px; font-weight: 700;
-  cursor: pointer; color: var(--text); font-family: inherit;
+  border: 0; border-radius: 999px; padding: 11px 20px; font-size: 16px; font-weight: 700;
+  cursor: pointer; color: var(--text); font-family: var(--display);
+  text-transform: uppercase; letter-spacing: 1px;
   background: rgba(28,56,18,.6); border: 2px solid var(--line);
   transition: transform .08s, box-shadow .15s, filter .15s;
 }
@@ -105,6 +108,7 @@ nav {
 nav button.tab {
   background: rgba(18,38,12,.55); border: 2px solid var(--line);
   border-radius: 999px; color: var(--muted); white-space: nowrap; padding: 9px 17px; font-weight: 700;
+  font-family: var(--display); text-transform: uppercase; letter-spacing: 1px; font-size: 16px;
 }
 nav button.tab:hover { color: var(--text); border-color: var(--yellow); box-shadow: var(--glow-yellow); }
 nav button.tab.active {
@@ -116,7 +120,8 @@ nav button.tab.active {
 /* ---- Content ---- */
 main { flex: 1; overflow: auto; padding: 24px; }
 .tabpane { max-width: 940px; margin: 0 auto; }
-.pane-title { font-size: 26px; margin: 0 0 4px; color: var(--pink); text-shadow: var(--glow-pink); }
+.pane-title { font-family: var(--display); font-size: 40px; font-style: italic; text-transform: uppercase;
+  letter-spacing: 1.5px; margin: 0 0 4px; color: var(--pink); text-shadow: var(--glow-pink); }
 .pane-sub { color: var(--muted); margin: 0 0 20px; font-size: 13px; font-style: italic; }
 
 .ctrl {
@@ -127,7 +132,7 @@ main { flex: 1; overflow: auto; padding: 24px; }
 }
 .ctrl:hover { border-color: var(--green); box-shadow: 0 0 16px rgba(57,255,20,.28); transform: translateY(-1px); }
 .ctrl .meta { min-width: 0; }
-.ctrl .name { font-weight: 700; color: var(--green2); }
+.ctrl .name { font-family: var(--display); text-transform: uppercase; letter-spacing: .8px; font-size: 17px; color: var(--pink); text-shadow: 0 0 8px rgba(255,46,151,.35); }
 .ctrl .desc { color: var(--muted); font-size: 12.5px; }
 .ctrl .input { display: flex; align-items: center; gap: 14px; justify-self: end; }
 .ctrl .val {
@@ -212,7 +217,7 @@ label.opt { color: var(--muted); display: flex; align-items: center; gap: 8px; f
 
 /* sound forge */
 .sound-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
-.sound-cat { margin: 0 0 8px; color: var(--pink); text-shadow: var(--glow-pink); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; font-size: 13px; }
+.sound-cat { font-family: var(--display); margin: 0 0 8px; color: var(--pink); text-shadow: var(--glow-pink); font-weight: 800; text-transform: uppercase; letter-spacing: 1px; font-size: 17px; }
 .sound-item {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 10px 12px; border: 2px solid var(--line); border-radius: 16px; background: var(--panel); font-size: 13px;
