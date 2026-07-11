@@ -3,13 +3,38 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>DIYGuy999 Sound &amp; Light — Configurator</title>
+<title>The DIYGuy999 · Light · Sound · Speed Controller</title>
 <link rel="icon" href="data:,">
 <link rel="stylesheet" href="/web/styles.css">
 </head>
 <body>
 <header>
-  <div class="brand">🚜 Sound &amp; Light Configurator</div>
+  <div class="brand">
+    <svg class="logo" viewBox="0 0 388 56" role="img" aria-label="The DIYGuy999 Light Sound and Speed Controller">
+      <defs>
+        <linearGradient id="lgGreen" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#b6ff7a"/><stop offset="1" stop-color="#22e000"/>
+        </linearGradient>
+        <linearGradient id="lgYellow" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#fffb8a"/><stop offset="1" stop-color="#ffcf00"/>
+        </linearGradient>
+        <filter id="lglow" x="-30%" y="-50%" width="160%" height="200%">
+          <feGaussianBlur stdDeviation="1.5" result="b"/>
+          <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <!-- bolt emblem -->
+      <g filter="url(#lglow)">
+        <rect x="3" y="7" width="44" height="44" rx="13" fill="rgba(10,22,8,.55)" stroke="#39ff14" stroke-width="2.5"/>
+        <path d="M27 12 L15 31 h7 l-4 14 18-21 h-7 l4-12 z" fill="url(#lgYellow)" stroke="#39ff14" stroke-width="1"/>
+      </g>
+      <!-- wordmark -->
+      <g filter="url(#lglow)" font-family="'Comic Sans MS','Trebuchet MS',system-ui,sans-serif" font-weight="800" font-style="italic">
+        <text x="59" y="33" font-size="28" fill="url(#lgGreen)">DIY<tspan fill="url(#lgYellow)">Guy</tspan>999</text>
+      </g>
+      <text x="61" y="49" font-family="'Trebuchet MS',system-ui,sans-serif" font-size="9.3" letter-spacing="1.9" font-weight="700" fill="#faff00">LIGHT &#183; SOUND &#183; SPEED CONTROLLER</text>
+    </svg>
+  </div>
   <div class="veh">
     <label for="vehicleSel">Vehicle</label>
     <select id="vehicleSel"><option>Loading…</option></select>

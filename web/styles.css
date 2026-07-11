@@ -59,10 +59,8 @@ header {
   border-bottom: 2px solid var(--green);
   box-shadow: 0 4px 24px rgba(57,255,20,.30);
 }
-.brand {
-  font-size: 21px; font-weight: 700; white-space: nowrap;
-  color: var(--green); text-shadow: var(--glow-green); letter-spacing: .5px;
-}
+.brand { display: flex; align-items: center; }
+.logo { display: block; height: 46px; width: auto; max-width: 58vw; }
 .veh { display: flex; align-items: center; gap: 8px; }
 .veh label { color: var(--yellow); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
 .spacer { flex: 1; }
