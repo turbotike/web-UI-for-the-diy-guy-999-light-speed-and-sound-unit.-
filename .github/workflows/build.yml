@@ -29,7 +29,8 @@ jobs:
             bundle: RC-Sound-Configurator-Windows
             # --noconsole: no black terminal window; the app runs in the background
             # and the browser tab is the UI (Quit button stops it).
-            pyi_args: "--noconsole"
+            # --icon: use the TheDIYGuy999 logo as the .exe icon.
+            pyi_args: "--noconsole --icon web/icon.ico"
           - os: macos-latest        # Apple Silicon runner; universal2 build runs on Intel too
             label: macOS
             binary: RC Sound Configurator
