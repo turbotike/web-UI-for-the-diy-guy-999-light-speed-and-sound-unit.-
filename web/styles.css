@@ -55,15 +55,15 @@ h1, h2, .brand { font-family: "Comic Sans MS", "Trebuchet MS", system-ui, sans-s
 /* ---- Header ---- */
 header {
   display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-  padding: 8px 20px 10px; position: sticky; top: 0; z-index: 10;
+  padding: 6px 20px; position: sticky; top: 0; z-index: 10;
   /* dark green-black so the now-transparent logo blends into the app (no black box) */
   background: linear-gradient(180deg, #0a1206, #060d04);
   border-bottom: 2px solid var(--green);
   box-shadow: 0 4px 24px rgba(57,255,20,.30);
 }
-/* logo spans the full width of the header on its own row; controls sit below it */
-.brand { display: flex; align-items: center; justify-content: center; flex: 1 1 100%; }
-.logo { display: block; width: min(900px, 94vw); height: auto; max-width: 100%;
+/* logo sits inline in the header bar and fills it vertically */
+.brand { display: flex; align-items: center; }
+.logo { display: block; height: 104px; width: auto; max-width: 56vw;
         filter: drop-shadow(0 3px 10px rgba(0,0,0,.55)); }
 .veh { display: flex; align-items: center; gap: 8px; }
 .veh label { color: var(--pink); text-shadow: var(--glow-pink); font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
