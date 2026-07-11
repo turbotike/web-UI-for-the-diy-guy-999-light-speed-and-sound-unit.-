@@ -6260,12 +6260,21 @@ class Handler(BaseHTTPRequestHandler):
                 fqbn = "esp32:esp32:esp32:PartitionScheme=huge_app"
                 build_path = build_dir()  # ASCII-safe (handles Japanese/non-ASCII app paths)
 
-                # Base compile command
+                # Base compile command.
+                # NOTE: the TFT_eSPI config flags go through compiler.{c,cpp}.extra_flags,
+                # NOT build.extra_flags. On esp32 core 2.0.x, build.extra_flags is where the
+                # core's own "-DESP32" (and CORE_DEBUG_LEVEL, USB defines, ...) live — so
+                # overwriting it strips -DESP32, and libraries like FastLED then fail to
+                # detect the platform ("This platform isn't recognized by FastLED... yet").
+                # The compiler.*.extra_flags slots are empty by default and are appended
+                # after the core flags, so our defines add on top without clobbering -DESP32.
+                tft_flags = get_build_flags()
                 acli_cmd = [
                     cli, "compile",
                     "--fqbn", fqbn,
                     "--build-path", build_path,
-                    "--build-property", "build.extra_flags=" + get_build_flags(),
+                    "--build-property", "compiler.c.extra_flags=" + tft_flags,
+                    "--build-property", "compiler.cpp.extra_flags=" + tft_flags,
                 ]
 
                 # Add library paths
