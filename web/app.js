@@ -476,10 +476,10 @@ function renderFlashPane() {
         <div class="spacer"></div>
         <label class="opt">Speed
           <select id="baud">
-            <option value="921600">921600 (fast)</option>
-            <option value="460800">460800</option>
+            <option value="460800" selected>460800 (recommended)</option>
+            <option value="921600">921600 (fastest)</option>
             <option value="230400">230400</option>
-            <option value="115200">115200 (safe)</option>
+            <option value="115200">115200 (most compatible)</option>
           </select>
         </label>
         <label class="opt"><input type="checkbox" id="erase"> Erase all flash</label>

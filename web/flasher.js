@@ -72,60 +72,71 @@ export async function flashFirmware({
     write: (d) => onLog(d),
   };
 
-  let transport;
-  try {
-    onStatus("Loading firmware images…", "work");
-    const fileArray = await fetchFirmwareImages();
-    const totalBytes = fileArray.reduce((n, f) => n + f.data.length, 0);
-    onLog(`Firmware: ${fileArray.length} images, ${(totalBytes / 1024).toFixed(0)} KB total.\n`);
+  onStatus("Loading firmware images…", "work");
+  const fileArray = await fetchFirmwareImages();
+  const totalBytes = fileArray.reduce((n, f) => n + f.data.length, 0);
+  onLog(`Firmware: ${fileArray.length} images, ${(totalBytes / 1024).toFixed(0)} KB total.\n`);
 
-    if (!port) {
-      // Fallback (e.g. standalone page) — may fail after a long build due to
-      // the browser's user-gesture rule; the SPA passes `port` from the click.
-      onStatus("Select your board's serial port in the prompt…", "work");
-      port = await navigator.serial.requestPort();
-    }
-    transport = new Transport(port, true);
-
-    const loader = new ESPLoader({
-      transport,
-      baudrate: parseInt(baud, 10) || 921600,
-      romBaudrate: 115200,
-      terminal: espTerminal,
-    });
-
-    onStatus("Connecting to ESP32…", "work");
-    const chip = await loader.main();
-    onLog("Detected: " + chip + "\n");
-
-    onStatus("Flashing… do not unplug the board.", "work");
-    onProgress(0);
-    await loader.writeFlash({
-      fileArray,
-      flashSize: "keep",
-      flashMode: "keep",
-      flashFreq: "keep",
-      eraseAll: !!eraseAll,
-      compress: true,
-      reportProgress: (idx, written) => {
-        let done = 0;
-        for (let i = 0; i < idx; i++) done += fileArray[i].data.length;
-        done += written;
-        onProgress((done / totalBytes) * 100);
-      },
-    });
-    onProgress(100);
-
-    onStatus("Resetting board…", "work");
-    try { await loader.hardReset(); }
-    catch (_) {
-      try { await transport.setRTS(true); await sleep(120); await transport.setRTS(false); } catch (_e) {}
-    }
-    onStatus("✓ Done! Firmware flashed. Reconnect the battery.", "ok");
-    onLog("\n=== FLASH COMPLETE ===\n");
-  } finally {
-    try { if (transport) await transport.disconnect(); } catch (_) {}
+  if (!port) {
+    // Fallback (e.g. standalone page) — may fail after a long build due to
+    // the browser's user-gesture rule; the SPA passes `port` from the click.
+    onStatus("Select your board's serial port in the prompt…", "work");
+    port = await navigator.serial.requestPort();
   }
+
+  // Try the chosen speed, then progressively slower ones. Many USB-serial chips
+  // (notably CP2102) throw "Invalid head of packet" at 921600 but flash fine at
+  // a lower baud — so we retry automatically instead of failing.
+  const chosen = parseInt(baud, 10) || 460800;
+  const bauds = [chosen, ...[460800, 230400, 115200].filter((b) => b < chosen)];
+  const isSpeedError = (e) =>
+    /invalid head|packet|Timed out|Failed to connect|corruption|not in flashing/i.test(String((e && e.message) || e));
+
+  let lastErr;
+  for (let i = 0; i < bauds.length; i++) {
+    const b = bauds[i];
+    let transport;
+    try {
+      if (i > 0) { onLog(`\n--- retrying at a lower speed (${b} baud) ---\n`); await sleep(400); }
+      transport = new Transport(port, true);
+      const loader = new ESPLoader({ transport, baudrate: b, romBaudrate: 115200, terminal: espTerminal });
+
+      onStatus(`Connecting to ESP32 (${b} baud)…`, "work");
+      const chip = await loader.main();
+      onLog("Detected: " + chip + "\n");
+
+      onStatus("Flashing… do not unplug the board.", "work");
+      onProgress(0);
+      await loader.writeFlash({
+        fileArray,
+        flashSize: "keep", flashMode: "keep", flashFreq: "keep",
+        eraseAll: !!eraseAll, compress: true,
+        reportProgress: (idx, written) => {
+          let done = 0;
+          for (let j = 0; j < idx; j++) done += fileArray[j].data.length;
+          done += written;
+          onProgress((done / totalBytes) * 100);
+        },
+      });
+      onProgress(100);
+
+      onStatus("Resetting board…", "work");
+      try { await loader.hardReset(); }
+      catch (_) { try { await transport.setRTS(true); await sleep(120); await transport.setRTS(false); } catch (_e) {} }
+      try { await transport.disconnect(); } catch (_) {}
+
+      onStatus("✓ Done! Firmware flashed. Reconnect the battery.", "ok");
+      onLog("\n=== FLASH COMPLETE ===\n");
+      return; // success
+    } catch (e) {
+      lastErr = e;
+      try { if (transport) await transport.disconnect(); } catch (_) {}
+      const canRetry = i < bauds.length - 1 && isSpeedError(e);
+      onLog(`Attempt at ${b} baud failed: ${(e && e.message) || e}\n`);
+      if (!canRetry) throw e;
+    }
+  }
+  throw lastErr;
 }
 
 // Map a raw flash error to a friendly hint.
