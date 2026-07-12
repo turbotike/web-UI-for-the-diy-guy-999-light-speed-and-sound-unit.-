@@ -48,10 +48,10 @@ const uint8_t SERVO_FREQUENCY = 50; // usually 50Hz, some servos may run smoothe
 // WARNING: never connect receiver PWM signals to the "CH" pins in BUS communication mode!
 
 // Servo limits
-uint16_t CH1L = 1411, CH1C = 2142, CH1R = 2958; // CH1 steering left, center, right
-uint16_t CH2L = 1411, CH2C = 2142, CH2R = 2958; // CH2 transmission gear 1, 2, 3
-uint16_t CH3L = 1411, CH3C = 2142, CH3R = 2958; // CH3 Beacons (modes are switched, if position changes from 1000 to 2000us)
-uint16_t CH4L = 1836, CH4R = 2448;              // CH4 trailer coupler (5th. wheel) locked, unlocked
+uint16_t CH1L = 1000, CH1C = 1500, CH1R = 2000; // CH1 steering left, center, right
+uint16_t CH2L = 1000, CH2C = 1500, CH2R = 2000; // CH2 transmission gear 1, 2, 3
+uint16_t CH3L = 1000, CH3C = 1500, CH3R = 2000; // CH3 Beacons (modes are switched, if position changes from 1000 to 2000us)
+uint16_t CH4L = 1350, CH4R = 1650;              // CH4 trailer coupler (5th. wheel) locked, unlocked
 
 // Servo ramp time
 uint16_t STEERING_RAMP_TIME = 0; // 0 = fastest speed, enlarge it to around 3000 for "scale" servo movements
@@ -67,10 +67,10 @@ const uint8_t SERVO_FREQUENCY = 50; // usually 50Hz, some servos may run smoothe
 // WARNING: never connect receiver PWM signals to the "CH" pins in BUS communication mode!
 
 // Servo limits
-uint16_t CH1L = 1411, CH1C = 2142, CH1R = 2958; // CH1 steering left 1880, center 1480, right 1080
-uint16_t CH2L = 1411, CH2C = 2142, CH2R = 2958;  // CH2 transmission gear 1 978, 2 1833, 3 1833
-uint16_t CH3L = 1411, CH3C = 2142, CH3R = 2958; // CH3 winch pull, off, release
-uint16_t CH4L = 1836, CH4R = 2448;              // CH4 trailer coupler (5th. wheel) locked, unlocked
+uint16_t CH1L = 1840, CH1C = 1485, CH1R = 1090; // CH1 steering left 1880, center 1480, right 1080
+uint16_t CH2L = 978, CH2C = 1833, CH2R = 1833;  // CH2 transmission gear 1 978, 2 1833, 3 1833
+uint16_t CH3L = 1300, CH3C = 1450, CH3R = 1600; // CH3 winch pull, off, release
+uint16_t CH4L = 1300, CH4R = 1700;              // CH4 trailer coupler (5th. wheel) locked, unlocked
 
 // Servo ramp time
 uint16_t STEERING_RAMP_TIME = 0; // 0 = fastest speed, enlarge it to around 3000 for "scale" servo movements
@@ -89,10 +89,10 @@ const uint8_t SERVO_FREQUENCY = 50; // usually 50Hz, some servos may run smoothe
 // WARNING: never connect receiver PWM signals to the "CH" pins in BUS communication mode!
 
 // Servo limits
-uint16_t CH1L = 1411, CH1C = 2142, CH1R = 2958;  // CH1 steering left 900, center 1600, right 2200
-uint16_t CH2L = 1411, CH2C = 2142, CH2R = 2958; // CH2 transmission gear 1 1900, 2 1000, 3 1000
-uint16_t CH3L = 1411, CH3C = 2142, CH3R = 2958; // CH3 winch pull, off, release
-uint16_t CH4L = 1836, CH4R = 2448;              // CH4 trailer coupler (5th. wheel) locked, unlocked
+uint16_t CH1L = 900, CH1C = 1600, CH1R = 2200;  // CH1 steering left 900, center 1600, right 2200
+uint16_t CH2L = 1900, CH2C = 1000, CH2R = 1000; // CH2 transmission gear 1 1900, 2 1000, 3 1000
+uint16_t CH3L = 2000, CH3C = 1500, CH3R = 1000; // CH3 winch pull, off, release
+uint16_t CH4L = 1300, CH4R = 1700;              // CH4 trailer coupler (5th. wheel) locked, unlocked
 
 // Servo ramp time
 uint16_t STEERING_RAMP_TIME = 0; // 0 = fastest speed, enlarge it to around 3000 for "scale" servo movements
@@ -108,10 +108,10 @@ const uint8_t SERVO_FREQUENCY = 50; // usually 50Hz, some servos may run smoothe
 // WARNING: never connect receiver PWM signals to the "CH" pins in BUS communication mode!
 
 // Servo limits
-uint16_t CH1L = 1411, CH1C = 2142, CH1R = 2958; // CH1 steering left 1990, center 1640, right 1090
-uint16_t CH2L = 1411, CH2C = 2142, CH2R = 2958;  // CH2 transmission gear 1 978, 2 1800, 3 1800
-uint16_t CH3L = 1411, CH3C = 2142, CH3R = 2958; // CH3 winch pull, off, release
-uint16_t CH4L = 1836, CH4R = 2448;              // CH4 trailer coupler (5th. wheel) locked, unlocked
+uint16_t CH1L = 1940, CH1C = 1600, CH1R = 1140; // CH1 steering left 1990, center 1640, right 1090
+uint16_t CH2L = 670, CH2C = 1800, CH2R = 1800;  // CH2 transmission gear 1 978, 2 1800, 3 1800
+uint16_t CH3L = 1300, CH3C = 1450, CH3R = 1600; // CH3 winch pull, off, release
+uint16_t CH4L = 1300, CH4R = 1700;              // CH4 trailer coupler (5th. wheel) locked, unlocked
 
 // Servo ramp time
 uint16_t STEERING_RAMP_TIME = 0; // 0 = fastest speed, enlarge it to around 3000 for "scale" servo movements
@@ -127,10 +127,10 @@ const uint8_t SERVO_FREQUENCY = 50; // usually 50Hz, some servos may run smoothe
 // WARNING: never connect receiver PWM signals to the "CH" pins in BUS communication mode!
 
 // Servo limits
-uint16_t CH1L = 1411, CH1C = 2142, CH1R = 2958; // CH1 steering left 1990, center 1640, right 1090
-uint16_t CH2L = 1411, CH2C = 2142, CH2R = 2958;  // CH2 transmission gear 1 978, 2 1800, 3 1800
-uint16_t CH3L = 1411, CH3C = 2142, CH3R = 2958; // CH3 winch pull, off, release
-uint16_t CH4L = 1836, CH4R = 2448;              // CH4 trailer coupler (5th. wheel) locked, unlocked
+uint16_t CH1L = 1990, CH1C = 1640, CH1R = 1090; // CH1 steering left 1990, center 1640, right 1090
+uint16_t CH2L = 670, CH2C = 1800, CH2R = 1800;  // CH2 transmission gear 1 978, 2 1800, 3 1800
+uint16_t CH3L = 1300, CH3C = 1450, CH3R = 1600; // CH3 winch pull, off, release
+uint16_t CH4L = 1300, CH4R = 1700;              // CH4 trailer coupler (5th. wheel) locked, unlocked
 
 // Servo ramp time
 uint16_t STEERING_RAMP_TIME = 0; // 0 = fastest speed, enlarge it to around 3000 for "scale" servo movements
@@ -149,10 +149,10 @@ const uint8_t SERVO_FREQUENCY = 50; // usually 50Hz, some servos may run smoothe
 // WARNING: never connect receiver PWM signals to the "CH" pins in BUS communication mode!
 
 // Servo limits
-uint16_t CH1L = 1411, CH1C = 2142, CH1R = 2958; // CH1 steering left 2000, center 1660, right 1190
-uint16_t CH2L = 1411, CH2C = 2142, CH2R = 2958; // CH2 transmission gear 1, 2, 3
-uint16_t CH3L = 1411, CH3C = 2142, CH3R = 2958; // CH3 winch pull, off, release
-uint16_t CH4L = 1836, CH4R = 2448;              // CH4 trailer coupler (5th. wheel) locked, unlocked
+uint16_t CH1L = 2100, CH1C = 1660, CH1R = 1190; // CH1 steering left 2000, center 1660, right 1190
+uint16_t CH2L = 1000, CH2C = 1500, CH2R = 2000; // CH2 transmission gear 1, 2, 3
+uint16_t CH3L = 1435, CH3C = 1495, CH3R = 1560; // CH3 winch pull, off, release
+uint16_t CH4L = 1300, CH4R = 1700;              // CH4 trailer coupler (5th. wheel) locked, unlocked
 
 // Servo ramp time
 uint16_t STEERING_RAMP_TIME = 0; // 0 = fastest speed, enlarge it to around 3000 for "scale" servo movements
@@ -171,10 +171,10 @@ const uint8_t SERVO_FREQUENCY = 50; // usually 50Hz, some servos may run smoothe
 // WARNING: never connect receiver PWM signals to the "CH" pins in BUS communication mode!
 
 // Servo limits
-uint16_t CH1L = 1411, CH1C = 2142, CH1R = 2958; // CH1 steering left, center, right
-uint16_t CH2L = 1411, CH2C = 2142, CH2R = 2958; // CH2 transmission gear 1, 2, 3
-uint16_t CH3L = 1411, CH3C = 2142, CH3R = 2958; // CH3 Beacons (modes are switched, if position changes from 1000 to 2000us)
-uint16_t CH4L = 1836, CH4R = 2448;              // CH4 trailer coupler (5th. wheel) locked, unlocked
+uint16_t CH1L = 1000, CH1C = 1500, CH1R = 2000; // CH1 steering left, center, right
+uint16_t CH2L = 1000, CH2C = 1500, CH2R = 2000; // CH2 transmission gear 1, 2, 3
+uint16_t CH3L = 1000, CH3C = 1500, CH3R = 2000; // CH3 Beacons (modes are switched, if position changes from 1000 to 2000us)
+uint16_t CH4L = 1350, CH4R = 1650;              // CH4 trailer coupler (5th. wheel) locked, unlocked
 
 // Servo ramp time
 uint16_t STEERING_RAMP_TIME = 0; // 0 = fastest speed, enlarge it to around 3000 for "scale" servo movements
@@ -193,13 +193,13 @@ const uint8_t SERVO_FREQUENCY = 50; // usually 50Hz, some servos may run smoothe
 // WARNING: never connect receiver PWM signals to the "CH" pins in BUS communication mode!
 
 // Servo limits
-uint16_t CH1L = 1411, CH1C = 2142, CH1R = 2958; // CH1 steering left, center, right
-uint16_t CH2L = 1411, CH2C = 2142, CH2R = 2958; // CH2 transmission gear 1, 2, 3
-uint16_t CH3L = 1411, CH3C = 2142, CH3R = 2958; // CH3 Beacons (modes are switched, if position changes from 1000 to 2000us)
-uint16_t CH4L = 1836, CH4R = 2448;              // CH4 trailer coupler (5th. wheel) locked, unlocked
+uint16_t CH1L = 1000, CH1C = 1500, CH1R = 2000; // CH1 steering left, center, right
+uint16_t CH2L = 1000, CH2C = 1500, CH2R = 2000; // CH2 transmission gear 1, 2, 3
+uint16_t CH3L = 1000, CH3C = 1500, CH3R = 2000; // CH3 Beacons (modes are switched, if position changes from 1000 to 2000us)
+uint16_t CH4L = 1500, CH4R = 1100;              // CH4 trailer coupler (5th. wheel) locked, unlocked
 
 // Servo ramp time
-uint16_t STEERING_RAMP_TIME = 0; // 0 = fastest speed, enlarge it to around 3000 for "scale" servo movements
+uint16_t STEERING_RAMP_TIME = 1000; // 0 = fastest speed, enlarge it to around 3000 for "scale" servo movements
 
 #endif
 
@@ -212,10 +212,10 @@ const uint8_t SERVO_FREQUENCY = 50; // usually 50Hz, some servos may run smoothe
 // WARNING: never connect receiver PWM signals to the "CH" pins in BUS communication mode!
 
 // Servo limits
-uint16_t CH1L = 1411, CH1C = 2142, CH1R = 2958; // CH1 steering left, center, right
-uint16_t CH2L = 1411, CH2C = 2142, CH2R = 2958; // CH2 transmission gear 1, 2, 3
-uint16_t CH3L = 1411, CH3C = 2142, CH3R = 2958; // CH3 Beacons (modes are switched, if position changes from 1000 to 2000us)
-uint16_t CH4L = 1836, CH4R = 2448;              // CH4 trailer coupler (5th. wheel) locked, unlocked
+uint16_t CH1L = 1850, CH1C = 1500, CH1R = 1120; // CH1 steering left, center, right
+uint16_t CH2L = 1000, CH2C = 1500, CH2R = 2000; // CH2 transmission gear 1, 2, 3
+uint16_t CH3L = 1000, CH3C = 1500, CH3R = 2000; // CH3 Beacons (modes are switched, if position changes from 1000 to 2000us)
+uint16_t CH4L = 1300, CH4R = 1700;              // CH4 trailer coupler (5th. wheel) locked, unlocked
 
 // Servo ramp time
 uint16_t STEERING_RAMP_TIME = 0; // 0 = fastest speed, enlarge it to around 3000 for "scale" servo movements
@@ -231,13 +231,13 @@ const uint8_t SERVO_FREQUENCY = 50; // usually 50Hz, some servos may run smoothe
 // WARNING: never connect receiver PWM signals to the "CH" pins in BUS communication mode!
 
 // Servo limits
-uint16_t CH1L = 1411, CH1C = 2142, CH1R = 2958; // CH1 steering left, center, right
-uint16_t CH2L = 1411, CH2C = 2142, CH2R = 2958; // CH2 transmission gear 1, 2, 3
-uint16_t CH3L = 1411, CH3C = 2142, CH3R = 2958; // CH3 Beacons (modes are switched, if position changes from 1000 to 2000us)
-uint16_t CH4L = 1836, CH4R = 2448;              // CH4 trailer coupler (5th. wheel) locked, unlocked
+uint16_t CH1L = 1000, CH1C = 1500, CH1R = 2000; // CH1 steering left, center, right
+uint16_t CH2L = 1000, CH2C = 1500, CH2R = 2000; // CH2 transmission gear 1, 2, 3
+uint16_t CH3L = 1000, CH3C = 1500, CH3R = 2000; // CH3 Beacons (modes are switched, if position changes from 1000 to 2000us)
+uint16_t CH4L = 1300, CH4R = 1700;              // CH4 trailer coupler (5th. wheel) locked, unlocked
 
 // Servo ramp time
-uint16_t STEERING_RAMP_TIME = 0; // 0 = fastest speed, enlarge it to around 3000 for "scale" servo movements
+uint16_t STEERING_RAMP_TIME = 6000; // 0 = fastest speed, enlarge it to around 3000 for "scale" servo movements
 
 #endif
 
@@ -254,10 +254,10 @@ const uint8_t SERVO_FREQUENCY = 50; // usually 50Hz, some servos may run smoothe
 // WARNING: never connect receiver PWM signals to the "CH" pins in BUS communication mode!
 
 // Servo limits
-uint16_t CH1L = 1411, CH1C = 2142, CH1R = 2958; // CH1 steering left 1620, center 1460, right 1300
-uint16_t CH2L = 1411, CH2C = 2142, CH2R = 2958; // CH2 transmission gear 1, 2, 3
-uint16_t CH3L = 1411, CH3C = 2142, CH3R = 2958; // CH3 winch pull, off, release
-uint16_t CH4L = 1836, CH4R = 2448;              // CH4 trailer coupler (5th. wheel) locked, unlocked
+uint16_t CH1L = 1620, CH1C = 1480, CH1R = 1300; // CH1 steering left 1620, center 1460, right 1300
+uint16_t CH2L = 1000, CH2C = 1500, CH2R = 2000; // CH2 transmission gear 1, 2, 3
+uint16_t CH3L = 2000, CH3C = 1500, CH3R = 1000; // CH3 winch pull, off, release
+uint16_t CH4L = 1300, CH4R = 1700;              // CH4 trailer coupler (5th. wheel) locked, unlocked
 
 // Servo ramp time
 uint16_t STEERING_RAMP_TIME = 0; // 0 = fastest speed, enlarge it to around 3000 for "scale" servo movements
@@ -277,10 +277,10 @@ const uint8_t SERVO_FREQUENCY = 50; // usually 50Hz, some servos may run smoothe
 // WARNING: never connect receiver PWM signals to the "CH" pins in BUS communication mode!
 
 // Servo limits
-uint16_t CH1L = 1411, CH1C = 2142, CH1R = 2958; // CH1 bucket ESC
-uint16_t CH2L = 1411, CH2C = 2142, CH2R = 2958; // CH2 dipper ESC
-uint16_t CH3L = 1411, CH3C = 2142, CH3R = 2958; // CH3 boom ESC
-uint16_t CH4L = 1836, CH4C = 2142, CH4R = 2448; // CH4 swing ESC
+uint16_t CH1L = 1000, CH1C = 1500, CH1R = 2000; // CH1 bucket ESC
+uint16_t CH2L = 1000, CH2C = 1500, CH2R = 2000; // CH2 dipper ESC
+uint16_t CH3L = 1000, CH3C = 1500, CH3R = 2000; // CH3 boom ESC
+uint16_t CH4L = 1000, CH4C = 1500, CH4R = 2000; // CH4 swing ESC
 
 // Servo ramp times
 uint16_t CH1_RAMP_TIME = 0; // 0 = fastest speed, enlarge it to around 3000 for "scale" servo movements
@@ -296,7 +296,7 @@ uint16_t CH4_RAMP_TIME = 2000;
 #define PINGON_MODE // Wheel lift for Pingon excavators
 
 boolean boomDownwardsHydraulic = true; // hydraulic load sound as well for boom downwards
-boolean reverseBoomSoundDirection = false; // reverse sound direction, if needed (for example if hoses can't be swapped)
+boolean reverseBoomSoundDirection = true; // reverse sound direction, if needed (for example if hoses can't be swapped)
 
 // Servo frequency
 const uint8_t SERVO_FREQUENCY = 50; // usually 50Hz, some servos may run smoother @ 100Hz
@@ -304,23 +304,23 @@ const uint8_t SERVO_FREQUENCY = 50; // usually 50Hz, some servos may run smoothe
 // WARNING: never connect receiver PWM signals to the "CH" pins in BUS communication mode!
 
 // Valve servo limits
-uint16_t CH1L = 1411, CH1C = 2142, CH1R = 2958; // CH1 bucket valve
-uint16_t CH2L = 1411, CH2C = 2142, CH2R = 2958; // CH2 dipper valve
-uint16_t CH3L = 1411, CH3C = 2142, CH3R = 2958; // CH3 boom valve
+uint16_t CH1L = 1100, CH1C = 1500, CH1R = 2000; // CH1 bucket valve
+uint16_t CH2L = 1040, CH2C = 1500, CH2R = 2040; // CH2 dipper valve
+uint16_t CH3L = 960, CH3C = 1500, CH3R = 2060; // CH3 boom valve
 
 // Swing ESC limits
-uint16_t CH4L = 1836, CH4C = 2142, CH4R = 2448; // CH4 swing ESC 1375, 1625 (1250, 1500, 1750 for Pingon)
+uint16_t CH4L = 1250, CH4C = 1500, CH4R = 1750; // CH4 swing ESC 1375, 1625 (1250, 1500, 1750 for Pingon)
 
 // Hydraulic pump limits
-uint16_t ESC_L = 1411, ESC_C = 2142, ESC_R = 2958; // ESC output for oil pump (always 1000, 1500, 2000)
-uint16_t ESC_MIN = 2142; // Pump off
-uint16_t ESC_MAX = 2652; // Pump max. RPM (1800 for Pingon)
+uint16_t ESC_L = 1000, ESC_C = 1500, ESC_R = 2000; // ESC output for oil pump (always 1000, 1500, 2000)
+uint16_t ESC_MIN = 1500; // Pump off
+uint16_t ESC_MAX = 1800; // Pump max. RPM (1800 for Pingon)
 
 // Servo ramp times
 uint16_t CH1_RAMP_TIME = 0; // always 0 for now
-uint16_t CH2_RAMP_TIME = 100; // always 0 for now
-uint16_t CH3_RAMP_TIME = 1000; // always 0 for now
-uint16_t CH4_RAMP_TIME = 2000; // 2000 for swing motor protection (2500 for Pingon)
+uint16_t CH2_RAMP_TIME = 0; // always 0 for now
+uint16_t CH3_RAMP_TIME = 0; // always 0 for now
+uint16_t CH4_RAMP_TIME = 2500; // 2000 for swing motor protection (2500 for Pingon)
 
 #endif
 
@@ -333,9 +333,9 @@ const uint8_t SERVO_FREQUENCY = 50; // usually 50Hz, some servos may run smoothe
 // WARNING: never connect receiver PWM signals to the "CH" pins in BUS communication mode!
 
 // Servo limits (not used, SBUS decoder only, adjust it in the transmitter, if needed!)
-uint16_t CH1L = 1411, CH1C = 2142, CH1R = 2958; // CH1 (decoded CH13)
-uint16_t CH2L = 1411, CH2C = 2142, CH2R = 2958; // CH2 (decoded CH14)
-uint16_t CH3L = 1411, CH3C = 2142, CH3R = 2958; // CH3 (decoded CH15)
-uint16_t CH4L = 1836, CH4C = 2142, CH4R = 2448; // CH4 (decoded CH16)          
+uint16_t CH1L = 1000, CH1C = 1500, CH1R = 2000; // CH1 (decoded CH13)
+uint16_t CH2L = 1000, CH2C = 1500, CH2R = 2000; // CH2 (decoded CH14)
+uint16_t CH3L = 1000, CH3C = 1500, CH3R = 2000; // CH3 (decoded CH15)
+uint16_t CH4L = 1000, CH4C = 1500, CH4R = 2000; // CH4 (decoded CH16)          
 
 #endif
