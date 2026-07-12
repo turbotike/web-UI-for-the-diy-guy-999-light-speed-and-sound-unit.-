@@ -742,68 +742,41 @@ void IRAM_ATTR variablePlaybackTimer()
 
     if (!engineJakeBraking && !blowoffTrigger)
     {
-      // Seamless loop crossfade: blend the last N samples into the start
-      // Use 10% of loop length for crossfade (much longer = less audible phase artifacts)
-      #define LOOP_CROSSFADE_DIVISOR 10
-      const uint32_t cfSamples = sampleCount / LOOP_CROSSFADE_DIVISOR;
-
-      // --- Idle sound (always produce a sample every tick) ---
-      if (cfSamples >= 4 && curEngineSample >= (sampleCount - cfSamples)) {
-        uint32_t fadePos = curEngineSample - (sampleCount - cfSamples);
-        int32_t fromEnd = samples[curEngineSample];
-        int32_t fromStart = samples[fadePos];
-        int32_t blended = (fromEnd * (int32_t)(cfSamples - fadePos) + fromStart * (int32_t)fadePos) / (int32_t)cfSamples;
-        a1 = (blended * throttleDependentVolume / 100 * idleVolumePercentage / 100);
-      } else {
-        a1 = (samples[curEngineSample] * throttleDependentVolume / 100 * idleVolumePercentage / 100);
-      }
-      a3 = 0;
-      curEngineSample++;
-
-      // --- Rev sound ---
-#ifdef REV_SOUND
+      if (curEngineSample < sampleCount - 1)
       {
-        const uint32_t revCf = revSampleCount / LOOP_CROSSFADE_DIVISOR;
-        if (revCf >= 4 && curRevSample >= (revSampleCount - revCf)) {
-          uint32_t fadePos = curRevSample - (revSampleCount - revCf);
-          int32_t fromEnd = revSamples[curRevSample];
-          int32_t fromStart = revSamples[fadePos];
-          int32_t blended = (fromEnd * (int32_t)(revCf - fadePos) + fromStart * (int32_t)fadePos) / (int32_t)revCf;
-          a2 = (blended * throttleDependentRevVolume / 100 * revVolumePercentage / 100);
-        } else {
-          a2 = (revSamples[curRevSample] * throttleDependentRevVolume / 100 * revVolumePercentage / 100);
-        }
-        curRevSample++;
-      }
+        a1 = (samples[curEngineSample] * throttleDependentVolume / 100 * idleVolumePercentage / 100); // Idle sound
+        a3 = 0;
+        curEngineSample++;
+
+        // Optional rev sound, recorded at medium rpm. Note, that it needs to represent the same number of ignition cycles as the
+        // idle sound. For example 4 or 8 for a V8 engine. It also needs to have about the same length. In order to adjust the length
+        // or "revSampleCount", change the "Rate" setting in Audacity until it is about the same.
+#ifdef REV_SOUND
+        a2 = (revSamples[curRevSample] * throttleDependentRevVolume / 100 * revVolumePercentage / 100); // Rev sound
+        if (curRevSample < revSampleCount)
+          curRevSample++;
 #endif
 
-      // Trigger throttle dependent Diesel ignition "knock" sound
-      if (curEngineSample - lastDieselKnockSample > (sampleCount / dieselKnockInterval))
-      {
-        dieselKnockTrigger = true;
-        dieselKnockTriggerFirst = false;
-        lastDieselKnockSample = curEngineSample;
+        // Trigger throttle dependent Diesel ignition "knock" sound (played in the fixed sample rate interrupt)
+        if (curEngineSample - lastDieselKnockSample > (sampleCount / dieselKnockInterval))
+        {
+          dieselKnockTrigger = true;
+          dieselKnockTriggerFirst = false;
+          lastDieselKnockSample = curEngineSample;
+        }
       }
-
-      // --- Loop reset (after producing the sample, so no silent gap) ---
-      if (curEngineSample >= sampleCount)
+      else
       {
-        curEngineSample = (cfSamples >= 4) ? cfSamples : 0;
+        curEngineSample = 0;
         if (jakeBrakeRequest)
           engineJakeBraking = true;
+#ifdef REV_SOUND
+        curRevSample = 0;
+#endif
         lastDieselKnockSample = 0;
         dieselKnockTrigger = true;
         dieselKnockTriggerFirst = true;
       }
-#ifdef REV_SOUND
-      {
-        const uint32_t revCf = revSampleCount / LOOP_CROSSFADE_DIVISOR;
-        if (curRevSample >= revSampleCount)
-        {
-          curRevSample = (revCf >= 4) ? revCf : 0;
-        }
-      }
-#endif
       curJakeBrakeSample = 0;
     }
     else
