@@ -2,9 +2,9 @@
 
 // Select (remove //) the remote configuration profile you have:
 // #define FLYSKY_FS_I6X            // <------- Flysky FS-i6x
-//#define FLYSKY_FS_I6S            // <------- Flysky FS-i6s
+#define FLYSKY_FS_I6S            // <------- Flysky FS-i6s
 // #define FLYSKY_FS_I6S_LOADER     // <------- Flysky FS-i6s for BURNIE222 Volvo L120H loader (use IBUS communication setting)
- #define FLYSKY_FS_I6S_DOZER     // <------- Flysky FS-i6s for dozer (use IBUS communication setting)
+// #define FLYSKY_FS_I6S_DOZER     // <------- Flysky FS-i6s for dozer (use IBUS communication setting)
 // #define FLYSKY_FS_I6S_EXCAVATOR  // <------- Flysky FS-i6s for KABOLITE K336 hydraulic excavator (use IBUS communication setting)
 // #define FRSKY_TANDEM_EXCAVATOR   // <------- Frsky Tandem XE for hydraulic excavator (use SBUS communication setting)
 // #define FRSKY_TANDEM_HARMONY_LOADER // <------- Frsky Tandem XE for Lukas Cajkar Harmony 370 (use SBUS communication setting)
@@ -103,7 +103,7 @@ uint16_t sbusFailsafeTimeout = 100; // Failsafe is triggered after this timeout 
 #define POT2 8               // CH7 pot 2
 #define MODE1 7              // CH8 mode 1 switch
 #define MODE2 9              // CH9 mode 2 switch
-#define MOMENTARY1 NONE      // CH10
+#define MOMENTARY1 10
 #define HAZARDS NONE         // CH11
 #define INDICATOR_LEFT NONE  // CH12
 #define INDICATOR_RIGHT NONE // CH13
@@ -181,7 +181,7 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 #define POT2 7               // CH7 pot 2 dump bed
 #define MODE1 8              // CH8 mode 1 switch
 #define MODE2 NONE           // CH9 mode 2 switch
-#define MOMENTARY1 NONE      // CH10
+#define MOMENTARY1 10
 #define HAZARDS NONE         // CH11
 #define INDICATOR_LEFT NONE  // CH12
 #define INDICATOR_RIGHT NONE // CH13
@@ -263,7 +263,7 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 #define POT2 NONE               // CH7 pot 2
 #define MODE1 NONE              // CH8 mode 1 switch
 #define MODE2 NONE              // CH9 mode 2 switch
-#define MOMENTARY1 NONE      // CH10
+#define MOMENTARY1 10
 #define HAZARDS NONE         // CH11
 #define INDICATOR_LEFT NONE  // CH12
 #define INDICATOR_RIGHT NONE // CH13
@@ -344,7 +344,7 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 #define POT2 2               // CH7 right track
 #define MODE1 6              // CH8 ripper
 #define MODE2 8              // CH9 light switch
-#define MOMENTARY1 NONE      // CH10
+#define MOMENTARY1 10
 #define HAZARDS NONE         // CH11
 #define INDICATOR_LEFT NONE  // CH12
 #define INDICATOR_RIGHT NONE // CH13
@@ -425,7 +425,7 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 #define POT2 7               // CH7 right track
 #define MODE1 4              // CH8 swing
 #define MODE2 8              // CH9 light switch
-#define MOMENTARY1 5         // CH10 2 position switch for ISO / SAE mode selection
+#define MOMENTARY1 10
 #define HAZARDS NONE         // CH11
 #define INDICATOR_LEFT NONE  // CH12
 #define INDICATOR_RIGHT NONE // CH13
@@ -505,7 +505,7 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 #define POT2 7               // CH7 right track
 #define MODE1 4              // CH8 swing
 #define MODE2 8              // CH9 light switch
-#define MOMENTARY1 13        // CH10 2 position switch for ISO / SAE mode selection
+#define MOMENTARY1 10
 #define HAZARDS NONE         // CH11
 #define INDICATOR_LEFT NONE  // CH12
 #define INDICATOR_RIGHT NONE // CH13
@@ -585,7 +585,7 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 #define POT2 NONE            // CH7 pot 2
 #define MODE1 NONE           // CH8 mode 1 switch
 #define MODE2 NONE           // CH9 mode 2 switch
-#define MOMENTARY1 NONE      // CH10
+#define MOMENTARY1 10
 #define HAZARDS NONE         // CH11
 #define INDICATOR_LEFT NONE  // CH12
 #define INDICATOR_RIGHT NONE // CH13
@@ -665,7 +665,7 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 #define POT2 6               // CH7 main rope
 #define MODE1 8              // CH8 swing
 #define MODE2 7              // CH9 fast rope
-#define MOMENTARY1 NONE      // CH10
+#define MOMENTARY1 10
 #define HAZARDS NONE         // CH11
 #define INDICATOR_LEFT 9     // CH12 Outrigger booms (all together)
 #define INDICATOR_RIGHT 13   // CH13 Support cylinder front left
@@ -745,7 +745,7 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 #define POT2 NONE            // CH7 right track
 #define MODE1 4              // CH8 swing
 #define MODE2 NONE           // CH9
-#define MOMENTARY1 NONE      // CH10
+#define MOMENTARY1 10
 #define HAZARDS NONE         // CH11
 #define INDICATOR_LEFT NONE  // CH12
 #define INDICATOR_RIGHT NONE // CH13
@@ -849,7 +849,7 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 #define POT2 NONE            // CH7 pot 2
 #define MODE1 NONE           // CH8 mode 1 switch
 #define MODE2 NONE           // CH9 mode 2 switch
-#define MOMENTARY1 NONE      // CH10
+#define MOMENTARY1 10
 #define HAZARDS 3            // CH11
 #define INDICATOR_LEFT NONE  // CH12
 #define INDICATOR_RIGHT NONE // CH13
@@ -948,7 +948,7 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 #define POT2 NONE            // CH7 pot 2
 #define MODE1 NONE           // CH8 mode 1 switch
 #define MODE2 NONE           // CH9 mode 2 switch
-#define MOMENTARY1 NONE      // CH10
+#define MOMENTARY1 10
 #define HAZARDS NONE         // CH11
 #define INDICATOR_LEFT NONE  // CH12
 #define INDICATOR_RIGHT NONE // CH13
@@ -1026,7 +1026,7 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 #define POT2 8               // CH7 pot 2
 #define MODE1 6              // CH8 mode 1 switch
 #define MODE2 NONE           // CH9 mode 2 switch
-#define MOMENTARY1 NONE      // CH10
+#define MOMENTARY1 10
 #define HAZARDS 9            // CH11
 #define INDICATOR_LEFT NONE  // CH12
 #define INDICATOR_RIGHT NONE // CH13
@@ -1104,7 +1104,7 @@ boolean sbusInverted = true; // true = standard (non inverted) SBUS signal
 #define POT2 16              // CH7 pot2
 #define MODE1 6              // CH8 mode 1 switch
 #define MODE2 7              // CH9 mode 2 switch
-#define MOMENTARY1 8         // CH10
+#define MOMENTARY1 10
 #define HAZARDS 9            // CH11
 #define INDICATOR_LEFT 10    // CH12
 #define INDICATOR_RIGHT 11   // CH13
@@ -1182,7 +1182,7 @@ boolean sbusInverted = false; // false = non standard (inverted) SBUS signal
 #define POT2 16              // CH7 pot2
 #define MODE1 6              // CH8 mode 1 switch
 #define MODE2 7              // CH9 mode 2 switch
-#define MOMENTARY1 8         // CH10
+#define MOMENTARY1 10
 #define HAZARDS 9            // CH11
 #define INDICATOR_LEFT 10    // CH12
 #define INDICATOR_RIGHT 11   // CH13
