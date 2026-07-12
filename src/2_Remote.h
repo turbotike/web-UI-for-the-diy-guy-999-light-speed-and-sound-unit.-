@@ -31,7 +31,7 @@
 // SBUS communication (RX header, 16 channels. This is my preferred communication protocol)--------
 // #define SBUS_COMMUNICATION // control signals are coming in via the SBUS interface (comment it out for classic PWM RC signals)
 // NOTE: "boolean sbusInverted = true, so you don't have to change it
-uint32_t sbusBaud = 160650;         // Standard is 100000. Try to lower it, if your channels are coming in unstable. Working range is about 96000 - 104000.
+uint32_t sbusBaud = 100000;         // Standard is 100000. Try to lower it, if your channels are coming in unstable. Working range is about 96000 - 104000.
 #define EMBEDDED_SBUS               // Embedded SBUS code is used instead of SBUS library, if defined (recommended, don't change it)
 uint16_t sbusFailsafeTimeout = 102; // Failsafe is triggered after this timeout in milliseconds (about 100)
 
