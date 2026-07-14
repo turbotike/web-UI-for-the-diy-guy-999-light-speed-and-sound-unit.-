@@ -117,7 +117,7 @@ volatile int sirenVolumePercentage = 60; // Adjust the siren volume (usually = 1
 //#include "sounds/river_kwai(1).h" // sound from nenno @ rc-modellbau-portal.de
 //#include "sounds/startrek(1).h" // sound from nenno @ rc-modellbau-portal.de
 //#include "sounds/susannah(1).h" // sound from nenno @ rc-modellbau-portal.de
-//#include "sounds/Tequila.h" // sound from nenno @ rc-modellbau-portal.de
+//#include "sounds/Tequila(1).h" // sound from nenno @ rc-modellbau-portal.de
 #include "sounds/kittScanner.h" // Knight Rider KITT scanner. Use it in combination with Neopixel animation.
 
 // Choose the air brake release sound (uncomment the one you want) --------

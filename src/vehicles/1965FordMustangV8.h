@@ -5,14 +5,14 @@
 // Sound files (22'050 Hz, 8 bit PCM recommended) -----------------------------------------------------------------------
 // Choose the start sound (uncomment the one you want) --------
 volatile int startVolumePercentage = 90; // Adjust the start volume (usually = 100%)
-// #include "sounds/1965FordMustangV8start.h" // 1965 Ford Mustang V8
+//#include "sounds/1965FordMustangV8start.h" // 1965 Ford Mustang V8
 #include "sounds/1965FordMustangV8startShort.h" // 1965 Ford Mustang V8
 
 // Choose the motor idle sound (uncomment the one you want) --------
 volatile int idleVolumePercentage = 80; // Adjust the idle volume (usually = 100%, more also working, depending on sound, 50 - 60% if additional diesel knock sound is used)
 volatile int engineIdleVolumePercentage = 80; // the engine volume will be throttle dependent (usually = 40%, never more than 100%!)
 volatile int fullThrottleVolumePercentage = 170; // Volume Percentage while full throttle (for rev sound as well)
-// #include "sounds/1965FordMustangV8idle.h" // 1965 Ford Mustang V8
+//#include "sounds/1965FordMustangV8idle.h" // 1965 Ford Mustang V8
 #include "sounds/1965FordMustangV8idleLowpass.h" // 1965 Ford Mustang V8
 
 // Choose the motor revving sound (uncomment the one you want) --------
@@ -23,7 +23,7 @@ volatile const uint16_t revSwitchPoint = 10; // The rev sound is played instead 
 volatile const uint16_t idleEndPoint = 500; // above this point, we have 100% rev and 0% idle sound volume (usually 500, min. 50 more than revSwitchPoint)
 volatile const uint16_t idleVolumeProportionPercentage = 90; // The idle sound volume proportion (rest is rev proportion) below "revSwitchPoint" (about 90 - 100%, never more than 100)
 #ifdef REV_SOUND
-// #include "sounds/1965FordMustangV8rev.h" // 1965 Ford Mustang V8
+//#include "sounds/1965FordMustangV8rev.h" // 1965 Ford Mustang V8
 #include "sounds/1965FordMustangV8revLowpass.h" // 1965 Ford Mustang V8
 #endif
 
@@ -50,8 +50,8 @@ volatile int dieselKnockAdaptiveVolumePercentage = 50; // Adjust the Diesel knoc
 uint8_t minKnockVolumePercentage = 5; // percentage, if at knock start RPM (about 5 - 80)
 uint16_t knockStartRpm = 400; // starting @ this RPM (about 50 - 400)
 #endif // ********************************************************************************
-// #include "sounds/DieselKnockDummy.h" // No knock
-// #include "sounds/1965FordMustangV8knock.h" // 1965 Ford Mustang V8
+//#include "sounds/DieselKnockDummy.h" // No knock
+//#include "sounds/1965FordMustangV8knock.h" // 1965 Ford Mustang V8
 #include "sounds/1965FordMustangV8knockLowpass.h" // 1965 Ford Mustang V8
 
 // Adjust the additional turbo sound (set "turboVolumePercentage" to "0", if you don't want it) --------
@@ -82,49 +82,49 @@ volatile int fanStartPoint = 250; // Volume will raise above this point (250 for
 
 // Choose the horn sound (uncomment the one you want) --------
 volatile int hornVolumePercentage = 100; // Adjust the horn volume (usually = 100%)
-// #include "sounds/TrainHorn.h" // American train horn
-// #include "sounds/HornblastersOUTLAWTrainHornShort.h" // Hornblasters outlaw train horn short
-// #include "sounds/ManTgeHorn.h" // MAN TGE truck horn (King Hauler)
-// #include "sounds/westinghouseHorn.h" // American truck horn (the best)
-// #include "sounds/FireTruckAirHorn.h" // US fire truck air horn
+//#include "sounds/TrainHorn.h" // American train horn
+//#include "sounds/HornblastersOUTLAWTrainHornShort.h" // Hornblasters outlaw train horn short
+//#include "sounds/ManTgeHorn.h" // MAN TGE truck horn (King Hauler)
+//#include "sounds/westinghouseHorn.h" // American truck horn (the best)
+//#include "sounds/FireTruckAirHorn.h" // US fire truck air horn
 #include "sounds/CarHorn.h" // A boring car horn
-// #include "sounds/TruckHorn.h" // A generic truck horn
-// #include "sounds/PeterbiltHorn.h" // A Peterbilt truck horn
-// #include "sounds/2ToneTruckHorn.h" // A 2 tone truck horn
+//#include "sounds/TruckHorn.h" // A generic truck horn
+//#include "sounds/PeterbiltHorn.h" // A Peterbilt truck horn
+//#include "sounds/2ToneTruckHorn.h" // A 2 tone truck horn
 
 // Choose the siren / additional horn sound (uncomment the one you want) --------
 volatile int sirenVolumePercentage = 60; // Adjust the siren volume (usually = 100%)
-// #include "sounds/sirenDummy.h" // If you don't want siren sound
-// #include "sounds/UsPoliceSiren.h" // US Police siren
-// #include "sounds/FireTruckAirSiren.h" // US fire truck air siren (King Hauler)
-// #include "sounds/FeuerwehrMartinshorn.h" // European Feuerwehr Martinshorn
-// #include "sounds/IrishFireEngineHorn.h" // Irish fire truck horn
-// #include "sounds/siren01norskere22.h" // Norwegian siren
-// #include "sounds/PostAutoHorn.h" // The typical Swiss post bus horn
+//#include "sounds/sirenDummy.h" // If you don't want siren sound
+//#include "sounds/UsPoliceSiren.h" // US Police siren
+//#include "sounds/FireTruckAirSiren.h" // US fire truck air siren (King Hauler)
+//#include "sounds/FeuerwehrMartinshorn.h" // European Feuerwehr Martinshorn
+//#include "sounds/IrishFireEngineHorn.h" // Irish fire truck horn
+//#include "sounds/siren01norskere22.h" // Norwegian siren
+//#include "sounds/PostAutoHorn.h" // The typical Swiss post bus horn
 #include "sounds/kittScanner.h" // Knight Rider KITT scanner. Use it in combination with Neopixel animation.
 
 // Choose the air brake release sound (uncomment the one you want) --------
 volatile int brakeVolumePercentage = 200; // Adjust the brake volume (usually = 200%)
 #include "sounds/AirBrakeDummy.h" // If you don't want air brake sound
-// #include "sounds/TruckAirBrakes.h" // Short truck air brake sound
-// #include "sounds/TruckAirBrakesLong.h" // Long truck air brake sound
-// #include "sounds/TruckAirBrakes2.h" // Another truck air brake sound
-// #include "sounds/AirBrakeSqueak.h" // Squeaky air brake sound
+//#include "sounds/TruckAirBrakes.h" // Short truck air brake sound
+//#include "sounds/TruckAirBrakesLong.h" // Long truck air brake sound
+//#include "sounds/TruckAirBrakes2.h" // Another truck air brake sound
+//#include "sounds/AirBrakeSqueak.h" // Squeaky air brake sound
 
 // Choose the parking brake engaging sound (uncomment the one you want) --------
 volatile int parkingBrakeVolumePercentage = 200; // Adjust the brake volume (usually = 200%)
 #include "sounds/ParkingBrakeDummy.h" // If you don't want parking brake sound
-// #include "sounds/ParkingBrake.h" // Parking brake sound
+//#include "sounds/ParkingBrake.h" // Parking brake sound
 
 // Choose the gear shifting sound (uncomment the one you want) --------
 volatile int shiftingVolumePercentage = 100; // Adjust the shifting volume (usually = 200%)
 #include "sounds/AirShiftingDummy.h" // If you don't want pneumatic shifting sound
-// #include "sounds/AirShifting.h" // Pneumatic shifting sound
-// #include "sounds/ClunkingGearShifting.h" // Manual clunking shifting sound
+//#include "sounds/AirShifting.h" // Pneumatic shifting sound
+//#include "sounds/ClunkingGearShifting.h" // Manual clunking shifting sound
 
 // Choose the additional "sound1" (uncomment the one you want) --------
 volatile int sound1VolumePercentage = 100; // Adjust the sound1 volume (usually = 100%)
-// #include "sounds/007JamesBond.h" // James Bond melody
+//#include "sounds/007JamesBond.h" // James Bond melody
 #include "sounds/door.h" // opening and closing the door
 
 // Choose the reversing beep sound --------
@@ -156,7 +156,7 @@ const boolean pwmSoundTrigger = true; // horn triggered by RC PWM signal instead
 
 // Gearbox parameters (select number of automatic gears in curves.h)-----------------------------------------------------
 const boolean automatic = true; // false = linear rpm curve, true = automatic transmission with torque converter is simulated (use it, if you don't have a real shifting transmission)
-#define NumberOfAutomaticGears 3
+#define NumberOfAutomaticGears 3 // <<------- Select 3, 4 or 6 gears!
 const boolean doubleClutch = false; // do not activate it at the same time as automatic!
 const boolean shiftingAutoThrottle = true; // For Tamiya 3 speed tansmission, throttle is altered for synchronizing, if "true"
 

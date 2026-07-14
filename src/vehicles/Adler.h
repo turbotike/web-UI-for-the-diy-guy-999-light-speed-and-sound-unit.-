@@ -72,7 +72,7 @@ volatile int fanStartPoint = 250; // Volume will raise above this point (250 for
 
 // Choose the horn sound (uncomment the one you want) --------
 volatile int hornVolumePercentage = 100; // Adjust the horn volume (usually = 100%)
-// #include "sounds/TrainHorn.h" // American train horn
+//#include "sounds/TrainHorn.h" // American train horn
 #include "sounds/AdlerWhistle2.h" // Adler steam whistle
 
 // Choose the siren / additional horn sound (uncomment the one you want) --------
@@ -81,26 +81,26 @@ volatile int sirenVolumePercentage = 100; // Adjust the siren volume (usually = 
 
 // Choose the air brake release sound (uncomment the one you want) --------
 volatile int brakeVolumePercentage = 100; // Adjust the brake volume (usually = 200%)
-// #include "sounds/AirBrakeDummy.h" // If you don't want air brake sound
-// #include "sounds/TruckAirBrakes.h" // Short truck air brake sound
+//#include "sounds/AirBrakeDummy.h" // If you don't want air brake sound
+//#include "sounds/TruckAirBrakes.h" // Short truck air brake sound
 #include "sounds/TruckAirBrakesLong.h" // Long truck air brake sound
-// #include "sounds/TruckAirBrakes2.h" // Another truck air brake sound
-// #include "sounds/AirBrakeSqueak.h" // Squeaky air brake sound
+//#include "sounds/TruckAirBrakes2.h" // Another truck air brake sound
+//#include "sounds/AirBrakeSqueak.h" // Squeaky air brake sound
 
 // Choose the parking brake engaging sound (uncomment the one you want) --------
 volatile int parkingBrakeVolumePercentage = 200; // Adjust the brake volume (usually = 200%)
 #include "sounds/ParkingBrakeDummy.h" // If you don't want parking brake sound
-// #include "sounds/ParkingBrake.h" // Parking brake sound
+//#include "sounds/ParkingBrake.h" // Parking brake sound
 
 // Choose the gear shifting sound (uncomment the one you want) --------
 volatile int shiftingVolumePercentage = 100; // Adjust the shifting volume (usually = 200%)
 #include "sounds/AirShiftingDummy.h" // If you don't want pneumatic shifting sound
-// #include "sounds/AirShifting.h" // Pneumatic shifting sound
-// #include "sounds/ClunkingGearShifting.h" // Manual clunking shifting sound
+//#include "sounds/AirShifting.h" // Pneumatic shifting sound
+//#include "sounds/ClunkingGearShifting.h" // Manual clunking shifting sound
 
 // Choose the additional "sound1" (uncomment the one you want) --------
 volatile int sound1VolumePercentage = 100; // Adjust the sound1 volume (usually = 100%)
-// #include "sounds/007JamesBond.h" // James Bond melody
+//#include "sounds/007JamesBond.h" // James Bond melody
 #include "sounds/door.h" // opening and closing the door
 
 // Choose the reversing beep sound --------
@@ -132,7 +132,7 @@ const uint8_t escAccelerationSteps = 3; // determines, how fast the ESC is able 
 
 // Gearbox parameters (select number of automatic gears in curves.h)-----------------------------------------------------
 const boolean automatic = false; // false = linear rpm curve, true = automatic transmission with torque converter is simulated (use it, if you don't have a real shifting transmission)
-#define NumberOfAutomaticGears 3
+#define NumberOfAutomaticGears 3 // <<------- Select 3, 4 or 6 gears!
 const boolean doubleClutch = false; // do not activate it at the same time as automatic!
 const boolean shiftingAutoThrottle = true; // For Tamiya 3 speed tansmission, throttle is altered for synchronizing, if "true"
 

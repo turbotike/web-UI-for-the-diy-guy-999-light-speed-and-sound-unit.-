@@ -19,7 +19,6 @@ volatile int revVolumePercentage = 60; // Adjust the idle volume (usually = 100%
 volatile int engineRevVolumePercentage = 60; // the engine volume will be throttle dependent (usually = 40%, never more than 100%!)
 const uint16_t revSwitchPoint = 200; // The rev sound is played instead of the idle sound above this point
 const uint16_t idleEndPoint = 500; // above this point, we have 100% rev and 0% idle sound volume (usually 500, min. 50 more than revSwitchPoint)
-volatile const uint16_t idleVolumeProportionPercentage = 100; // The idle sound volume proportion (rest is rev proportion) below "revSwitchPoint" (about 90 - 100%, never more than 100)
 #ifdef REV_SOUND
 #include "sounds/HarleyDavidsonFXSBrev.h" // Harley Davidson FXSB
 #endif

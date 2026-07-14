@@ -5,14 +5,14 @@
 // Sound files (22'050 Hz, 8 bit PCM recommended) -----------------------------------------------------------------------
 // Choose the start sound (uncomment the one you want) --------
 volatile int startVolumePercentage = 140; // Adjust the start volume (usually = 100%)
-// #include "sounds/ScaniaV850tonStart.h" // SCANIA V8
+//#include "sounds/ScaniaV850tonStart.h" // SCANIA V8
 #include "sounds/ScaniaV8start.h" // SCANIA V8
 
 // Choose the motor idle sound (uncomment the one you want) --------
 volatile int idleVolumePercentage = 80; // Adjust the idle volume (usually = 100%, more also working, depending on sound, 50 - 60% if additional diesel knock sound is used)
 volatile int engineIdleVolumePercentage = 50; // the engine volume will be throttle dependent (usually = 40%, never more than 100%!)
 volatile int fullThrottleVolumePercentage = 150; // Volume Percentage while full throttle (for rev sound as well) 200
-// #include "sounds/1000HpScaniaV8idle2.h" // SCANIA V8
+//#include "sounds/1000HpScaniaV8idle2.h" // SCANIA V8
 #include "sounds/ScaniaV8idle.h" // SCANIA V8
 
 
@@ -50,9 +50,9 @@ volatile int dieselKnockAdaptiveVolumePercentage = 10; // Adjust the Diesel knoc
 
 // Choose the Diesel (or whatever) ignition "knock" sound (played in the fixed sampling rate interrupt, uncomment the one you want,
 // play around here, the results are amazing, if you hit the right combination with the idle sound!) --------
-volatile int dieselKnockVolumePercentage = 300; // Adjust the Diesel knock volume (usually = 200 - 600%) 700
+volatile int dieselKnockVolumePercentage = 400; // Adjust the Diesel knock volume (usually = 200 - 600%) 700
 volatile int dieselKnockIdleVolumePercentage = 0; // Diesel knock volume while no throttle is applied (usually = 20%)
-volatile int dieselKnockStartPoint = 110; // Volume will raise above this throttle input( usually 0, for "open pipe" exhaust about 250)
+volatile int dieselKnockStartPoint = 10; // Volume will raise above this throttle input( usually 0, for "open pipe" exhaust about 250)
 volatile int dieselKnockInterval = 8; // Idle sample length divided by this number (1 - 20, depending on sound files)
 //#define R6 // 6th Knock will be louder
 #define V8 // V8 engine (Ford, Scania): pulses 4 and 8 will bel louder, because only 90° gap between exhaust cycles in same manifold
@@ -60,13 +60,13 @@ volatile int dieselKnockInterval = 8; // Idle sample length divided by this numb
 //#define V2 // V2 engine (Harley): first 2 of 4 pulses will be louder (set dieselKnockInterval to 4)
 //#define R6 // 6th Knock will be louder
 //#define R6_2 // 6th and 3rd Knock will be louder
-volatile int dieselKnockAdaptiveVolumePercentage = 10; // Adjust the Diesel knock volume for the non-first knocks per engine cycle (usually = 50%) 18
+volatile int dieselKnockAdaptiveVolumePercentage = 30; // Adjust the Diesel knock volume for the non-first knocks per engine cycle (usually = 50%) 18
 //#define RPM_DEPENDENT_KNOCK // Knock volume also depending on engine RPM *****************
 #ifdef RPM_DEPENDENT_KNOCK // These parameters are for RPM dependent knock mode only:
 uint8_t minKnockVolumePercentage = 80; // percentage, if at knock start RPM (about 5 - 80)
 uint16_t knockStartRpm = 50; // starting @ this RPM (about 50 - 400)
 #endif // ********************************************************************************
-// #include "sounds/1000HpScaniaV8knock.h" // SCANIA V8
+//#include "sounds/1000HpScaniaV8knock.h" // SCANIA V8
 #include "sounds/ScaniaV8knockExtreme.h" // SCANIA V8
 
 // Adjust the additional turbo sound (set "turboVolumePercentage" to "0", if you don't want it) --------
@@ -98,55 +98,54 @@ volatile int fanStartPoint = 0; // Volume will raise above this point (250 for T
 
 // Choose the horn sound (uncomment the one you want) --------
 volatile int hornVolumePercentage = 120; // Adjust the horn volume (usually = 100%)
-// #include "sounds/TrainHorn.h" // American train horn
-// #include "sounds/HornblastersOUTLAWTrainHornShort.h" // Hornblasters outlaw train horn short
-// #include "sounds/ManTgeHorn.h" // MAN TGE truck horn (King Hauler)
-// #include "sounds/westinghouseHorn.h" // American truck horn (the best)
-// #include "sounds/FireTruckAirHorn.h" // US fire truck air horn
-// #include "sounds/CarHorn.h" // A boring car horn
-// #include "sounds/TruckHorn.h" // A generic truck horn
-// #include "sounds/PeterbiltHorn.h" // A Peterbilt truck horn
-// #include "sounds/2ToneTruckHorn.h" // A 2 tone truck horn
-// #include "sounds/CaboverCAThorn.h" // Cabover wit CAT engine horn
+//#include "sounds/TrainHorn.h" // American train horn
+//#include "sounds/HornblastersOUTLAWTrainHornShort.h" // Hornblasters outlaw train horn short
+//#include "sounds/ManTgeHorn.h" // MAN TGE truck horn (King Hauler)
+//#include "sounds/westinghouseHorn.h" // American truck horn (the best)
+//#include "sounds/FireTruckAirHorn.h" // US fire truck air horn
+//#include "sounds/CarHorn.h" // A boring car horn
+//#include "sounds/TruckHorn.h" // A generic truck horn
+//#include "sounds/PeterbiltHorn.h" // A Peterbilt truck horn
+//#include "sounds/2ToneTruckHorn.h" // A 2 tone truck horn
+//#include "sounds/CaboverCAThorn.h" // Cabover wit CAT engine horn
 #include "sounds/ScaniaV8trainHorn.h" // Scania with train horn
 
 // Choose the siren / additional horn sound (uncomment the one you want) --------
 volatile int sirenVolumePercentage = 100; // Adjust the siren volume (usually = 100%)
 #include "sounds/sirenDummy.h" // If you don't want siren sound
-// #include "sounds/UsPoliceSiren.h" // US Police siren
-// #include "sounds/FireTruckAirSiren.h" // US fire truck air siren (King Hauler)
-// #include "sounds/FeuerwehrMartinshorn.h" // European Feuerwehr Martinshorn
-// #include "sounds/IrishFireEngineHorn.h" // Irish fire truck horn
-// #include "sounds/siren01norskere22.h" // Norwegian siren
-// #include "sounds/PostAutoHorn.h" // The typical Swiss post bus horn
+//#include "sounds/UsPoliceSiren.h" // US Police siren
+//#include "sounds/FireTruckAirSiren.h" // US fire truck air siren (King Hauler)
+//#include "sounds/FeuerwehrMartinshorn.h" // European Feuerwehr Martinshorn
+//#include "sounds/IrishFireEngineHorn.h" // Irish fire truck horn
+//#include "sounds/siren01norskere22.h" // Norwegian siren
+//#include "sounds/PostAutoHorn.h" // The typical Swiss post bus horn
 
 // Choose the air brake release sound (uncomment the one you want) --------
 volatile int brakeVolumePercentage = 150; // Adjust the brake volume (usually = 200%)
-// #include "sounds/AirBrakeDummy.h" // If you don't want air brake sound
-// #include "sounds/TruckAirBrakes.h" // Short truck air brake sound
-// #include "sounds/TruckAirBrakesLong.h" // Long truck air brake sound
+//#include "sounds/AirBrakeDummy.h" // If you don't want air brake sound
+//#include "sounds/TruckAirBrakes.h" // Short truck air brake sound
+//#include "sounds/TruckAirBrakesLong.h" // Long truck air brake sound
 #include "sounds/TruckAirBrakes2.h" // Another truck air brake sound
-// #include "sounds/AirBrakeSqueak.h" // Squeaky air brake sound
-// #include "sounds/UralBrakeSqueak.h" // URAL 4320 air brake sound
+//#include "sounds/AirBrakeSqueak.h" // Squeaky air brake sound
+//#include "sounds/UralBrakeSqueak.h" // URAL 4320 air brake sound
 
 // Choose the parking brake engaging sound (uncomment the one you want) --------
 volatile int parkingBrakeVolumePercentage = 150; // Adjust the brake volume (usually = 200%)
-// #include "sounds/ParkingBrakeDummy.h" // If you don't want parking brake sound
+//#include "sounds/ParkingBrakeDummy.h" // If you don't want parking brake sound
 #include "sounds/ParkingBrake.h" // Parking brake sound
 
 // Choose the gear shifting sound (uncomment the one you want) --------
 volatile int shiftingVolumePercentage = 100; // Adjust the shifting volume (usually = 200%)
-// #include "sounds/AirShiftingDummy.h" // If you don't want pneumatic shifting sound
-// #include "sounds/AirShifting.h" // Pneumatic shifting sound
-// #include "sounds/Mercedes_SK_1935_V8_AirShifting.h" // Mercedes SK air shifting
+//#include "sounds/AirShiftingDummy.h" // If you don't want pneumatic shifting sound
+//#include "sounds/AirShifting.h" // Pneumatic shifting sound
 #include "sounds/ClunkingGearShifting.h" // Manual clunking shifting sound
 
 // Choose the additional "sound1" (uncomment the one you want) --------
 volatile int sound1VolumePercentage = 100; // Adjust the sound1 volume (usually = 100%)
-// #include "sounds/EMDLocomotiveBell.h" // American EMD locomotive bell
-// #include "sounds/007JamesBond.h" // James Bond melody
-// #include "sounds/M2Fire.h" // M2 salve
-// #include "sounds/GlenCanyon.h" // Glen Canyon country song for truckers ;-)
+//#include "sounds/EMDLocomotiveBell.h" // American EMD locomotive bell
+//#include "sounds/007JamesBond.h" // James Bond melody
+//#include "sounds/M2Fire.h" // M2 salve
+//#include "sounds/GlenCanyon.h" // Glen Canyon country song for truckers ;-)
 #include "sounds/door.h" // opening and closing the door
 
 // Choose the reversing beep sound --------
@@ -182,7 +181,7 @@ const uint8_t escAccelerationSteps = 3; // determines, how fast the ESC is able 
 
 // Gearbox parameters (select number of automatic gears in curves.h)-----------------------------------------------------
 const boolean automatic = false; // false = linear rpm curve, true = automatic transmission with torque converter is simulated (use it, if you don't have a real shifting transmission)
-#define NumberOfAutomaticGears 3
+#define NumberOfAutomaticGears 3 // <<------- Select 3, 4 or 6 gears!
 const boolean doubleClutch = false; // do not activate it at the same time as automatic!
 const boolean shiftingAutoThrottle = true; // For Tamiya 3 speed tansmission, throttle is altered for synchronizing, if "true"
 

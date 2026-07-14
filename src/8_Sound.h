@@ -7,22 +7,14 @@
  */
 
 // #define NO_SIREN // siren sound is not played, if defined
-// #define NO_INDICATOR_SOUND // If you don't want the indicator "tick - tack" sound
-
-// Volume pot override: uncomment to ignore RC volume cycling and use only the web slider value
-#define VOL_POT_OVERRIDE
+ #define NO_INDICATOR_SOUND // If you don't want the indicator "tick - tack" sound
 
 // Volume adjustment
-// const  uint8_t numberOfVolumeSteps = 4; // The mumber of volume steps below
+// const  uint8_t numberOfVolumeSteps = 3; // The mumber of volume steps below
 // const uint8_t masterVolumePercentage[] = {100, 66, 44}; // loud, medium, silent (more than 100% may cause distortions)
 
 const uint8_t numberOfVolumeSteps = 4;                     // The mumber of volume steps below
-const uint8_t masterVolumePercentage[] = {250, 187, 125, 0}; // max, loud, medium, mute (values above 100 may clip but are LOUDER)
+const uint8_t masterVolumePercentage[] = {100, 66, 44, 0}; // loud, medium, silent, no sound (more than 100% may cause distortions)
 
 // Crawler mode
-const uint8_t masterVolumeCrawlerThreshold = 60; // If master volume is <= this threshold, crawler mode (without virtual inertia) is active
-
-// Air dryer: periodic air-system purge "pfft" while the engine runs. By default
-// it reuses the air brake hiss sound. Interval = seconds between purges (0 = off).
-uint16_t airDryerInterval = 40;          // Seconds between air dryer purges (0 = disabled)
-uint8_t airDryerVolumePercentage = 80;   // Air dryer purge volume (0 - 100+)
+const uint8_t masterVolumeCrawlerThreshold = 44; // If master volume is <= this threshold, crawler mode (without virtual inertia) is active

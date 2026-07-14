@@ -108,10 +108,10 @@ volatile int sirenVolumePercentage = 100; // Adjust the siren volume (usually = 
 //#include "sounds/la_carica(1).h" // sound from nenno @ rc-modellbau-portal.de
 //#include "sounds/la_cucaracha(1).h" // sound from nenno @ rc-modellbau-portal.de
 //#include "sounds/marseillaise(1).h" // sound from nenno @ rc-modellbau-portal.de
-#include "sounds/river_kwai.h" // sound from nenno @ rc-modellbau-portal.de
+#include "sounds/river_kwai(1).h" // sound from nenno @ rc-modellbau-portal.de
 //#include "sounds/startrek(1).h" // sound from nenno @ rc-modellbau-portal.de
 //#include "sounds/susannah(1).h" // sound from nenno @ rc-modellbau-portal.de
-//#include "sounds/Tequila.h" // sound from nenno @ rc-modellbau-portal.de
+//#include "sounds/Tequila(1).h" // sound from nenno @ rc-modellbau-portal.de
 
 // Choose the air brake release sound (uncomment the one you want) --------
 volatile int brakeVolumePercentage = 150; // Adjust the brake volume (usually = 200%)

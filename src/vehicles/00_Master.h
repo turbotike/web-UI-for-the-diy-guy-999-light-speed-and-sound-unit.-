@@ -34,7 +34,9 @@ volatile int fullThrottleVolumePercentage = 130; // Volume Percentage while full
 // #include "sounds/HumveeDieselIdle.h" // "Humvvee" (Hummer H1) V8 Diesel
 // #include "sounds/HgP408Idle.h" // HG P408 Humvee Diesel (only for small speakers)
 // #include "sounds/DetroitDieselIdle.h" // Detroit Diesel generic Truck (Volume 80%, 30%, Turbo 60%, 10%, Wastegate 50%, 1%, CEP 100, TSM 3)
-// #include "sounds/DetroitDieselStraightPipeIdle.h" // Detroit Diesel Truck with straight pipes (use multiplier = 2, acc = 2, dec = 1, Volume 60%, 40%, Turbo 60%, 10, Wastegate 100%, 1%, CEP 100, TSM 3, Knock volume 400, 10%, interval 2, 50)
+// #include "sounds/DetroitDieselStraightPipeIdle.h" // Detroit Diesel Truck with straight pipes (use multiplier = 2, acc = 2, dec = 1)
+// #include "sounds/DetroitDieselBassBoost15db.h" // Detroit Diesel Truck with straight pipes. Bass 100-200Hz + 15dB
+// #include "sounds/DetroitDieselBassBoost7db.h" // Detroit Diesel Truck with straight pipes. Bass 100-200Hz + 7dB (use it for King Hauler, Volume 60%, 40%, Turbo 60%, 10, Wastegate 100%, 1%, CEP 100, TSM 3, Knock volume 400, 10%, interval 2, 50)
 // #include "sounds/DetroitDieselPeterbiltCabover.h" // Detroit Diesel Peterbilt cabover truck
 // #include "sounds/DetroitDieselKenworth.h" // Detroit Diesel Kenworth truck (use Ural V8 Start & 100% turbo)
 // #include "sounds/DetroitDieselJohnDeereTractor.h" // Detroit Diesel John Deere tractor
@@ -170,7 +172,7 @@ volatile int hornVolumePercentage = 100; // Adjust the horn volume (usually = 10
 #include "sounds/westinghouseHorn.h" // American truck horn (incl. loop)
 // #include "sounds/FireTruckAirHorn.h" // US fire truck air horn (incl. loop)
 // #include "sounds/CarHorn.h" // A boring car horn (incl. loop)
-// #include "sounds/OldCarHorn.h" // An old car horn
+//  #include "sounds/OldCarHorn.h" // An old car horn
 // #include "sounds/TruckHorn.h" // A generic truck horn (incl. loop)
 // #include "sounds/PeterbiltHorn.h" // A Peterbilt truck horn (incl. loop, not the best)
 // #include "sounds/2ToneTruckHorn.h" // A 2 tone truck horn
@@ -200,7 +202,7 @@ volatile int sirenVolumePercentage = 100; // Adjust the siren volume (usually = 
 // #include "sounds/river_kwai(1).h" // sound from nenno @ rc-modellbau-portal.de
 // #include "sounds/startrek(1).h" // sound from nenno @ rc-modellbau-portal.de
 // #include "sounds/susannah(1).h" // sound from nenno @ rc-modellbau-portal.de
-#include "sounds/Tequila.h" // sound from nenno @ rc-modellbau-portal.de
+#include "sounds/Tequila(1).h" // sound from nenno @ rc-modellbau-portal.de
 // #include "sounds/DixieSiren.h" // Dixie siren
 // #include "sounds/SwissPsalm.h" // Swiss national anthem
 // #include "sounds/Alphorn.h" // Alphorn
@@ -216,7 +218,6 @@ volatile int brakeVolumePercentage = 150; // Adjust the brake volume (usually = 
 // #include "sounds/AirBrakeSqueak2.h" // Squeaky air brake sound
 // #include "sounds/UralBrakeSqueak.h" // URAL 4320 air brake sound
 // #include "sounds/Saurer2DMbrake.h" // // Saurer 2DM air brake sound
-// #include "sounds/Mercedes_SK_AirBrakes.h" // Mercedes SK
 
 // Choose the parking brake engaging sound (uncomment the one you want) --------
 volatile int parkingBrakeVolumePercentage = 150; // Adjust the brake volume (usually = 200%)
@@ -228,7 +229,6 @@ volatile int parkingBrakeVolumePercentage = 150; // Adjust the brake volume (usu
 volatile int shiftingVolumePercentage = 200; // Adjust the shifting volume (usually = 200%)
 // #include "sounds/AirShiftingDummy.h" // If you don't want pneumatic shifting sound
 // #include "sounds/AirShifting.h" // Pneumatic shifting sound
-// #include "sounds/Mercedes_SK_1935_V8_AirShifting.h" // Mercedes SK air shifting
 #include "sounds/ClunkingGearShifting.h" // Manual clunking shifting sound
 
 // Choose the additional "sound1" (uncomment the one you want) --------
@@ -244,7 +244,6 @@ volatile int sound1VolumePercentage = 100; // Adjust the sound1 volume (usually 
 // Choose the reversing beep sound --------
 volatile int reversingVolumePercentage = 70; // Adjust the reversing sound volume (usually = 70%)
 #include "sounds/TruckReversingBeep.h"       // 1000Hz peep sound
-// #include "sounds/CATreversingBeep.h" // CAT beep sound
 
 // Choose the indicator / turn signal options --------
 volatile int indicatorVolumePercentage = 100; // Adjust the indicator sound volume (usually = 100%)
@@ -282,7 +281,7 @@ const uint8_t escAccelerationSteps = 3;   // determines, how fast the ESC is abl
 
 // Gearbox parameters ---------------------------------------------------------------------------------------------------
 const boolean automatic = false;           // false = linear rpm curve, true = automatic transmission with torque converter is simulated (use it, if you don't have a real shifting transmission)
-#define NumberOfAutomaticGears 3
+#define NumberOfAutomaticGears 3           // <<------- Select 3, 4 or 6 gears!
 const boolean doubleClutch = false;        // do not activate it at the same time as automatic!
 const boolean shiftingAutoThrottle = true; // For Tamiya 3 speed tansmission, throttle is altered for synchronizing, if "true"
 
@@ -300,4 +299,3 @@ const int8_t dec = 1; // Deceleration step (1) 1 = slow for locomotive engine, 5
 
 // Vehicle type ----------------------------------------------------------------------------------------------------
 // #define TRACKED_MODE // For Tanks, diggers, excavators etc. which use dual throttle input on CH2 and CH3
-// #define DUMP_BED // Vehicle with hydraulic dump bed (CAT 730 for example)

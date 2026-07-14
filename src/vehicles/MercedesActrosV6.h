@@ -109,7 +109,7 @@ volatile int sirenVolumePercentage = 100; // Adjust the siren volume (usually = 
 //#include "sounds/river_kwai(1).h" // sound from nenno @ rc-modellbau-portal.de
 //#include "sounds/startrek(1).h" // sound from nenno @ rc-modellbau-portal.de --
 //#include "sounds/susannah(1).h" // sound from nenno @ rc-modellbau-portal.de
-//#include "sounds/Tequila.h" // sound from nenno @ rc-modellbau-portal.de
+//#include "sounds/Tequila(1).h" // sound from nenno @ rc-modellbau-portal.de
 #include "sounds/DixieSiren.h" // Dixie siren
 //#include "sounds/SwissPsalm.h" // Swiss national anthem
 //#include "sounds/Alphorn.h" // Alphorn

@@ -14,7 +14,7 @@ volatile int engineIdleVolumePercentage = 60; // the engine volume will be throt
 volatile int fullThrottleVolumePercentage = 140; // Volume Percentage while full throttle (for rev sound as well)
 //#include "sounds/3408CatIdle.h" // CAT 3408 V8 Diesel idle (Kenworth W900A)
 //#include "sounds/3408CatIdleLowpass.h" // CAT 3408 V8 Diesel idle (Kenworth W900A, 1.5kHz lowpass filtered)
-#include "sounds/Cat3408Idle.h" // CAT 3408 V8 Diesel idle (Kenworth W900A, b+7, h-7)
+#include "sounds/3408CatIdle2.h" // CAT 3408 V8 Diesel idle (Kenworth W900A, b+7, h-7)
 
 // Choose the motor revving sound (uncomment the one you want) --------
 #define REV_SOUND // uncomment this, if you want to use the separate, optional rev sound
@@ -110,7 +110,7 @@ volatile int sirenVolumePercentage = 130; // Adjust the siren volume (usually = 
 //#include "sounds/IrishFireEngineHorn.h" // Irish fire truck horn
 //#include "sounds/siren01norskere22.h" // Norwegian siren
 //#include "sounds/PostAutoHorn.h" // The typical Swiss post bus horn
-#include "sounds/Tequila.h" // sound from nenno @ rc-modellbau-portal.de
+#include "sounds/Tequila(1).h" // sound from nenno @ rc-modellbau-portal.de
 
 // Choose the air brake release sound (uncomment the one you want) --------
 volatile int brakeVolumePercentage = 150; // Adjust the brake volume (usually = 200%)
