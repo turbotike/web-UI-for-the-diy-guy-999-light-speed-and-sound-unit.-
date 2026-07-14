@@ -18,3 +18,7 @@ const uint8_t masterVolumePercentage[] = {100, 66, 44, 0}; // loud, medium, sile
 
 // Crawler mode
 const uint8_t masterVolumeCrawlerThreshold = 44; // If master volume is <= this threshold, crawler mode (without virtual inertia) is active
+
+// Air dryer (periodic air-system purge "pfft", reuses the air brake hiss). GLOBAL (applies to all vehicles).
+uint16_t airDryerInterval = 40;        // Seconds between air dryer purges while the engine runs. 0 = off.
+uint8_t airDryerVolumePercentage = 80; // Volume of the air dryer purge (% of the air brake hiss sound)

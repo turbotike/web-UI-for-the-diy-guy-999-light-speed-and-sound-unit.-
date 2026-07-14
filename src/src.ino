@@ -391,6 +391,7 @@ volatile boolean blowoffTrigger = false;          // Trigger jake brake sound (b
 volatile boolean dieselKnockTrigger = false;      // Trigger Diesel ignition "knock"
 volatile boolean dieselKnockTriggerFirst = false; // The first Diesel ignition "knock" per sequence
 volatile boolean airBrakeTrigger = false;         // Trigger for air brake noise
+volatile boolean airDryerTrigger = false;         // Trigger for periodic air dryer purge noise
 volatile boolean parkingBrakeTrigger = false;     // Trigger for air parking brake noise
 volatile boolean shiftingTrigger = false;         // Trigger for shifting noise
 volatile boolean hornTrigger = false;             // Trigger for horn on / off
@@ -953,6 +954,7 @@ void IRAM_ATTR fixedPlaybackTimer()
   static uint32_t curIndicatorSample = 0;                       // Index of currently loaded indicator tick sample
   static uint32_t curWastegateSample = 0;                       // Index of currently loaded wastegate sample
   static uint32_t curBrakeSample = 0;                           // Index of currently loaded brake sound sample
+  static uint32_t curAirDryerSample = 0;                        // Index of currently loaded air dryer sample
   static uint32_t curParkingBrakeSample = 0;                    // Index of currently loaded brake sound sample
   static uint32_t curShiftingSample = 0;                        // Index of currently loaded shifting sample
   static uint32_t curDieselKnockSample = 0;                     // Index of currently loaded Diesel knock sample
@@ -964,7 +966,7 @@ void IRAM_ATTR fixedPlaybackTimer()
   static uint32_t curTireSquealSample = 0;                      // Index of currently loaded tire squeal sample
   static uint32_t curOutOfFuelSample = 0;                       // Index of currently loaded out of fuel sample
   static int32_t a, a1, a2 = 0;                                 // Input signals "a" for mixer
-  static int32_t b, b0, b1, b2, b3, b4, b5, b6, b7, b8, b9 = 0; // Input signals "b" for mixer
+  static int32_t b, b0, b1, b2, b3, b4, b5, b6, b7, b8, b9, b10 = 0; // Input signals "b" for mixer
   static int32_t c, c1, c2, c3 = 0;                             // Input signals "c" for mixer
   static int32_t d, d1, d2 = 0;                                 // Input signals "d" for mixer
   static boolean knockSilent = 0;                               // This knock will be more silent
@@ -1138,6 +1140,25 @@ void IRAM_ATTR fixedPlaybackTimer()
   {
     b4 = 0;
     curBrakeSample = 0; // ensure, next sound will start @ first sample
+  }
+
+  // Air dryer purge sound, triggered periodically while running (reuses the air brake hiss) -------
+  if (airDryerTrigger)
+  {
+    if (curAirDryerSample < brakeSampleCount - 1)
+    {
+      b10 = (brakeSamples[curAirDryerSample] * airDryerVolumePercentage / 100);
+      curAirDryerSample++;
+    }
+    else
+    {
+      airDryerTrigger = false;
+    }
+  }
+  else
+  {
+    b10 = 0;
+    curAirDryerSample = 0; // ensure, next sound will start @ first sample
   }
 
   // Air parking brake attaching sound, triggered after engine off --------------------------------
@@ -1385,7 +1406,7 @@ void IRAM_ATTR fixedPlaybackTimer()
   // Mixing sounds together **********************************************************************
   a = a1 + a2; // Horn & siren
   // if (a < 2 && a > -2) a = 0; // Remove noise floor TODO, experimental
-  b = b0 * 5 + b1 + b2 / 2 + b3 + b4 + b5 + b6 + b7 + b8 + b9; // Other sounds
+  b = b0 * 5 + b1 + b2 / 2 + b3 + b4 + b5 + b6 + b7 + b8 + b9 + b10; // Other sounds
   c = c1 + c2 + c3;                                            // Excavator sounds
   d = d1 + d2;                                                 // Additional sounds
 
@@ -5801,6 +5822,33 @@ void steamLocomotiveControl()
 
 //
 // =======================================================================================================
+// AIR DRYER (periodic air-system purge "pfft", reuses the air brake hiss sound)
+// =======================================================================================================
+//
+
+void airDryer()
+{
+  static uint32_t lastDryerTime = 0;
+
+  if (airDryerInterval == 0)
+    return; // Air dryer disabled
+
+  if (engineState != RUNNING)
+  {
+    lastDryerTime = millis(); // Hold off while the engine isn't running
+    return;
+  }
+
+  if (millis() - lastDryerTime >= (uint32_t)airDryerInterval * 1000)
+  {
+    lastDryerTime = millis();
+    if (!airDryerTrigger)
+      airDryerTrigger = true; // Fire one purge
+  }
+}
+
+//
+// =======================================================================================================
 // TRAILER CONTROL (ESP NOW)
 // =======================================================================================================
 //
@@ -6021,6 +6069,9 @@ void Task1code(void *pvParameters)
 
     // Switch engine on or off
     engineOnOff();
+
+    // Air dryer periodic purge
+    airDryer();
 
     // LED control
     if (autoZeroDone)
