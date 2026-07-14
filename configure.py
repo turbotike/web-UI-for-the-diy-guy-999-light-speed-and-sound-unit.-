@@ -1878,7 +1878,7 @@ ESP32_FLASH_LAYOUT = [
 
 
 def find_boot_app0():
-    """Locate boot_app0.bin inside the installed esp32 2.0.17 core."""
+    """Locate boot_app0.bin inside the installed esp32 core (REQUIRED_CORE_VERSION)."""
     roots = []
     for env in ("LOCALAPPDATA", "HOME", "USERPROFILE"):
         d = os.environ.get(env)
@@ -2007,14 +2007,19 @@ def build_firmware_manifest():
 
 
 REQUIRED_CORE = "esp32:esp32"
-REQUIRED_CORE_VERSION = "2.0.17"
+# CRITICAL: pinned to 1.0.6 to match PlatformIO's `espressif32@3.2.0` — the exact
+# ESP32 Arduino core the stock firmware is written and tested against. On the newer
+# 2.0.x core the audio/timer interrupt behaves differently and the board FREEZES at
+# peak load (e.g. full reverse). Same source compiled on 1.0.6 runs fine. DO NOT bump
+# this to 2.0.x — it reintroduces the full-reverse lock-up.
+REQUIRED_CORE_VERSION = "1.0.6"
 ESP32_BOARD_URL = "https://raw.githubusercontent.com/espressif/arduino-esp32/gh-pages/package_esp32_index.json"
 
 _core_ready = False  # cached after first successful check
 
 
 def ensure_esp32_core(cli, chunk_fn=None):
-    """Make sure esp32:esp32@2.0.17 is installed. Installs automatically if needed.
+    """Make sure esp32:esp32@1.0.6 is installed. Installs automatically if needed.
     chunk_fn is an optional callback for streaming status text to the browser."""
     global _core_ready
     if _core_ready:
