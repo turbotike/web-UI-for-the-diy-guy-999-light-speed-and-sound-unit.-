@@ -41,13 +41,17 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          # 3.11 (not 3.12): the bundled interpreter runs esp32 core 1.0.6's
+          # esptool.py 3.0, which still imports distutils (removed in 3.12).
+          python-version: '3.11'
 
       - name: Install PyInstaller
-        run: python -m pip install --upgrade pyinstaller certifi
+        # pyserial is bundled so the app's own Python can run esptool.py (upload)
+        # without any system Python — see build_env()/--pyexec in configure.py.
+        run: python -m pip install --upgrade pyinstaller certifi pyserial
 
       - name: Build one-file app
-        run: pyinstaller --onefile ${{ matrix.pyi_args }} --collect-data certifi --name "RC Sound Configurator" configure.py
+        run: pyinstaller --onefile ${{ matrix.pyi_args }} --collect-data certifi --collect-all serial --name "RC Sound Configurator" configure.py
 
       - name: Assemble ready-to-run bundle
         shell: bash

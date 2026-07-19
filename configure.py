@@ -2013,13 +2013,22 @@ def build_env():
         if d not in parts:
             parts.append(d)
     env["PATH"] = os.pathsep.join(p for p in parts if p)
-    py3 = _find_python3()
-    if py3:
+    # What should bare `python` resolve to?
+    #  - Frozen app: our OWN bundled interpreter, via `<app> --pyexec` — fully
+    #    self-contained, no system Python required (like PlatformIO's penv).
+    #  - Running from source: a real python3 on the machine.
+    if getattr(sys, "frozen", False):
+        target = '"%s" --pyexec' % sys.executable
+        found = sys.executable
+    else:
+        found = _find_python3()
+        target = ('"%s"' % found) if found else None
+    if target:
         try:
             shim = os.path.join(_work_root(), "pyshim")
             os.makedirs(shim, exist_ok=True)
             sp = os.path.join(shim, "python")
-            content = '#!/bin/sh\nexec "%s" "$@"\n' % py3
+            content = '#!/bin/sh\nexec %s "$@"\n' % target
             existing = read_text(sp) if os.path.exists(sp) else None
             if existing != content:
                 with open(sp, "w", encoding="utf-8") as f:
@@ -2028,7 +2037,7 @@ def build_env():
             env["PATH"] = shim + os.pathsep + env["PATH"]
         except Exception:
             pass
-    return env, py3
+    return env, found
 
 
 def build_firmware_manifest():
@@ -6553,4 +6562,14 @@ def main():
 
 
 if __name__ == "__main__":
+    # Self-contained Python for the ESP32 build. esp32 core 1.0.6's recipes call
+    # bare `python` (gen_esp32part.py, esptool.py); on macOS there's no system
+    # `python`. build_env() points a `python` shim at "<this app> --pyexec", so
+    # OUR bundled interpreter runs those scripts — no system Python needed at all.
+    if len(sys.argv) >= 3 and sys.argv[1] == "--pyexec":
+        import runpy
+        _script = sys.argv[2]
+        sys.argv = [_script] + sys.argv[3:]
+        runpy.run_path(_script, run_name="__main__")
+        sys.exit(0)
     main()
