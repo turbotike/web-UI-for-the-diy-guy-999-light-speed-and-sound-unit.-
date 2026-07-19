@@ -1981,6 +1981,56 @@ def build_dir():
     return os.path.join(_work_root(), "build")
 
 
+def _find_python3():
+    """Locate a real python3. The esp32 1.0.6 core's build recipes call bare
+    `python` (Python-2 era), which modern macOS no longer ships — only python3.
+    We shim `python` -> this. Searches PATH + the usual macOS/Homebrew/python.org
+    locations (a Finder-launched app inherits a minimal PATH)."""
+    import shutil, glob
+    cands = []
+    w = shutil.which("python3")
+    if w:
+        cands.append(w)
+    cands += ["/usr/bin/python3", "/usr/local/bin/python3", "/opt/homebrew/bin/python3"]
+    cands += sorted(glob.glob("/Library/Frameworks/Python.framework/Versions/*/bin/python3"), reverse=True)
+    for c in cands:
+        if c and os.path.isfile(c) and os.access(c, os.X_OK):
+            return c
+    return None
+
+
+def build_env():
+    """Environment for the arduino-cli build. On macOS/Linux, put a `python` ->
+    python3 shim on PATH so esp32 core 1.0.6's recipes (which call bare `python`)
+    work — otherwise the build dies with `exec: "python": ... not found in $PATH`.
+    Returns (env, python3_path_or_None)."""
+    env = os.environ.copy()
+    if os.name == "nt":
+        return env, "python"  # Windows: `python`/py launcher normally present
+    # Finder-launched apps get a minimal PATH — make sure common bins are on it
+    parts = env.get("PATH", "").split(os.pathsep)
+    for d in ("/usr/bin", "/usr/local/bin", "/opt/homebrew/bin"):
+        if d not in parts:
+            parts.append(d)
+    env["PATH"] = os.pathsep.join(p for p in parts if p)
+    py3 = _find_python3()
+    if py3:
+        try:
+            shim = os.path.join(_work_root(), "pyshim")
+            os.makedirs(shim, exist_ok=True)
+            sp = os.path.join(shim, "python")
+            content = '#!/bin/sh\nexec "%s" "$@"\n' % py3
+            existing = read_text(sp) if os.path.exists(sp) else None
+            if existing != content:
+                with open(sp, "w", encoding="utf-8") as f:
+                    f.write(content)
+                os.chmod(sp, 0o755)
+            env["PATH"] = shim + os.pathsep + env["PATH"]
+        except Exception:
+            pass
+    return env, py3
+
+
 def build_firmware_manifest():
     """Package the compiled build/ images for the browser flasher.
 
@@ -6352,6 +6402,18 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     chunk("Compiling firmware...\n\n")
 
+                # esp32 core 1.0.6's build scripts call bare `python`; shim it to
+                # python3 on macOS/Linux (see build_env). Bail early with a clear
+                # message if no python3 exists at all (nothing to shim to).
+                build_environment, py3 = build_env()
+                if os.name != "nt" and not py3:
+                    chunk("ERROR: Python 3 is required to build, but none was found.\n")
+                    chunk("On macOS, install it by running this in Terminal:  xcode-select --install\n")
+                    chunk("(or install Python 3 from https://www.python.org/downloads/), then flash again.\n")
+                    chunk("\n--- DONE (exit 1) ---\n")
+                    self.wfile.write(b"0\r\n\r\n"); self.wfile.flush()
+                    return
+
                 proc = subprocess.Popen(
                     acli_cmd,
                     cwd=ROOT,
@@ -6362,6 +6424,7 @@ class Handler(BaseHTTPRequestHandler):
                     errors="replace",   # Japanese (cp932) locale crash the read
                     bufsize=1,
                     shell=(os.name == "nt"),
+                    env=build_environment,
                 )
 
                 for line in proc.stdout:
