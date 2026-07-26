@@ -5986,6 +5986,47 @@ void trailerControl()
 
 //
 // =======================================================================================================
+// SURVONAUTS SHIFT-GATE (RC control) — park/neutral until you flick the throttle stick to engage
+// =======================================================================================================
+// The truck stays in NEUTRAL until you flick the throttle stick DOWN + RIGHT (engage forward) or
+// DOWN + LEFT (engage reverse); then push the stick UP to drive in the engaged direction. Coast for
+// ~1s and it drops back to neutral. Uses the throttle channel (CH3, up/down) and steering channel
+// (CH1, left/right) — i.e. one stick that carries both. RC only (not gamepad). Enable in Transmission.
+#if defined SURVONAUTS && !defined GAMEPAD_MODE
+int8_t survGear = 0; // 0 = neutral, 1 = forward, -1 = reverse
+unsigned long survLastDriveMillis = 0;
+void survonautsGate()
+{
+  int thr = pulseWidthRaw[3]; // throttle stick, 1000..2000 (1500 = center)
+  int str = pulseWidthRaw[1]; // steering stick, left/right of the same gimbal
+  bool down = (thr < 1300);
+  bool up = (thr > 1550);
+  bool right = (str > 1650);
+  bool left = (str < 1350);
+
+  if (down && right)
+    survGear = 1; // engage forward
+  else if (down && left)
+    survGear = -1; // engage reverse
+
+  int upAmount = up ? (thr - 1500) : 0; // 0..500
+  uint16_t out = 1500;
+  if (survGear == 1)
+    out = 1500 + upAmount;
+  else if (survGear == -1)
+    out = 1500 - upAmount;
+
+  if (upAmount > 40)
+    survLastDriveMillis = millis();
+  if (survGear != 0 && millis() - survLastDriveMillis > 1000)
+    survGear = 0; // auto-return to neutral after coasting
+
+  pulseWidthRaw[3] = out; // hand the gated throttle to the normal drive / sound path
+}
+#endif
+
+//
+// =======================================================================================================
 // MAIN LOOP, RUNNING ON CORE 1
 // =======================================================================================================
 //
@@ -6016,6 +6057,10 @@ void loop()
 #else
   // measure RC signals mark space ratio
   readPwmSignals();
+#endif
+
+#if defined SURVONAUTS && !defined GAMEPAD_MODE
+  survonautsGate(); // shift-gate: rewrite the throttle channel from the park/forward/reverse state
 #endif
 
   // Horn triggering

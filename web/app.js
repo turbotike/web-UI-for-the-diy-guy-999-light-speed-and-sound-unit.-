@@ -226,39 +226,7 @@ function renderSettingsPane(tab) {
   }
   if (!tab.controls.length) { pane.appendChild(el("div", "empty", "No adjustable settings here.")); return pane; }
   for (const c of tab.controls) pane.appendChild(controlRow(tab.file, c));
-  // The gamepad "survonauts" shift-gate is a shifting behaviour — surface it here in Transmission.
-  if (tab.file === "4_Transmission.h") pane.appendChild(gamepadShiftgateCard());
   return pane;
-}
-
-// Survonauts shift-gate toggle, shown in the Transmission tab. Reads/writes the
-// gamepad config via a full round-trip so nothing else in it gets clobbered.
-function gamepadShiftgateCard() {
-  const card = el("div", "card");
-  card.appendChild(el("div", "sound-cat", "🎮 Game controller shifting"));
-  card.appendChild(el("p", "pane-sub", "How a game controller engages drive. Only applies in Game-controller mode (choose that in the 🎮 Controls tab)."));
-  const row = el("div", "ctrl");
-  const meta = el("div", "meta");
-  meta.appendChild(el("div", "name", "Survonauts shift-gate"));
-  meta.appendChild(el("div", "desc", "On: start in neutral — flick the left stick down+right for forward, down+left for reverse, then push up to throttle. Off: left stick up/down is throttle directly."));
-  row.appendChild(meta);
-  const input = el("div", "input");
-  const sw = el("label", "switch"); const inp = el("input"); inp.type = "checkbox"; inp.disabled = true;
-  sw.appendChild(inp); sw.appendChild(el("span", "slider-ui")); input.appendChild(sw);
-  row.appendChild(input); card.appendChild(row);
-  let cfg = null;
-  fetch("/gamepad_config").then((r) => r.json()).then((j) => {
-    if (!j.ok) return;
-    cfg = j.config; inp.checked = !!cfg.shiftgate; inp.disabled = false;
-  }).catch(() => {});
-  inp.onchange = async () => {
-    if (!cfg) return;
-    cfg.shiftgate = inp.checked; inp.disabled = true;
-    try { await post("/gamepad_config", cfg); toast("Shift-gate saved.", "ok"); }
-    catch (e) { toast(e.message, "err"); inp.checked = !inp.checked; }
-    finally { inp.disabled = false; }
-  };
-  return card;
 }
 
 // ---- Sound Forge ----
@@ -596,7 +564,6 @@ function buildGamepadUI(root) {
       sw.appendChild(inp); sw.appendChild(el("span", "slider-ui")); input.appendChild(sw);
       row.appendChild(input); return row;
     };
-    card.appendChild(el("p", "pane-sub", "Shift-gate drive (survonauts) lives in the Transmission tab."));
     card.appendChild(toggle("Tank / dual-track mix", "tankmix",
       "For tracked vehicles (tanks, dozers). Blends throttle + steering into two track signals — LEFT track on CH1, RIGHT track on CH2. Plug an ESC into each; trim them with the CH1/CH2 endpoints below."));
 

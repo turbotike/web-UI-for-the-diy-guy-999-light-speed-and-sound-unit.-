@@ -31,17 +31,11 @@ volatile bool gamepadConnected = false;
 
 // ---- Mapping defaults (the flasher overrides these via gamepad_config.h) ------------------------------
 // Analog input range from Bluepad32: sticks -512..511, triggers 0..1023.
-#ifndef GP_SHIFTGATE
-#define GP_SHIFTGATE 1 // 1 = survonauts shift-gate on left stick; 0 = simple (left stick Y = throttle)
-#endif
 #ifndef GP_STEER_DEADZONE
 #define GP_STEER_DEADZONE 60
 #endif
 #ifndef GP_THROTTLE_DEADZONE
 #define GP_THROTTLE_DEADZONE 80
-#endif
-#ifndef GP_AUTO_NEUTRAL_MS
-#define GP_AUTO_NEUTRAL_MS 1000 // idle time before dropping back to NEUTRAL
 #endif
 #ifndef GP_STEER_SOURCE
 #define GP_STEER_SOURCE 1 // 0 = left stick X, 1 = right stick X
@@ -150,9 +144,6 @@ volatile uint16_t gpAuxServoMicros = 1500;                         // AUX (GPIO3
 #define GP_BTN_JAKE 0x0004 // Square / X
 #endif
 
-enum GpGear { GP_NEUTRAL = 0, GP_FORWARD = 1, GP_REVERSE = -1 };
-static int8_t gpGear = GP_NEUTRAL;
-
 static void gpOnConnect(ControllerPtr ctl)
 {
   gpController = ctl;
@@ -165,7 +156,6 @@ static void gpOnDisconnect(ControllerPtr ctl)
   {
     gpController = nullptr;
     gamepadConnected = false;
-    gpGear = GP_NEUTRAL;
     Serial.println("Gamepad disconnected");
   }
 }
@@ -259,7 +249,6 @@ void readGamepadCommands()
     // No pad -> hold everything at neutral (failsafe)
     for (uint8_t i = 1; i <= 13; i++)
       pulseWidthRaw[i] = 1500;
-    gpGear = GP_NEUTRAL;
     gpOutMicros[2] = GP_CH2_CENTER;
     gpOutMicros[3] = GP_CH3_CENTER;
     gpOutMicros[4] = GP_CH4_CENTER;
@@ -280,39 +269,8 @@ void readGamepadCommands()
 #endif
   pulseWidthRaw[1] = gpAxisToPulse(steerRaw, 512, GP_STEER_DEADZONE);
 
-  // --- Throttle / gear: left stick ---
-  uint16_t throttlePulse = 1500;
-#if GP_SHIFTGATE
-  static uint32_t lastThrottleMs = 0;
-  bool down = (ly > 300);
-  bool up = (ly < -GP_THROTTLE_DEADZONE);
-  bool right = (lx > 300);
-  bool left = (lx < -300);
-
-  // Engage gear with a DOWN+RIGHT (forward) or DOWN+LEFT (reverse) flick
-  if (down && right)
-    gpGear = GP_FORWARD;
-  else if (down && left)
-    gpGear = GP_REVERSE;
-
-  // Throttle = how far UP the stick is, applied in the engaged direction
-  int upAmount = up ? (-ly) : 0; // 0..512
-  if (gpGear == GP_FORWARD)
-    throttlePulse = 1500 + (uint16_t)((long)upAmount * 500 / 512);
-  else if (gpGear == GP_REVERSE)
-    throttlePulse = 1500 - (uint16_t)((long)upAmount * 500 / 512);
-  else
-    throttlePulse = 1500; // neutral
-
-  // Auto-return to NEUTRAL after no throttle for a while
-  if (upAmount > GP_THROTTLE_DEADZONE)
-    lastThrottleMs = millis();
-  if (gpGear != GP_NEUTRAL && millis() - lastThrottleMs > GP_AUTO_NEUTRAL_MS)
-    gpGear = GP_NEUTRAL;
-#else
-  // Simple mode: left stick Y directly = throttle (up = forward, down = reverse)
-  throttlePulse = gpAxisToPulse(-ly, 512, GP_THROTTLE_DEADZONE);
-#endif
+  // --- Throttle: left stick Y directly (up = forward, down = reverse) ---
+  uint16_t throttlePulse = gpAxisToPulse(-ly, 512, GP_THROTTLE_DEADZONE);
 #if GP_THROTTLE_INVERT
   throttlePulse = 3000 - throttlePulse; // mirror around 1500 (swap fwd/rev)
 #endif
