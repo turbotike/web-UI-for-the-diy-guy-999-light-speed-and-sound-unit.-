@@ -52,6 +52,9 @@ volatile bool gamepadConnected = false;
 #ifndef GP_THROTTLE_INVERT
 #define GP_THROTTLE_INVERT 0
 #endif
+#ifndef GP_TANKMIX
+#define GP_TANKMIX 0 // 1 = tank/skid mix: throttle +/- steering -> left track (CH1) & right track (CH2)
+#endif
 
 // Digital-function button masks (Bluepad32 buttons() bitfield). Defaults; overridable by the flasher.
 #ifndef GP_BTN_HORN
@@ -174,6 +177,30 @@ void readGamepadCommands()
 #endif
   pulseWidthRaw[3] = throttlePulse;
 
+#if GP_TANKMIX
+  // --- Tank / skid-steer mix ---------------------------------------------------------------
+  // Blend throttle and steering into two track signals. Left stick Y = throttle (direct, so
+  // you can pivot on the spot), the steering stick = turn. Output: left track on CH1, right
+  // track on CH2 — plug an ESC into each. CH1L/C/R and CH2L/C/R (Servos tab) still trim them.
+  int thrDev = -ly; // up = forward (-512..511)
+  if (thrDev > -GP_THROTTLE_DEADZONE && thrDev < GP_THROTTLE_DEADZONE)
+    thrDev = 0;
+  int strDev = GP_STEER_SOURCE ? rx : lx;
+  if (strDev > -GP_STEER_DEADZONE && strDev < GP_STEER_DEADZONE)
+    strDev = 0;
+#if GP_THROTTLE_INVERT
+  thrDev = -thrDev;
+#endif
+#if GP_STEER_INVERT
+  strDev = -strDev;
+#endif
+  long trkL = constrain((long)thrDev + strDev, -512, 512);
+  long trkR = constrain((long)thrDev - strDev, -512, 512);
+  pulseWidthRaw[1] = 1500 + (int)(trkL * 500 / 512);          // left track  -> CH1
+  pulseWidthRaw[2] = 1500 + (int)(trkR * 500 / 512);          // right track -> CH2
+  pulseWidthRaw[3] = 1500 + (int)((long)abs(thrDev) * 500 / 512); // engine sound follows throttle
+#endif
+
   // --- Digital functions -> the channels the profile reads them on ---
   // CH4 = HORN, CH5 = FUNCTION_R (engine/jake/lights), CH6 = FUNCTION_L (indicators)
   pulseWidthRaw[4] = (btn & GP_BTN_HORN) ? 2000 : 1000;                 // horn
@@ -181,7 +208,9 @@ void readGamepadCommands()
   pulseWidthRaw[6] = (btn & GP_BTN_LIGHTS) ? 2000 : 1500;               // lights
 
   // Fill any remaining channels with neutral so nothing floats
-  pulseWidthRaw[2] = 1500;
+#if !GP_TANKMIX
+  pulseWidthRaw[2] = 1500; // in tank mix CH2 carries the right track — don't clobber it
+#endif
   for (uint8_t i = 7; i <= 13; i++)
     pulseWidthRaw[i] = 1500;
 }

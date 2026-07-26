@@ -566,6 +566,8 @@ function buildGamepadUI(root) {
     };
     card.appendChild(toggle("Shift-gate drive", "shiftgate",
       "On: start in neutral, flick the left stick down+right for forward / down+left for reverse, then push up to throttle. Off: left stick up/down is throttle directly."));
+    card.appendChild(toggle("Tank / dual-track mix", "tankmix",
+      "For tracked vehicles (tanks, dozers). Blends throttle + steering into two track signals — LEFT track on CH1, RIGHT track on CH2. Plug an ESC into each; trim them with the CH1/CH2 endpoints below."));
 
     // steering source
     const srow = el("div", "ctrl");

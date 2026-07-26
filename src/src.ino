@@ -2744,7 +2744,14 @@ void mcpwmOutput()
 
     // Shifting CH2 **********************
     static uint16_t shiftingServoMicros;
-#if not defined MODE1_SHIFTING
+#if GP_TANKMIX // Gamepad tank mix: CH2 carries the RIGHT track ESC signal, not gear position
+    if (pulseWidth[2] < 1500)
+      shiftingServoMicros = map(pulseWidth[2], 1000, 1500, CH2L, CH2C);
+    else if (pulseWidth[2] > 1500)
+      shiftingServoMicros = map(pulseWidth[2], 1500, 2000, CH2C, CH2R);
+    else
+      shiftingServoMicros = CH2C;
+#elif not defined MODE1_SHIFTING
     if (selectedGear == 1)
       shiftingServoMicros = CH2L;
     if (selectedGear == 2)
