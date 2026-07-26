@@ -130,6 +130,49 @@ volatile bool gamepadConnected = false;
 volatile uint16_t gpOutMicros[5] = {1500, 1500, 1500, 1500, 1500}; // [1..4] gamepad servo out for CH1..CH4
 volatile uint16_t gpAuxServoMicros = 1500;                         // AUX (GPIO32) servo out
 
+// ---- Teach-mode endpoints (live calibration, saved on the chip) --------------------------------------
+// Runtime endpoints for the 4 mappable outputs (index 0=CH2, 1=CH3, 2=CH4, 3=AUX). Seeded from the
+// flasher's GP_* defaults; overwritten by calibration loaded from EEPROM at boot. gpResolve() uses these.
+uint16_t gpCalMin[4] = {GP_CH2_MIN, GP_CH3_MIN, GP_CH4_MIN, GP_AUX_MIN};
+uint16_t gpCalCenter[4] = {GP_CH2_CENTER, GP_CH3_CENTER, GP_CH4_CENTER, GP_AUX_CENTER};
+uint16_t gpCalMax[4] = {GP_CH2_MAX, GP_CH3_MAX, GP_CH4_MAX, GP_AUX_MAX};
+volatile bool gpInCalMode = false;
+
+// EEPROM block: 4 outputs x (min,center,max) x 2 bytes = 24 bytes at 300..323. The firmware's used
+// range ends at 250 (servo endpoints) and WiFi creds start at 384, so 300 is safe free space.
+// Persistence follows the stock servo-endpoint pattern: seeded on eeprom_id init, loaded at boot.
+#define GP_EEPROM_CAL_ADDR 300
+
+void gpSaveCalToEeprom()
+{
+  int a = GP_EEPROM_CAL_ADDR;
+  for (uint8_t i = 0; i < 4; i++)
+  {
+    EEPROM.writeUShort(a, gpCalMin[i]);    a += 2;
+    EEPROM.writeUShort(a, gpCalCenter[i]); a += 2;
+    EEPROM.writeUShort(a, gpCalMax[i]);    a += 2;
+  }
+  EEPROM.commit();
+}
+void gpLoadCalFromEeprom()
+{
+  int a = GP_EEPROM_CAL_ADDR;
+  for (uint8_t i = 0; i < 4; i++)
+  {
+    gpCalMin[i]    = EEPROM.readUShort(a); a += 2;
+    gpCalCenter[i] = EEPROM.readUShort(a); a += 2;
+    gpCalMax[i]    = EEPROM.readUShort(a); a += 2;
+  }
+}
+void gpWriteCalDefaultsToEeprom() // called from the eeprom_id factory-init block
+{
+  const uint16_t dmn[4] = {GP_CH2_MIN, GP_CH3_MIN, GP_CH4_MIN, GP_AUX_MIN};
+  const uint16_t dct[4] = {GP_CH2_CENTER, GP_CH3_CENTER, GP_CH4_CENTER, GP_AUX_CENTER};
+  const uint16_t dmx[4] = {GP_CH2_MAX, GP_CH3_MAX, GP_CH4_MAX, GP_AUX_MAX};
+  for (uint8_t i = 0; i < 4; i++) { gpCalMin[i] = dmn[i]; gpCalCenter[i] = dct[i]; gpCalMax[i] = dmx[i]; }
+  gpSaveCalToEeprom();
+}
+
 // Digital-function button masks (Bluepad32 buttons() bitfield). Defaults; overridable by the flasher.
 #ifndef GP_BTN_HORN
 #define GP_BTN_HORN 0x0002 // Circle / B
@@ -240,6 +283,111 @@ static uint16_t gpResolve(ControllerPtr c, uint8_t idx, uint8_t src, uint16_t bt
   }
 }
 
+// ---- Teach mode: live endpoint calibration on the controller ----------------------------------------
+// Enter/exit: hold L1 + R1 + Options(Menu) ~1.2s. D-pad left/right picks the output (only ones you've
+// assigned). Right stick X moves that servo live across its full range. X = set min, ▢ = set center,
+// △ = set max (each a rumble blip). Exit saves to EEPROM (long buzz). On PS pads the light-bar colours
+// the selected output: CH2 blue, CH3 green, CH4 yellow, AUX magenta. Driving is disabled while calibrating.
+static const uint8_t GP_CAL_N = 4; // CH2, CH3, CH4, AUX
+static const uint8_t GP_CAL_COLORS[4][3] = {{0, 0, 255}, {0, 255, 0}, {255, 200, 0}, {255, 0, 255}};
+
+static bool gpChannelAssigned(uint8_t ch)
+{
+  switch (ch)
+  {
+  case 0: return GP_CH2_SRC != 0;
+  case 1: return GP_CH3_SRC != 0;
+  case 2: return GP_CH4_SRC != 0;
+  case 3: return GP_AUX_SRC != 0;
+  }
+  return false;
+}
+static void gpCalWriteLive(uint8_t ch, uint16_t us)
+{
+  switch (ch)
+  {
+  case 0: gpOutMicros[2] = us; break;
+  case 1: gpOutMicros[3] = us; break;
+  case 2: gpOutMicros[4] = us; break;
+  case 3: gpAuxServoMicros = us; break;
+  }
+}
+static void gpCalSelectFeedback(ControllerPtr c, uint8_t ch)
+{
+  c->setColorLED(GP_CAL_COLORS[ch][0], GP_CAL_COLORS[ch][1], GP_CAL_COLORS[ch][2]);
+  c->playDualRumble(0, 90, 160, 160);
+}
+
+// Returns true while in calibration mode (caller then skips normal driving).
+static bool gpHandleCal(ControllerPtr c)
+{
+  static bool inCal = false, comboLatch = false;
+  static uint32_t comboSince = 0;
+  static uint8_t ch = 0;
+  static bool pL = false, pR = false, pA = false, pX = false, pY = false;
+
+  uint16_t btn = c->buttons();
+  uint8_t dp = c->dpad();
+  bool combo = (btn & 0x10) && (btn & 0x20) && c->miscStart(); // L1 + R1 + Options/Menu
+
+  if (combo)
+  {
+    if (!comboSince) comboSince = millis();
+    if (!comboLatch && millis() - comboSince > 1200)
+    {
+      comboLatch = true;
+      inCal = !inCal;
+      if (inCal)
+      {
+        ch = 0;
+        for (uint8_t i = 0; i < GP_CAL_N; i++) { if (gpChannelAssigned(i)) { ch = i; break; } }
+        gpCalSelectFeedback(c, ch);
+      }
+      else
+      {
+        gpSaveCalToEeprom();
+        c->setColorLED(0, 0, 0);
+        c->playDualRumble(0, 260, 200, 200); // long buzz = saved
+      }
+    }
+  }
+  else { comboSince = 0; comboLatch = false; }
+
+  if (!inCal) { gpInCalMode = false; return false; }
+  gpInCalMode = true;
+
+  // Channel select with D-pad left/right (step to the next ASSIGNED output)
+  bool dl = dp & 0x08, dr = dp & 0x04;
+  if ((dr && !pR) || (dl && !pL))
+  {
+    for (uint8_t k = 0; k < GP_CAL_N; k++)
+    {
+      ch = dr ? (ch + 1) % GP_CAL_N : (ch + GP_CAL_N - 1) % GP_CAL_N;
+      if (gpChannelAssigned(ch)) break;
+    }
+    gpCalSelectFeedback(c, ch);
+  }
+  pR = dr; pL = dl;
+
+  // Hold the truck still; move only the selected servo, live, over its full range.
+  for (uint8_t i = 1; i <= 13; i++) pulseWidthRaw[i] = 1500;
+  gpOutMicros[2] = gpCalCenter[0];
+  gpOutMicros[3] = gpCalCenter[1];
+  gpOutMicros[4] = gpCalCenter[2];
+  gpAuxServoMicros = gpCalCenter[3];
+  uint16_t live = gpAxisToPulse(c->axisRX(), 512, 0); // right stick X -> 1000..2000
+  gpCalWriteLive(ch, live);
+
+  // Capture: X(A)=min, ▢(X)=center, △(Y)=max
+  bool a = btn & 0x01, xb = btn & 0x04, yb = btn & 0x08;
+  if (a && !pA) { gpCalMin[ch] = live; c->playDualRumble(0, 70, 190, 190); }
+  if (xb && !pX) { gpCalCenter[ch] = live; c->playDualRumble(0, 70, 190, 190); }
+  if (yb && !pY) { gpCalMax[ch] = live; c->playDualRumble(0, 70, 190, 190); }
+  pA = a; pX = xb; pY = yb;
+
+  return true;
+}
+
 void readGamepadCommands()
 {
   BP32.update();
@@ -249,14 +397,17 @@ void readGamepadCommands()
     // No pad -> hold everything at neutral (failsafe)
     for (uint8_t i = 1; i <= 13; i++)
       pulseWidthRaw[i] = 1500;
-    gpOutMicros[2] = GP_CH2_CENTER;
-    gpOutMicros[3] = GP_CH3_CENTER;
-    gpOutMicros[4] = GP_CH4_CENTER;
-    gpAuxServoMicros = GP_AUX_CENTER;
+    gpOutMicros[2] = gpCalCenter[0];
+    gpOutMicros[3] = gpCalCenter[1];
+    gpOutMicros[4] = gpCalCenter[2];
+    gpAuxServoMicros = gpCalCenter[3];
     return;
   }
 
   ControllerPtr c = gpController;
+  if (gpHandleCal(c))
+    return; // in calibration mode -> don't drive
+
   int lx = c->axisX();   // left stick  X  (-512..511)
   int ly = c->axisY();   // left stick  Y  (-512..511, up is negative)
   int rx = c->axisRX();  // right stick X
@@ -308,16 +459,16 @@ void readGamepadCommands()
 
   // --- Per-output mapping: CH2 / CH3 / CH4 / AUX (any assigned channel is driven here) ---
 #if GP_CH2_SRC
-  gpOutMicros[2] = gpResolve(c, 0, GP_CH2_SRC, GP_CH2_BTN, GP_CH2_MIN, GP_CH2_CENTER, GP_CH2_MAX);
+  gpOutMicros[2] = gpResolve(c, 0, GP_CH2_SRC, GP_CH2_BTN, gpCalMin[0], gpCalCenter[0], gpCalMax[0]);
 #endif
 #if GP_CH3_SRC
-  gpOutMicros[3] = gpResolve(c, 1, GP_CH3_SRC, GP_CH3_BTN, GP_CH3_MIN, GP_CH3_CENTER, GP_CH3_MAX);
+  gpOutMicros[3] = gpResolve(c, 1, GP_CH3_SRC, GP_CH3_BTN, gpCalMin[1], gpCalCenter[1], gpCalMax[1]);
 #endif
 #if GP_CH4_SRC
-  gpOutMicros[4] = gpResolve(c, 2, GP_CH4_SRC, GP_CH4_BTN, GP_CH4_MIN, GP_CH4_CENTER, GP_CH4_MAX);
+  gpOutMicros[4] = gpResolve(c, 2, GP_CH4_SRC, GP_CH4_BTN, gpCalMin[2], gpCalCenter[2], gpCalMax[2]);
 #endif
 #if GP_AUX_SRC
-  gpAuxServoMicros = gpResolve(c, 3, GP_AUX_SRC, GP_AUX_BTN, GP_AUX_MIN, GP_AUX_CENTER, GP_AUX_MAX);
+  gpAuxServoMicros = gpResolve(c, 3, GP_AUX_SRC, GP_AUX_BTN, gpCalMin[3], gpCalCenter[3], gpCalMax[3]);
 #endif
 
   // Fill any remaining channels with neutral so nothing floats

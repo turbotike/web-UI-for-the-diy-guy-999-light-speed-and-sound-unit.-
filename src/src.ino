@@ -3060,6 +3060,10 @@ void eepromInit()
     EEPROM.writeUShort(adr_eprom_coupler_servo_left, CH4L);  // Trailer coupler servo left (locked)
     EEPROM.writeUShort(adr_eprom_coupelr_servo_right, CH4R); // Trailer coupler servo right (unlocked)
 
+#if defined GAMEPAD_MODE
+    gpWriteCalDefaultsToEeprom(); // seed gamepad teach-mode endpoints (CH2/CH3/CH4/AUX) on first boot
+#endif
+
     writeStringToEEPROM(adr_eprom_ssid, default_ssid);
     writeStringToEEPROM(adr_eprom_password, default_password);
     EEPROM.commit();
@@ -3141,6 +3145,10 @@ void eepromWrite()
   EEPROM.writeUShort(adr_eprom_coupler_servo_left, CH4L);  // Trailer coupler servo left (locked)
   EEPROM.writeUShort(adr_eprom_coupelr_servo_right, CH4R); // Trailer coupler servo right (unlocked)
 
+#if defined GAMEPAD_MODE
+  gpSaveCalToEeprom(); // persist current gamepad teach-mode endpoints alongside the servo endpoints
+#endif
+
   writeStringToEEPROM(adr_eprom_ssid, ssid);
   writeStringToEEPROM(adr_eprom_password, password);
   EEPROM.commit();
@@ -3217,6 +3225,10 @@ void eepromRead()
 
   CH4L = EEPROM.readUShort(adr_eprom_coupler_servo_left);  // Trailer coupler servo left (locked)
   CH4R = EEPROM.readUShort(adr_eprom_coupelr_servo_right); // Trailer coupler servo right (unlocked)
+
+#if defined GAMEPAD_MODE
+  gpLoadCalFromEeprom(); // load gamepad teach-mode endpoints (CH2/CH3/CH4/AUX)
+#endif
 
   readStringFromEEPROM(adr_eprom_ssid, &ssid);
   readStringFromEEPROM(adr_eprom_password, &password);
