@@ -58,36 +58,32 @@ void webInterface()
               // CSS styles for buttons
 
 #if defined MODERN_CSS // The modern CSS with scaling for better adaption between different devices
-              client.println("<style>html { font-family: Verdana, Helvetica, sans-serif; display: inline-block; margin: 0px auto; text-align: center; color: #0009ff; background-color: #f2f2f2;}");
-              // Text
-              client.println("h1 {font-size: clamp(1.5rem, 2.5vw, 2.5rem);}");
-              client.println("h2 {font-size: clamp(1.3rem, 2.0vw, 2.0rem);}");
-              client.println("p {font-size: clamp(1rem, 1.5vw, 1.5rem); color: black; }");
-              client.println("label {font-size: clamp(1rem, 1.5vw, 1.5rem); color: black; }");
-              client.println("a {font-size: clamp(1rem, 1.5vw, 1.5rem); color: black; cursor: pointer; text-decoration: underline;}");
-              // Two columns for checkboxes
-              client.println(".multiColumn {display: inline-block; width: 49%; text-align: left; vertical-align: top;}");
-              // Checkbox
-              client.println("input[type=\"checkbox\"] {cursor: pointer; zoom: 1.5;}");
-              // Slider
-              client.println(".slider { -webkit-appearance: none; width: 95%; height: 25px; background: #d3d3d3; outline: none; border: clamp(0.15rem, 0.15vw, 0.3rem) solid black; margin: 5px; border-radius: 10px;}");
-              client.println(".slider::-webkit-slider-thumb { -webkit-appearance: none; cursor: pointer; width: 95%; width: 35px; height: 35px; background: #66ffcc; outline: none; border: clamp(0.15rem, 0.15vw, 0.3rem) solid black; border-radius: 10px;}");
-              client.println(".sliderServo1::-webkit-slider-thumb { background: #ff9999;}");
-              client.println(".sliderServo2::-webkit-slider-thumb { background: #99ccff;}");
-              client.println(".sliderServo3::-webkit-slider-thumb { background: #ffbb99;}");
-              client.println(".sliderLed::-webkit-slider-thumb { background: #ffff99;}");
-              // Collapsible
-              client.println(".collapsible {background-color: #888; color: white;cursor: pointer; padding: 10px; width: 100%; border: none; text-align: center; outline: none; font-size: clamp(1rem, 1.5vw, 1.5rem); font-weight: bold;)}");
-              client.println(".active, .collapsible:hover {background-color: #555;}");
-              client.println(".content { display: none;}");
-              // Textbox
-              client.println(".textbox {cursor: pointer; border: clamp(0.15rem, 0.15vw, 0.3rem) solid black; font-size: clamp(1rem, 2vw, 2rem); padding: clamp(0.2rem, 1vw, 1rem); text-align: center; border-radius: 10px;}");
-              // Buttons
-              client.println(".buttonGreen {background-color: #4CAF50; color: white;}");
-              client.println(".buttonRed {background-color: #ff0000; color: white;}");
-              client.println(".buttonGrey {background-color: #7A7A7A; color: black;}");
-              client.println(".button { cursor: pointer; border: clamp(0.15rem, 0.15vw, 0.3rem) solid black; padding: clamp(0.2rem, 1vw, 1rem); margin: clamp(0.2rem, 1vw, 1rem); font-size: clamp(1rem, 2vw, 2rem); width: 95%; border-radius: 10px;");
-
+              // ==== TheDIYGuy999 flasher skin (neon green + hot pink, DieselCore-style) ====
+              client.println("<style>");
+              client.println("html{font-family:'Trebuchet MS',Arial,sans-serif;margin:0;text-align:center;color:#f3ffe6;background:#0a1206;background-image:radial-gradient(900px 500px at 15% -10%,rgba(57,255,20,.22),transparent 60%),radial-gradient(800px 600px at 100% 0%,rgba(255,46,151,.18),transparent 55%),linear-gradient(160deg,#0a1206,#112011);background-attachment:fixed;min-height:100%;}");
+              client.println("body{margin:0;padding:0 12px 40px;}");
+              client.println("h1{font-family:Impact,'Arial Black',sans-serif;text-transform:uppercase;font-style:italic;letter-spacing:1px;color:#ff2e97;text-shadow:0 0 12px rgba(255,46,151,.7);font-size:clamp(1.6rem,5vw,2.4rem);margin:16px 0 2px;}");
+              client.println("h2{font-family:Impact,'Arial Black',sans-serif;text-transform:uppercase;letter-spacing:.5px;color:#39ff14;font-size:clamp(1.15rem,3.5vw,1.6rem);margin:4px 0;}");
+              client.println("p{font-size:clamp(.95rem,2.8vw,1.15rem);color:#d7ffc9;}");
+              client.println("label{font-size:clamp(.95rem,2.8vw,1.15rem);color:#d7ffc9;}");
+              client.println("a{color:#39ff14;}");
+              client.println("hr{border:none;border-top:2px solid #3f9f24;margin:16px 0;}");
+              client.println(".multiColumn{display:inline-block;width:49%;text-align:left;vertical-align:top;}");
+              client.println("input[type=\"checkbox\"]{cursor:pointer;zoom:1.6;accent-color:#ff2e97;}");
+              client.println(".slider{-webkit-appearance:none;appearance:none;width:95%;height:22px;background:rgba(8,16,6,.85);outline:none;border:2px solid #3f9f24;margin:6px auto;border-radius:999px;}");
+              client.println(".slider::-webkit-slider-thumb{-webkit-appearance:none;cursor:pointer;width:34px;height:34px;background:radial-gradient(circle at 35% 30%,#eaffe0,#39ff14);border:2px solid #faff00;border-radius:50%;box-shadow:0 0 10px rgba(57,255,20,.8);}");
+              client.println(".sliderServo1::-webkit-slider-thumb{background:radial-gradient(circle at 35% 30%,#ffd0e4,#ff2e97);border-color:#fff;}");
+              client.println(".sliderServo2::-webkit-slider-thumb{background:radial-gradient(circle at 35% 30%,#cfeaff,#00b3ff);border-color:#fff;}");
+              client.println(".sliderServo3::-webkit-slider-thumb{background:radial-gradient(circle at 35% 30%,#ffe6cf,#ff9b2e);border-color:#fff;}");
+              client.println(".sliderLed::-webkit-slider-thumb{background:radial-gradient(circle at 35% 30%,#ffffcf,#faff00);border-color:#fff;}");
+              client.println(".collapsible{background:linear-gradient(180deg,#12260c,#0a1a06);color:#39ff14;cursor:pointer;padding:14px;width:100%;border:2px solid #3f9f24;border-radius:14px;text-align:center;outline:none;font-family:Impact,'Arial Black',sans-serif;text-transform:uppercase;letter-spacing:1px;font-size:clamp(1rem,3vw,1.3rem);margin-top:10px;}");
+              client.println(".active,.collapsible:hover{border-color:#39ff14;color:#eaffe0;box-shadow:0 0 16px rgba(57,255,20,.4);}");
+              client.println(".content{display:none;padding:8px;border:2px solid #3f9f24;border-top:none;border-radius:0 0 14px 14px;background:rgba(18,38,12,.55);margin-bottom:8px;}");
+              client.println(".textbox{cursor:pointer;border:2px solid #3f9f24;background:rgba(8,16,6,.7);color:#f3ffe6;font-size:clamp(1rem,3vw,1.35rem);padding:8px 12px;text-align:center;border-radius:10px;}");
+              client.println(".button{cursor:pointer;border:2px solid #3f9f24;padding:12px 18px;margin:8px 0;font-family:'Trebuchet MS',Arial,sans-serif;font-weight:800;font-size:clamp(1rem,3vw,1.3rem);width:95%;border-radius:999px;color:#f3ffe6;background:rgba(28,56,18,.6);}");
+              client.println(".buttonGreen{background:linear-gradient(135deg,#39ff14,#8fff5a);color:#0a1206;border:0;box-shadow:0 0 14px rgba(57,255,20,.6);}");
+              client.println(".buttonRed{background:linear-gradient(135deg,#ff2e97,#ff5b6b);color:#fff;border:0;box-shadow:0 0 14px rgba(255,46,151,.6);}");
+              client.println(".buttonGrey{background:rgba(28,56,18,.6);color:#d7ffc9;}");
               client.println("</style></head>");
 
 #else // Old CSS with green background
