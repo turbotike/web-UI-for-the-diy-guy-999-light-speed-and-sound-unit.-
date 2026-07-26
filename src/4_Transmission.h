@@ -6,10 +6,8 @@
  *
  */
 
-// Survonauts shift-gate: the truck stays in PARK / NEUTRAL until you flick the throttle stick DOWN + RIGHT
-// (engage forward) or DOWN + LEFT (engage reverse); then push the stick UP to drive. Coast for ~1s and it
-// drops back to neutral. Uses the throttle (CH3) + steering (CH1) stick. For RC transmitters (not gamepad).
-// #define SURVONAUTS
+// Survonauts shift-gate (RC transmitters). Gate-style driving instead of direct throttle.
+// #define SURVONAUTS // Starts in park/neutral. Flick the throttle stick down+right for forward, down+left for reverse, then push up to drive. Returns to neutral after about 1s of coasting.
 
 // The following transmission modes are ignored in "automatic" or "doubleClutch" vehicles ==================================================
 // Never uncomment more than one! If no option is defined, you can use a real 3 speed transmission, for example from TAMIYA

@@ -924,6 +924,10 @@ def extract_description(lines, i):
     line = lines[i]
     if "//" in line:
         inline = clean_comment(line.split("//", 1)[1])
+        # For a commented-out directive ("// #define NAME rest of comment"), the
+        # split grabs "#define NAME ..." as the text. Drop the "#define NAME" (and
+        # any following "//") so the real prose shows, not the raw directive.
+        inline = re.sub(r"^#\s*define\s+\w+\s*(?://+\s*)?", "", inline).strip()
 
     if inline and "choose the" not in inline.lower():
         return inline
