@@ -169,12 +169,14 @@ It's skinned to match this app (flames, neon theme) and gives you **master volum
 
 ## 🎮 Game controller support *(experimental)*
 
-Drive with a **PS4 / PS5 / Xbox** controller over Bluetooth instead of an RC transmitter, powered by [Bluepad32](https://github.com/ricardoquesada/bluepad32):
+Drive with a **PS4 / PS5 / Xbox** controller over Bluetooth instead of an RC transmitter, powered by [Bluepad32](https://github.com/ricardoquesada/bluepad32). Set it all up in the app's **🎮 Controls** tab:
 
-- **One radio:** the ESP32 does WiFi **or** Bluetooth, not both — so a gamepad build turns the on-chip WiFi page **off**.
-- **Shift-gate drive** ("survonauts" style): starts in neutral — flick the left stick **down+right** for forward, **down+left** for reverse, then push **up** to throttle; it drops back to neutral if you coast for a second. Steering on the right stick; buttons for horn / lights / engine / jake.
+- **Pick your mode** — one big switch between the **WiFi tuning page** (normal RC + phone tuning) and the **game controller**. The ESP32 has one radio, so it's one or the other; the app handles the wiring (and even downloads the right compiler core for you).
+- **Remap the buttons** — bind horn / lights / engine / jake to whichever controller buttons you like.
+- **Servo endpoints** — set the travel limits (left / center / right) for each channel, CH1–CH4.
+- **Shift-gate drive** ("survonauts" style): start in neutral — flick the left stick **down+right** for forward, **down+left** for reverse, then push **up** to throttle; it drops back to neutral if you coast for a second.
 
-> ⚠️ **Experimental.** The firmware builds + runs Bluepad32 on the board, but pairing + driving + sound need testing on real hardware with a real controller. The flasher's point-and-click gamepad setup screen (remap every button, set servo endpoints per channel) is in progress.
+> ⚠️ **Experimental.** The firmware builds + runs Bluepad32 on the board and the setup UI is done, but pairing + driving + sound still need testing on real hardware with a real controller.
 
 ## 🙌 Credits
 
