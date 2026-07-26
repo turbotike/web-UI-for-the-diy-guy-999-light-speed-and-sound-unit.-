@@ -7,6 +7,22 @@
 // =======================================================================================================
 //
 
+// Emit one "Sound Volume" slider (DieselCore stepper card via the page's JS) and
+// apply the value if this request set it. `var` is the vehicle's volume variable.
+void volSlider(WiFiClient &client, String &header, const char *param, const char *label, volatile int &var)
+{
+  String vs = String((int)var, DEC);
+  client.println(String("<p>") + label + ": <span id=\"textSlider" + param + "Value\">" + vs + "</span><br>");
+  client.println(String("<input type=\"range\" min=\"0\" max=\"200\" step=\"5\" class=\"slider\" id=\"Slider") + param + "Input\" onchange=\"vol('" + param + "',this.value)\" value=\"" + vs + "\" /></p>");
+  if (header.indexOf(String("GET /?") + param + "=") >= 0)
+  {
+    int p1 = header.indexOf('=');
+    int p2 = header.indexOf('&');
+    if (p1 >= 0 && p2 > p1)
+      var = header.substring(p1 + 1, p2).toInt();
+  }
+}
+
 void webInterface()
 {
 
@@ -110,8 +126,11 @@ void webInterface()
 
               client.println("<body onload=\"readDefaults()\">");
 
-              // Turn every plain slider into a DieselCore-style card with prev/next steppers
-              client.println("<script>window.addEventListener('load',function(){var s=document.querySelectorAll('input[type=range].slider');for(var i=0;i<s.length;i++){(function(sl){var st=parseFloat(sl.getAttribute('step'))||1;var mn=parseFloat(sl.getAttribute('min'));var mx=parseFloat(sl.getAttribute('max'));var w=document.createElement('div');w.className='slwrap';var a=document.createElement('button');a.type='button';a.className='stp';a.innerHTML='&#9666;';var b=document.createElement('button');b.type='button';b.className='stp';b.innerHTML='&#9656;';sl.parentNode.insertBefore(w,sl);w.appendChild(a);w.appendChild(sl);w.appendChild(b);function n(d){var v=parseFloat(sl.value)+d*st;if(!isNaN(mn))v=Math.max(mn,v);if(!isNaN(mx))v=Math.min(mx,v);sl.value=v;sl.dispatchEvent(new Event('change'));}a.onclick=function(){n(-1);};b.onclick=function(){n(1);};var c=sl.closest('p');if(c)c.classList.add('slidercard');})(s[i]);}});</script>");
+              // vol(): send a Sound Volume change.  Slider enhancer: DieselCore stepper cards + thumb-only drag.
+              client.println("<script>");
+              client.println("function vol(p,pos){var e=document.getElementById('textSlider'+p+'Value');if(e)e.innerHTML=pos;var x=new XMLHttpRequest();x.open('GET','/?'+p+'='+pos+'&',true);x.send();}");
+              client.println("window.addEventListener('load',function(){var s=document.querySelectorAll('input[type=range].slider');for(var i=0;i<s.length;i++){(function(sl){var st=parseFloat(sl.getAttribute('step'))||1;var mn=parseFloat(sl.getAttribute('min'));var mx=parseFloat(sl.getAttribute('max'));var w=document.createElement('div');w.className='slwrap';var a=document.createElement('button');a.type='button';a.className='stp';a.innerHTML='&#9666;';var b=document.createElement('button');b.type='button';b.className='stp';b.innerHTML='&#9656;';sl.parentNode.insertBefore(w,sl);w.appendChild(a);w.appendChild(sl);w.appendChild(b);function n(d){var v=parseFloat(sl.value)+d*st;if(!isNaN(mn))v=Math.max(mn,v);if(!isNaN(mx))v=Math.min(mx,v);sl.value=v;sl.dispatchEvent(new Event('change'));}a.onclick=function(){n(-1);};b.onclick=function(){n(1);};sl.addEventListener('pointerdown',function(e){var r=sl.getBoundingClientRect();var f=(parseFloat(sl.value)-mn)/(mx-mn);var tx=r.left+f*(r.width-34)+17;if(Math.abs(e.clientX-tx)>24){e.preventDefault();}});var c=sl.closest('p');if(c)c.classList.add('slidercard');})(s[i]);}});");
+              client.println("</script>");
 
               client.println("<h1>TheDIYGuy999 Sound & Light Controller</h1>"); // Website title
               // client.printf("<p>Vehicle: %s\n", ssid); // TODO, not working!
@@ -138,6 +157,25 @@ void webInterface()
                 masterVolume = webMasterVolume;
                 Serial.println("masterVolume = " + String(masterVolume));
               }
+
+              // ===== Individual sound volumes (live) =====
+              client.println("<hr>");
+              client.println("<button type=\"button\" class=\"collapsible\">&#x1F39A; Sound Volumes</button>");
+              client.println("<div class=\"content\">");
+              volSlider(client, header, "volStart", "Start", startVolumePercentage);
+              volSlider(client, header, "volIdle", "Idle", idleVolumePercentage);
+              volSlider(client, header, "volEngIdle", "Engine (idle throttle)", engineIdleVolumePercentage);
+              volSlider(client, header, "volRev", "Rev", revVolumePercentage);
+              volSlider(client, header, "volEngRev", "Engine (rev throttle)", engineRevVolumePercentage);
+              volSlider(client, header, "volThrottle", "Full throttle", fullThrottleVolumePercentage);
+              volSlider(client, header, "volDiesel", "Diesel knock", dieselKnockVolumePercentage);
+              volSlider(client, header, "volTurbo", "Turbo", turboVolumePercentage);
+              volSlider(client, header, "volJake", "Jake brake", jakeBrakeVolumePercentage);
+              volSlider(client, header, "volHorn", "Horn", hornVolumePercentage);
+              volSlider(client, header, "volSiren", "Siren", sirenVolumePercentage);
+              volSlider(client, header, "volBrake", "Air brake", brakeVolumePercentage);
+              volSlider(client, header, "volReverse", "Reversing beep", reversingVolumePercentage);
+              client.println("</div>");
 
 #if defined BATTERY_PROTECTION
               client.println("<hr>"); // Horizontal line ===================================================================================================================================================
