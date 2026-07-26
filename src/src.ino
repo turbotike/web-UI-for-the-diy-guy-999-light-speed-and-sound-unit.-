@@ -428,6 +428,7 @@ volatile uint16_t hydraulicLoad = 0;                   // Hydraulic load depende
 volatile uint64_t dacDebug = 0; // DAC debug variable TODO
 
 volatile int16_t masterVolume = 100; // Master volume percentage
+volatile int16_t webMasterVolume = -1; // Web UI master volume override (-1 = follow RC volume knob)
 volatile uint8_t dacOffset = 0;      // 128, but needs to be ramped up slowly to prevent popping noise, if switched on
 
 // Throttle
@@ -5048,8 +5049,12 @@ void rcTriggerRead()
       else
         volumeIndex = 0;
       volumeStateLock = !volumeStateLock;
+      webMasterVolume = -1; // RC volume knob used -> release the web override
     }
-    masterVolume = masterVolumePercentage[volumeIndex]; // Write volume
+    if (webMasterVolume >= 0)
+      masterVolume = webMasterVolume; // Web UI master volume override
+    else
+      masterVolume = masterVolumePercentage[volumeIndex]; // Write volume
   }
 
   // Engine on / off, if dual rate @75% and long in position -----

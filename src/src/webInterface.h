@@ -84,6 +84,13 @@ void webInterface()
               client.println(".buttonGreen{background:linear-gradient(135deg,#39ff14,#8fff5a);color:#0a1206;border:0;box-shadow:0 0 14px rgba(57,255,20,.6);}");
               client.println(".buttonRed{background:linear-gradient(135deg,#ff2e97,#ff5b6b);color:#fff;border:0;box-shadow:0 0 14px rgba(255,46,151,.6);}");
               client.println(".buttonGrey{background:rgba(28,56,18,.6);color:#d7ffc9;}");
+              // DieselCore-style stepper slider cards (built by JS on load)
+              client.println(".slidercard{background:rgba(18,38,12,.55);border:2px solid #3f9f24;border-radius:16px;padding:12px 14px;margin:10px auto;max-width:660px;box-shadow:0 0 14px rgba(57,255,20,.12);text-align:left;}");
+              client.println(".slwrap{display:flex;align-items:center;gap:10px;margin-top:10px;}");
+              client.println(".slwrap .slider{flex:1;margin:0;width:auto;}");
+              client.println(".stp{flex:0 0 auto;width:50px;height:46px;border-radius:12px;border:2px solid #3f9f24;background:linear-gradient(180deg,#12260c,#0a1a06);color:#39ff14;font-size:22px;font-weight:900;line-height:1;cursor:pointer;}");
+              client.println(".stp:active{transform:translateY(1px);background:#39ff14;color:#0a1206;}");
+              client.println("span[id^=\"textSlider\"],span[id^=\"textslider\"]{display:inline-block;min-width:52px;background:#faff00;color:#0a1206;font-weight:800;border-radius:999px;padding:2px 12px;margin-left:6px;box-shadow:0 0 10px rgba(250,255,0,.5);}");
               client.println("</style></head>");
 
 #else // Old CSS with green background
@@ -103,10 +110,34 @@ void webInterface()
 
               client.println("<body onload=\"readDefaults()\">");
 
+              // Turn every plain slider into a DieselCore-style card with prev/next steppers
+              client.println("<script>window.addEventListener('load',function(){var s=document.querySelectorAll('input[type=range].slider');for(var i=0;i<s.length;i++){(function(sl){var st=parseFloat(sl.getAttribute('step'))||1;var mn=parseFloat(sl.getAttribute('min'));var mx=parseFloat(sl.getAttribute('max'));var w=document.createElement('div');w.className='slwrap';var a=document.createElement('button');a.type='button';a.className='stp';a.innerHTML='&#9666;';var b=document.createElement('button');b.type='button';b.className='stp';b.innerHTML='&#9656;';sl.parentNode.insertBefore(w,sl);w.appendChild(a);w.appendChild(sl);w.appendChild(b);function n(d){var v=parseFloat(sl.value)+d*st;if(!isNaN(mn))v=Math.max(mn,v);if(!isNaN(mx))v=Math.min(mx,v);sl.value=v;sl.dispatchEvent(new Event('change'));}a.onclick=function(){n(-1);};b.onclick=function(){n(1);};var c=sl.closest('p');if(c)c.classList.add('slidercard');})(s[i]);}});</script>");
+
               client.println("<h1>TheDIYGuy999 Sound & Light Controller</h1>"); // Website title
               // client.printf("<p>Vehicle: %s\n", ssid); // TODO, not working!
               client.printf("<p>Software version: %s\n", codeVersion);
               client.printf("<p style=\"color:red;\"><b>Don't mess around while driving!</b></p>");
+
+              // ===== Master Volume (live web override) =====
+              client.println("<hr>");
+              valueString = String(masterVolume, DEC);
+              client.println("<p style=\"font-family:Impact,'Arial Black',sans-serif;text-transform:uppercase;color:#39ff14;letter-spacing:1px;font-size:clamp(1.1rem,3.5vw,1.5rem);\">&#x1F50A; Master Volume: <span id=\"textSliderMVValue\">" + valueString + "</span><br>");
+              client.println("<input type=\"range\" min=\"0\" max=\"150\" step=\"5\" class=\"slider\" id=\"MasterVolInput\" onchange=\"MasterVolChange(this.value)\" value=\"" + valueString + "\" /></p>");
+              client.println("<script> function MasterVolChange(pos) { ");
+              client.println("document.getElementById(\"textSliderMVValue\").innerHTML = document.getElementById(\"MasterVolInput\").value;");
+              client.println("var xhr = new XMLHttpRequest();");
+              client.println("xhr.open('GET', \"/?MasterVol=\" + pos + \"&\", true);");
+              client.println("xhr.send(); } </script>");
+
+              if (header.indexOf("GET /?MasterVol=") >= 0)
+              {
+                pos1 = header.indexOf('=');
+                pos2 = header.indexOf('&');
+                valueString = header.substring(pos1 + 1, pos2);
+                webMasterVolume = (valueString.toInt());
+                masterVolume = webMasterVolume;
+                Serial.println("masterVolume = " + String(masterVolume));
+              }
 
 #if defined BATTERY_PROTECTION
               client.println("<hr>"); // Horizontal line ===================================================================================================================================================
