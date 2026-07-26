@@ -5989,8 +5989,9 @@ void trailerControl()
 // SURVONAUTS SHIFT-GATE (RC control) — park/neutral until you flick the throttle stick to engage
 // =======================================================================================================
 // The truck stays in NEUTRAL until you flick the throttle stick DOWN + RIGHT (engage forward) or
-// DOWN + LEFT (engage reverse); then push the stick UP to drive in the engaged direction. Coast for
-// ~1s and it drops back to neutral. Uses the throttle channel (CH3, up/down) and steering channel
+// DOWN + LEFT (engage reverse); then push the stick UP to drive in the engaged direction. It stays in
+// gear while the truck is moving and only drops to neutral after being fully stopped for ~1s. Uses the
+// throttle channel (CH3, up/down) and steering channel
 // (CH1, left/right) — i.e. one stick that carries both. RC only (not gamepad). Enable in Transmission.
 #if defined SURVONAUTS && !defined GAMEPAD_MODE
 int8_t survGear = 0; // 0 = neutral, 1 = forward, -1 = reverse
@@ -6016,10 +6017,12 @@ void survonautsGate()
   else if (survGear == -1)
     out = 1500 - upAmount;
 
-  if (upAmount > 40)
+  // Auto-return to neutral ONLY after the truck has been fully stopped (parked) for ~1s.
+  // While it's still moving (currentSpeed > 0) or you're on the throttle, it stays in gear.
+  if (currentSpeed > 0 || upAmount > 40)
     survLastDriveMillis = millis();
   if (survGear != 0 && millis() - survLastDriveMillis > 1000)
-    survGear = 0; // auto-return to neutral after coasting
+    survGear = 0; // parked (stopped) for ~1s -> back to neutral
 
   pulseWidthRaw[3] = out; // hand the gated throttle to the normal drive / sound path
 }
