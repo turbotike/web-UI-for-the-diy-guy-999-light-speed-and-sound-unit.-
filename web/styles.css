@@ -267,3 +267,25 @@ label.opt { color: var(--muted); display: flex; align-items: center; gap: 8px; f
 #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 #toast.ok { border-color: var(--green); box-shadow: var(--glow-green); color: var(--green); }
 #toast.err { border-color: var(--err); box-shadow: 0 0 20px rgba(255,59,107,.6); color: var(--err); }
+
+/* ---- Controls / Gamepad tab ---- */
+.gpmodes { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.gpmode {
+  flex: 1 1 240px; padding: 20px; border-radius: var(--radius); cursor: pointer;
+  background: var(--panel); border: 2px solid var(--line); text-align: center;
+  transition: border-color .15s, box-shadow .15s, transform .1s;
+}
+.gpmode:hover { transform: translateY(-2px); }
+.gpmode.sel { border-color: var(--green); box-shadow: var(--glow-green); }
+.gpmode-ic { font-size: 40px; line-height: 1; margin-bottom: 8px; }
+.gpmode-t { font-family: var(--display); font-size: 22px; text-transform: uppercase; color: var(--green); letter-spacing: .5px; }
+.gpmode.sel .gpmode-t { color: var(--yellow); text-shadow: var(--glow-yellow); }
+.gpmode-s { color: var(--muted); font-size: 12.5px; margin-top: 6px; line-height: 1.4; }
+.gpbadge {
+  margin: 0 0 18px; padding: 10px 14px; border-radius: 12px; font-size: 13px;
+  background: rgba(250,255,0,.08); border: 1px solid var(--yellow); color: var(--yellow);
+}
+.gpends { display: flex; gap: 12px; flex-wrap: wrap; }
+.gpend { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.gpend-tag { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; }
+.gpend input { width: 92px; }

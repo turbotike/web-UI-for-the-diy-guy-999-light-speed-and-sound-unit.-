@@ -1675,6 +1675,229 @@ def apply_vehicle(vehicle_file):
     write_text(path, "\n".join(out) + "\n")
 
 
+# ---- Gamepad (Bluepad32) configuration ------------------------------------------------------------
+# The web UI's Gamepad tab drives all of this. The drive MODE lives in the firmware
+# headers — GAMEPAD_MODE in 2_Remote.h (Bluetooth controller) vs ENABLE_WIRELESS in
+# 0_generalSettings.h (WiFi tuning page). The ESP32 has a single radio, so only one
+# can be on at a time. The button map + drive options are written to an auto-generated
+# src/gamepad_config.h (included by src/gamepad.h). Servo endpoints live in the active
+# SERVOS_* block of 7_Servos.h and apply in every mode.
+
+# RC input modes, in the same #elif order src.ino dispatches them. GAMEPAD_MODE is the
+# LAST #elif, so an active comm mode must be commented out for the gamepad branch to run.
+GP_COMM_MODES = ["SBUS_COMMUNICATION", "IBUS_COMMUNICATION",
+                 "SUMD_COMMUNICATION", "PPM_COMMUNICATION"]
+
+# Bluepad32 buttons() bitmask -> friendly label (PlayStation / Xbox faces share bits).
+GP_BUTTON_CHOICES = [
+    ["0x0001", "Cross / A"],
+    ["0x0002", "Circle / B"],
+    ["0x0004", "Square / X"],
+    ["0x0008", "Triangle / Y"],
+    ["0x0010", "L1 / LB"],
+    ["0x0020", "R1 / RB"],
+    ["0x0040", "L2 / LT (click)"],
+    ["0x0080", "R2 / RT (click)"],
+    ["0x0100", "L3 (left stick click)"],
+    ["0x0200", "R3 (right stick click)"],
+]
+
+# Digital functions the user can bind a button to: (#define name, label, default mask).
+GP_FUNCTIONS = [
+    ["GP_BTN_HORN", "Horn", "0x0002"],
+    ["GP_BTN_ENGINE", "Engine start / stop", "0x0008"],
+    ["GP_BTN_JAKE", "Jake brake", "0x0004"],
+    ["GP_BTN_LIGHTS", "Lights", "0x0001"],
+]
+
+GP_CONFIG_REL = os.path.join("src", "gamepad_config.h")  # under SRC (next to gamepad.h)
+GP_SERVO_VARS = ["CH1L", "CH1C", "CH1R", "CH2L", "CH2C", "CH2R",
+                 "CH3L", "CH3C", "CH3R", "CH4L", "CH4R"]
+
+
+def _norm_mask(v, default="0x0000"):
+    """Normalize a button-mask string ('2', '0x0002', 2) to 0xNNNN form."""
+    try:
+        return "0x%04X" % (int(str(v).strip(), 0) & 0xFFFF)
+    except Exception:
+        return default
+
+
+def gamepad_mode_active():
+    """True if GAMEPAD_MODE is uncommented in 2_Remote.h."""
+    text = read_text(os.path.join(SRC, "2_Remote.h"))
+    return re.search(r"^\s*#define\s+GAMEPAD_MODE\b", text, re.MULTILINE) is not None
+
+
+def active_comm_mode():
+    """Return the one uncommented *_COMMUNICATION mode in 2_Remote.h, or None."""
+    text = read_text(os.path.join(SRC, "2_Remote.h"))
+    for m in GP_COMM_MODES:
+        if re.search(r"^\s*#define\s+" + m + r"\b", text, re.MULTILINE):
+            return m
+    return None
+
+
+def active_servos_profile():
+    """Return the uncommented SERVOS_* profile name from 7_Servos.h's selection list."""
+    text = read_text(os.path.join(SRC, "7_Servos.h"))
+    m = re.search(r"^\s*#define\s+(SERVOS_\w+)\b", text, re.MULTILINE)
+    return m.group(1) if m else None
+
+
+def _servos_block_range(text, profile):
+    """(start, end) char offsets of the `#ifdef <profile> ... #endif` block body."""
+    m = re.search(r"^\s*#if(?:def)?\s+(?:defined\s+)?" + re.escape(profile) + r"\b.*$",
+                  text, re.MULTILINE)
+    if not m:
+        return None
+    start = m.end()
+    e = re.search(r"^\s*#endif\b", text[start:], re.MULTILINE)
+    return (start, start + e.start()) if e else None
+
+
+def read_servo_endpoints():
+    """(profile, {var: int}) for the active SERVOS_* block."""
+    prof = active_servos_profile()
+    text = read_text(os.path.join(SRC, "7_Servos.h"))
+    rng = _servos_block_range(text, prof) if prof else None
+    scope = text[rng[0]:rng[1]] if rng else text
+    vals = {}
+    for var in GP_SERVO_VARS:
+        m = re.search(r"\b" + var + r"\s*=\s*(\d+)", scope)
+        if m:
+            vals[var] = int(m.group(1))
+    return prof, vals
+
+
+def write_servo_endpoints(vals):
+    """Write CH*L/C/R endpoints, scoped to the active SERVOS_* block only."""
+    path = os.path.join(SRC, "7_Servos.h")
+    text = read_text(path)
+    prof = active_servos_profile()
+    rng = _servos_block_range(text, prof) if prof else None
+    if not rng:
+        return False
+    head, scope, tail = text[:rng[0]], text[rng[0]:rng[1]], text[rng[1]:]
+    for var, val in vals.items():
+        if var not in GP_SERVO_VARS:
+            continue
+        v = max(500, min(2500, int(val)))
+        scope = re.sub(r"(\b" + var + r"\s*=\s*)\d+", r"\g<1>" + str(v), scope)
+    write_text(path, head + scope + tail)
+    return True
+
+
+def read_gamepad_defines():
+    """GP_* #defines currently in gamepad_config.h (empty if the file is absent)."""
+    path = os.path.join(SRC, GP_CONFIG_REL)
+    out = {}
+    if os.path.isfile(path):
+        for m in re.finditer(r"^\s*#define\s+(GP_\w+)\s+(\S+)",
+                             read_text(path), re.MULTILINE):
+            out[m.group(1)] = m.group(2)
+    return out
+
+
+def stored_prev_comm():
+    """The RC comm mode saved in gamepad_config.h (to restore when leaving gamepad mode)."""
+    path = os.path.join(SRC, GP_CONFIG_REL)
+    if os.path.isfile(path):
+        m = re.search(r"GP_PREV_COMM:\s*(\w+)", read_text(path))
+        if m:
+            return m.group(1)
+    return None
+
+
+def read_gamepad_config():
+    """Everything the Gamepad tab needs to render its current state."""
+    d = read_gamepad_defines()
+    prof, servos = read_servo_endpoints()
+    buttons = {name: _norm_mask(d.get(name, dflt), _norm_mask(dflt))
+               for name, _label, dflt in GP_FUNCTIONS}
+    return {
+        "mode": "gamepad" if gamepad_mode_active() else "webui",
+        "prevComm": active_comm_mode() or stored_prev_comm() or "IBUS_COMMUNICATION",
+        "shiftgate": int(d.get("GP_SHIFTGATE", "1")) != 0,
+        "steerSource": 1 if int(d.get("GP_STEER_SOURCE", "1")) else 0,
+        "steerInvert": int(d.get("GP_STEER_INVERT", "0")) != 0,
+        "throttleInvert": int(d.get("GP_THROTTLE_INVERT", "0")) != 0,
+        "steerDeadzone": int(d.get("GP_STEER_DEADZONE", "60")),
+        "throttleDeadzone": int(d.get("GP_THROTTLE_DEADZONE", "80")),
+        "autoNeutralMs": int(d.get("GP_AUTO_NEUTRAL_MS", "1000")),
+        "buttons": buttons,
+        "servos": servos,
+        "servoProfile": prof,
+        "buttonChoices": GP_BUTTON_CHOICES,
+        "functions": GP_FUNCTIONS,
+    }
+
+
+def write_gamepad_defines(req, prev_comm):
+    """(Re)write the auto-generated src/gamepad_config.h from the tab's settings."""
+    buttons = req.get("buttons") or {}
+
+    def mask(name, default):
+        return _norm_mask(buttons.get(name, default), default)
+
+    def i(key, default):
+        try:
+            return int(req.get(key, default))
+        except Exception:
+            return default
+
+    lines = [
+        "// ==== AUTO-GENERATED by the Configurator's Gamepad tab — do not edit by hand ====",
+        "// Regenerated whenever you save Gamepad settings. Included by src/gamepad.h.",
+        "// GP_PREV_COMM: %s" % (prev_comm or "IBUS_COMMUNICATION"),
+        "",
+        "#define GP_SHIFTGATE %d" % (1 if req.get("shiftgate", True) else 0),
+        "#define GP_STEER_SOURCE %d" % (1 if i("steerSource", 1) else 0),
+        "#define GP_STEER_INVERT %d" % (1 if req.get("steerInvert") else 0),
+        "#define GP_THROTTLE_INVERT %d" % (1 if req.get("throttleInvert") else 0),
+        "#define GP_STEER_DEADZONE %d" % i("steerDeadzone", 60),
+        "#define GP_THROTTLE_DEADZONE %d" % i("throttleDeadzone", 80),
+        "#define GP_AUTO_NEUTRAL_MS %d" % i("autoNeutralMs", 1000),
+        "",
+        "#define GP_BTN_HORN %s" % mask("GP_BTN_HORN", "0x0002"),
+        "#define GP_BTN_ENGINE %s" % mask("GP_BTN_ENGINE", "0x0008"),
+        "#define GP_BTN_JAKE %s" % mask("GP_BTN_JAKE", "0x0004"),
+        "#define GP_BTN_LIGHTS %s" % mask("GP_BTN_LIGHTS", "0x0001"),
+        "",
+    ]
+    write_text(os.path.join(SRC, GP_CONFIG_REL), "\n".join(lines))
+
+
+def write_gamepad_config(req):
+    """Apply the Gamepad tab: set the drive mode, button map and servo endpoints."""
+    mode = req.get("mode", "webui")
+    remote, general = "2_Remote.h", "0_generalSettings.h"
+
+    if mode == "gamepad":
+        # Remember the RC comm mode we're leaving so we can restore it later.
+        prev = active_comm_mode() or req.get("prevComm") or "IBUS_COMMUNICATION"
+        # One radio: the WiFi page must go off.
+        apply_changes(general, {"ENABLE_WIRELESS": False})
+        # GAMEPAD_MODE is the last #elif — the active comm mode has to be off.
+        for m in GP_COMM_MODES:
+            apply_changes(remote, {m: False})
+        apply_changes(remote, {"GAMEPAD_MODE": True})
+        write_gamepad_defines(req, prev)
+    else:
+        apply_changes(remote, {"GAMEPAD_MODE": False})
+        apply_changes(general, {"ENABLE_WIRELESS": True})
+        # Restore an RC comm mode if none is active after leaving gamepad mode.
+        if not active_comm_mode():
+            prev = req.get("prevComm") or stored_prev_comm() or "IBUS_COMMUNICATION"
+            apply_changes(remote, {prev: True})
+
+    # Servo endpoints apply in every mode.
+    servos = req.get("servos") or {}
+    picked = {k: v for k, v in servos.items() if k in GP_SERVO_VARS}
+    if picked:
+        write_servo_endpoints(picked)
+
+
 def list_serial_ports():
     ports = []
 
@@ -2144,6 +2367,78 @@ def ensure_esp32_core(cli, chunk_fn=None):
     else:
         msg("ERROR: Failed to install ESP32 core: " + (proc.stderr or proc.stdout or "unknown error"))
         return False
+
+
+# --- Bluepad32 core (for GAMEPAD_MODE) ---------------------------------------------------------------
+# Bluepad32 (the game-controller library) ships as its own ESP32 board core, which
+# also bundles the Bluepad32 Arduino library — so building GAMEPAD_MODE just needs this
+# core installed (no extra entry in libraries/). It's a different, newer core than the
+# pinned 1.0.6 the RC firmware uses, hence a separate install + FQBN.
+BLUEPAD32_CORE = "esp32-bluepad32:esp32"
+BLUEPAD32_CORE_VERSION = "4.1.0"
+BLUEPAD32_BOARD_URL = "https://raw.githubusercontent.com/ricardoquesada/esp32-arduino-lib-builder/master/bluepad32_files/package_esp32_bluepad32_index.json"
+_bluepad_ready = False
+
+
+def ensure_bluepad32_core(cli, chunk_fn=None):
+    """Make sure esp32-bluepad32:esp32@4.1.0 is installed. Installs it if needed."""
+    global _bluepad_ready
+    if _bluepad_ready:
+        return True
+
+    def msg(text):
+        if chunk_fn:
+            chunk_fn(text + "\n")
+
+    # Add the Bluepad32 board manager URL if missing.
+    try:
+        proc = subprocess.run(
+            [cli, "config", "dump", "--format", "json"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", shell=(os.name == "nt"), check=False
+        )
+        if proc.returncode == 0:
+            cfg = json.loads(proc.stdout)
+            urls = cfg.get("board_manager", {}).get("additional_urls", [])
+            if BLUEPAD32_BOARD_URL not in urls:
+                msg("Adding Bluepad32 board index URL...")
+                subprocess.run(
+                    [cli, "config", "add", "board_manager.additional_urls", BLUEPAD32_BOARD_URL],
+                    capture_output=True, text=True, encoding="utf-8", errors="replace", shell=(os.name == "nt"), check=False
+                )
+    except Exception:
+        pass
+
+    # Already installed?
+    try:
+        proc = subprocess.run(
+            [cli, "core", "list", "--format", "json"],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", shell=(os.name == "nt"), check=False
+        )
+        if proc.returncode == 0:
+            parsed = json.loads(proc.stdout)
+            cores = parsed.get("platforms", []) if isinstance(parsed, dict) else parsed
+            for c in cores:
+                cid = c.get("id", "")
+                ver = c.get("installed_version", "") or c.get("installed", "")
+                if cid == BLUEPAD32_CORE and ver == BLUEPAD32_CORE_VERSION:
+                    msg("Bluepad32 core v%s OK." % BLUEPAD32_CORE_VERSION)
+                    _bluepad_ready = True
+                    return True
+    except Exception:
+        pass
+
+    msg("Installing Bluepad32 core v%s (one-time, a few minutes on first run)..." % BLUEPAD32_CORE_VERSION)
+    subprocess.run([cli, "core", "update-index"], capture_output=True, text=True, shell=(os.name == "nt"), check=False)
+    proc = subprocess.run(
+        [cli, "core", "install", "%s@%s" % (BLUEPAD32_CORE, BLUEPAD32_CORE_VERSION)],
+        capture_output=True, text=True, shell=(os.name == "nt"), check=False
+    )
+    if proc.returncode == 0:
+        msg("Bluepad32 core v%s installed successfully." % BLUEPAD32_CORE_VERSION)
+        _bluepad_ready = True
+        return True
+    msg("ERROR: Failed to install Bluepad32 core: " + (proc.stderr or proc.stdout or "unknown error"))
+    return False
 
 
 def get_library_paths():
@@ -5647,6 +5942,13 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json({"ports": list_serial_ports(), "connected": CONNECTED_PORT})
             return
 
+        if self.path == "/gamepad_config":
+            try:
+                self.send_json({"ok": True, "config": read_gamepad_config()})
+            except Exception as e:
+                self.send_json({"ok": False, "error": str(e)}, 500)
+            return
+
         if self.path == "/get_volume":
             try:
                 sound_path = os.path.join(SRC, "8_Sound.h")
@@ -6053,6 +6355,15 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"ok": False, "error": str(e)}, 500)
             return
 
+        if self.path == "/gamepad_config":
+            try:
+                req = json.loads(body)
+                write_gamepad_config(req)
+                self.send_json({"ok": True, "config": read_gamepad_config()})
+            except Exception as e:
+                self.send_json({"ok": False, "error": str(e)}, 500)
+            return
+
         if self.path == "/set_volume":
             try:
                 req = json.loads(body)
@@ -6362,9 +6673,17 @@ class Handler(BaseHTTPRequestHandler):
                     self.wfile.flush()
                     return
 
-                # Auto-setup: install correct ESP32 core if needed
+                # Auto-setup: install the right ESP32 core. Game-controller builds
+                # (GAMEPAD_MODE) use the Bluepad32 core, which bundles the controller
+                # library; everything else uses the pinned 1.0.6 RC core.
                 chunk("Checking ESP32 toolchain...\n")
-                if not ensure_esp32_core(cli, chunk):
+                use_gamepad = gamepad_mode_active()
+                if use_gamepad:
+                    chunk("Game controller mode is on — using the Bluepad32 ESP32 core.\n")
+                    ok_core = ensure_bluepad32_core(cli, chunk)
+                else:
+                    ok_core = ensure_esp32_core(cli, chunk)
+                if not ok_core:
                     chunk("\n--- DONE (exit 1) ---\n")
                     self.wfile.write(b"0\r\n\r\n")
                     self.wfile.flush()
@@ -6373,7 +6692,9 @@ class Handler(BaseHTTPRequestHandler):
                 # PartitionScheme MUST be set on the FQBN — the build.partitions
                 # build-property is ignored, which silently capped the app at the
                 # 1.25 MB default (huge_app gives 3 MB, matching platformio.ini).
-                fqbn = "esp32:esp32:esp32:PartitionScheme=huge_app"
+                fqbn = ("esp32-bluepad32:esp32:esp32:PartitionScheme=huge_app"
+                        if use_gamepad else
+                        "esp32:esp32:esp32:PartitionScheme=huge_app")
                 build_path = build_dir()  # ASCII-safe (handles Japanese/non-ASCII app paths)
 
                 # Base compile command.

@@ -19,7 +19,7 @@ const post = async (url, body) => {
   return j;
 };
 
-const FLASH = "__flash__", FORGE = "__soundforge__";
+const FLASH = "__flash__", FORGE = "__soundforge__", GAMEPAD = "__gamepad__";
 
 const state = {
   schema: null,
@@ -74,6 +74,7 @@ function renderTabBar() {
   };
   for (const t of allTabs()) add(t.file, esc(t.label));
   add(FORGE, "🔊 Sound Forge");
+  add(GAMEPAD, "🎮 Controls");
   add(FLASH, "⚡ Flash");
 }
 
@@ -479,11 +480,168 @@ function renderFlashPane() {
   return pane;
 }
 
+// ---- Controls (WiFi page vs game controller) ----
+function renderGamepadPane() {
+  const pane = el("div", "tabpane");
+  pane.innerHTML = `
+    <h2 class="pane-title">🎮 Controls</h2>
+    <p class="pane-sub">Choose how you drive the truck. The ESP32 has one radio — so it's either the
+      phone tuning page over WiFi, <em>or</em> a Bluetooth game controller. Not both at once.</p>
+    <div id="gpRoot"><div class="empty">Loading…</div></div>`;
+  return pane;
+}
+
+// local working copy of the controls config (mirrors the server, saved on demand)
+let gpCfg = null;
+
+function wireGamepadPane() {
+  const root = document.getElementById("gpRoot");
+  fetch("/gamepad_config").then((r) => r.json()).then((j) => {
+    if (!j.ok) { root.innerHTML = `<div class="empty">Couldn't load controls: ${esc(j.error || "")}</div>`; return; }
+    gpCfg = j.config;
+    buildGamepadUI(root);
+  }).catch((e) => { root.innerHTML = `<div class="empty">Couldn't load controls: ${esc(e.message)}</div>`; });
+}
+
+function buildGamepadUI(root) {
+  const c = gpCfg;
+  root.innerHTML = "";
+
+  // --- Mode picker: two big, obvious cards ---
+  const modeWrap = el("div", "gpmodes");
+  const mk = (id, icon, title, sub) => {
+    const card = el("div", "gpmode" + (c.mode === id ? " sel" : ""));
+    card.innerHTML = `<div class="gpmode-ic">${icon}</div><div class="gpmode-t">${title}</div><div class="gpmode-s">${sub}</div>`;
+    card.onclick = () => { c.mode = id; buildGamepadUI(root); };
+    return card;
+  };
+  modeWrap.append(
+    mk("webui", "📱", "WiFi tuning page", "Tune from your phone at 192.168.4.1. Drive with your normal RC transmitter."),
+    mk("gamepad", "🎮", "Game controller", "Drive with a PS4 / PS5 / Xbox pad over Bluetooth. (WiFi page turns off.)")
+  );
+  root.appendChild(modeWrap);
+
+  const gpOnly = c.mode === "gamepad";
+  if (gpOnly) {
+    root.appendChild(el("div", "gpbadge", "⚠️ Experimental — controller support needs testing on real hardware."));
+  }
+
+  // --- Button map (gamepad only) ---
+  if (gpOnly) {
+    const card = el("div", "card");
+    card.appendChild(el("div", "sound-cat", "Button map"));
+    card.appendChild(el("p", "pane-sub", "Pick which controller button triggers each function."));
+    for (const [name, label] of c.functions) {
+      const row = el("div", "ctrl");
+      const meta = el("div", "meta"); meta.appendChild(el("div", "name", esc(label)));
+      row.appendChild(meta);
+      const input = el("div", "input");
+      const sel = el("select");
+      for (const [mask, blabel] of c.buttonChoices) {
+        const o = el("option"); o.value = mask; o.textContent = blabel;
+        if (parseInt(mask, 16) === parseInt(c.buttons[name], 16)) o.selected = true;
+        sel.appendChild(o);
+      }
+      sel.onchange = () => { c.buttons[name] = sel.value; };
+      input.appendChild(sel); row.appendChild(input);
+      card.appendChild(row);
+    }
+    root.appendChild(card);
+  }
+
+  // --- Drive options (gamepad only) ---
+  if (gpOnly) {
+    const card = el("div", "card");
+    card.appendChild(el("div", "sound-cat", "Drive feel"));
+    const toggle = (label, key, hint) => {
+      const row = el("div", "ctrl");
+      const meta = el("div", "meta"); meta.appendChild(el("div", "name", esc(label)));
+      if (hint) meta.appendChild(el("div", "desc", esc(hint)));
+      row.appendChild(meta);
+      const input = el("div", "input");
+      const sw = el("label", "switch"); const inp = el("input"); inp.type = "checkbox"; inp.checked = !!c[key];
+      inp.onchange = () => { c[key] = inp.checked; };
+      sw.appendChild(inp); sw.appendChild(el("span", "slider-ui")); input.appendChild(sw);
+      row.appendChild(input); return row;
+    };
+    card.appendChild(toggle("Shift-gate drive", "shiftgate",
+      "On: start in neutral, flick the left stick down+right for forward / down+left for reverse, then push up to throttle. Off: left stick up/down is throttle directly."));
+
+    // steering source
+    const srow = el("div", "ctrl");
+    const smeta = el("div", "meta"); smeta.appendChild(el("div", "name", "Steering stick"));
+    srow.appendChild(smeta);
+    const sin = el("div", "input"); const ssel = el("select");
+    [["1", "Right stick (left/right)"], ["0", "Left stick (left/right)"]].forEach(([v, t]) => {
+      const o = el("option"); o.value = v; o.textContent = t; if (String(c.steerSource) === v) o.selected = true; ssel.appendChild(o);
+    });
+    ssel.onchange = () => { c.steerSource = parseInt(ssel.value, 10); };
+    sin.appendChild(ssel); srow.appendChild(sin); card.appendChild(srow);
+
+    card.appendChild(toggle("Invert steering", "steerInvert", "Flip left/right if it steers the wrong way."));
+    card.appendChild(toggle("Invert throttle", "throttleInvert", "Swap forward/reverse."));
+    root.appendChild(card);
+  }
+
+  // --- Servo endpoints (always shown — apply in every mode) ---
+  const scard = el("div", "card");
+  scard.appendChild(el("div", "sound-cat", "Servo endpoints" + (c.servoProfile ? " · " + esc(c.servoProfile.replace(/^SERVOS_/, "")) : "")));
+  scard.appendChild(el("p", "pane-sub", "Travel limits for each servo channel, in microseconds (1000–2000, 1500 = center)."));
+  const ch = (label, keys) => {
+    const row = el("div", "ctrl");
+    const meta = el("div", "meta"); meta.appendChild(el("div", "name", esc(label)));
+    row.appendChild(meta);
+    const input = el("div", "input gpends");
+    for (const [k, tag] of keys) {
+      const box = el("div", "gpend");
+      box.appendChild(el("span", "gpend-tag", tag));
+      const inp = el("input"); inp.type = "number"; inp.min = 500; inp.max = 2500; inp.step = 5;
+      inp.value = (c.servos && c.servos[k] != null) ? c.servos[k] : 1500;
+      inp.oninput = () => { (c.servos ||= {})[k] = parseInt(inp.value, 10) || 1500; };
+      box.appendChild(inp); input.appendChild(box);
+    }
+    row.appendChild(input); return row;
+  };
+  scard.appendChild(ch("CH1 · Steering", [["CH1L", "Left"], ["CH1C", "Center"], ["CH1R", "Right"]]));
+  scard.appendChild(ch("CH2 · Gearbox", [["CH2L", "Gear 1"], ["CH2C", "Gear 2"], ["CH2R", "Gear 3"]]));
+  scard.appendChild(ch("CH3 · Aux / Beacon", [["CH3L", "Low"], ["CH3C", "Mid"], ["CH3R", "High"]]));
+  scard.appendChild(ch("CH4 · Coupler", [["CH4L", "Locked"], ["CH4R", "Unlocked"]]));
+  root.appendChild(scard);
+
+  // --- Save ---
+  const bar = el("div", "toolbar"); bar.style.marginTop = "18px";
+  const saveBtn = el("button", "primary", "💾 Save controls");
+  saveBtn.onclick = async () => {
+    saveBtn.disabled = true;
+    try {
+      const j = await post("/gamepad_config", c);
+      gpCfg = j.config || c;
+      toast(c.mode === "gamepad" ? "Saved. Flash to build the controller firmware." : "Saved. Flash to apply.", "ok");
+      buildGamepadUI(root);
+    } catch (e) { toast("Save failed: " + e.message, "err"); }
+    finally { saveBtn.disabled = false; }
+  };
+  const flashBtn = el("button", null, "⚡ Save & Flash");
+  flashBtn.onclick = async () => {
+    flashBtn.disabled = true;
+    try { await post("/gamepad_config", c); } catch (e) { toast("Save failed: " + e.message, "err"); flashBtn.disabled = false; return; }
+    flashBtn.disabled = false;
+    $("flashBtnTop").click();
+  };
+  bar.append(saveBtn, flashBtn);
+  root.appendChild(bar);
+  root.appendChild(el("p", "pane-sub",
+    c.mode === "gamepad"
+      ? "Game-controller builds use the Bluepad32 ESP32 core (downloaded once on the first controller flash)."
+      : "Standard RC + WiFi build."));
+}
+
 function render() {
   if (!state.activeTab) state.activeTab = (allTabs()[0] || {}).file || FLASH;
   renderTabBar();
   const content = $("content"); content.innerHTML = "";
   if (state.activeTab === FLASH) { content.appendChild(renderFlashPane()); wireFlashPane(); }
+  else if (state.activeTab === GAMEPAD) { content.appendChild(renderGamepadPane()); wireGamepadPane(); }
   else if (state.activeTab === FORGE) { content.appendChild(renderForgePane()); wireForgePane(); }
   else {
     const tab = allTabs().find((t) => t.file === state.activeTab);

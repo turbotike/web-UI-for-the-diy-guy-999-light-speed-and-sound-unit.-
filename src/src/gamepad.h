@@ -17,10 +17,19 @@
 
 #include <Bluepad32.h>
 
+// The configurator's Gamepad tab writes gamepad_config.h with the user's button
+// map, drive options and axis choices. It is #included here (before the #ifndef
+// defaults below) so those #defines win. If it's absent, the defaults apply.
+#if defined __has_include
+#  if __has_include("gamepad_config.h")
+#    include "gamepad_config.h"
+#  endif
+#endif
+
 ControllerPtr gpController = nullptr;
 volatile bool gamepadConnected = false;
 
-// ---- Mapping defaults (the flasher will override these via gamepad_config.h) --------------------------
+// ---- Mapping defaults (the flasher overrides these via gamepad_config.h) ------------------------------
 // Analog input range from Bluepad32: sticks -512..511, triggers 0..1023.
 #ifndef GP_SHIFTGATE
 #define GP_SHIFTGATE 1 // 1 = survonauts shift-gate on left stick; 0 = simple (left stick Y = throttle)
@@ -33,6 +42,15 @@ volatile bool gamepadConnected = false;
 #endif
 #ifndef GP_AUTO_NEUTRAL_MS
 #define GP_AUTO_NEUTRAL_MS 1000 // idle time before dropping back to NEUTRAL
+#endif
+#ifndef GP_STEER_SOURCE
+#define GP_STEER_SOURCE 1 // 0 = left stick X, 1 = right stick X
+#endif
+#ifndef GP_STEER_INVERT
+#define GP_STEER_INVERT 0
+#endif
+#ifndef GP_THROTTLE_INVERT
+#define GP_THROTTLE_INVERT 0
 #endif
 
 // Digital-function button masks (Bluepad32 buttons() bitfield). Defaults; overridable by the flasher.
@@ -111,8 +129,12 @@ void readGamepadCommands()
   int rx = c->axisRX();  // right stick X
   uint16_t btn = c->buttons();
 
-  // --- Steering: right stick X -> CH1 ---
-  pulseWidthRaw[1] = gpAxisToPulse(rx, 512, GP_STEER_DEADZONE);
+  // --- Steering: chosen stick X -> CH1 ---
+  int steerRaw = GP_STEER_SOURCE ? rx : lx;
+#if GP_STEER_INVERT
+  steerRaw = -steerRaw;
+#endif
+  pulseWidthRaw[1] = gpAxisToPulse(steerRaw, 512, GP_STEER_DEADZONE);
 
   // --- Throttle / gear: left stick ---
   uint16_t throttlePulse = 1500;
@@ -146,6 +168,9 @@ void readGamepadCommands()
 #else
   // Simple mode: left stick Y directly = throttle (up = forward, down = reverse)
   throttlePulse = gpAxisToPulse(-ly, 512, GP_THROTTLE_DEADZONE);
+#endif
+#if GP_THROTTLE_INVERT
+  throttlePulse = 3000 - throttlePulse; // mirror around 1500 (swap fwd/rev)
 #endif
   pulseWidthRaw[3] = throttlePulse;
 
