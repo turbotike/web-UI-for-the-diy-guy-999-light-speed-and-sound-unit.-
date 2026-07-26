@@ -1592,6 +1592,11 @@ void setupMcpwm()
   // 3. configure channels with settings above
   mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config); // Configure PWM0A & PWM0B
   mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_1, &pwm_config); // Configure PWM1A & PWM1B
+
+#if GP_AUX_ENABLE // Gamepad AUX servo on GPIO32 -> MCPWM unit 1, timer 1 (free; unit1/timer0 = ESC)
+  mcpwm_gpio_init(MCPWM_UNIT_1, MCPWM1A, 32);
+  mcpwm_init(MCPWM_UNIT_1, MCPWM_TIMER_1, &pwm_config);
+#endif
 }
 
 //
@@ -2877,6 +2882,10 @@ void mcpwmOutput()
     else
       couplerServoMicros = CH4L;
     mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, couplerServoMicros);
+
+#if GP_AUX_ENABLE // Gamepad AUX servo on GPIO32 (gpAuxServoMicros already trimmed to its endpoints)
+    mcpwm_set_duty_in_us(MCPWM_UNIT_1, MCPWM_TIMER_1, MCPWM_OPR_A, gpAuxServoMicros);
+#endif
   }
 
   // Print servo signal debug infos **********************

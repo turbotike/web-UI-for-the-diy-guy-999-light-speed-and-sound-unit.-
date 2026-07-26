@@ -56,6 +56,26 @@ volatile bool gamepadConnected = false;
 #define GP_TANKMIX 0 // 1 = tank/skid mix: throttle +/- steering -> left track (CH1) & right track (CH2)
 #endif
 
+// AUX proportional servo on GPIO32 (gamepad mode only). ESC(33) already carries throttle;
+// this adds one more analog output for a gripper / bed / crane etc.
+#ifndef GP_AUX_ENABLE
+#define GP_AUX_ENABLE 0 // 1 = drive a servo on GPIO32
+#endif
+#ifndef GP_AUX_SOURCE
+#define GP_AUX_SOURCE 0 // 0 = triggers (R2 up / L2 down), 1 = right stick Y
+#endif
+#ifndef GP_AUX_MIN
+#define GP_AUX_MIN 1000 // endpoints (us)
+#endif
+#ifndef GP_AUX_CENTER
+#define GP_AUX_CENTER 1500
+#endif
+#ifndef GP_AUX_MAX
+#define GP_AUX_MAX 2000
+#endif
+
+volatile uint16_t gpAuxServoMicros = 1500; // AUX servo target (1000..2000), read by mcpwmOutput()
+
 // Digital-function button masks (Bluepad32 buttons() bitfield). Defaults; overridable by the flasher.
 #ifndef GP_BTN_HORN
 #define GP_BTN_HORN 0x0002 // Circle / B
@@ -123,6 +143,7 @@ void readGamepadCommands()
     for (uint8_t i = 1; i <= 13; i++)
       pulseWidthRaw[i] = 1500;
     gpGear = GP_NEUTRAL;
+    gpAuxServoMicros = GP_AUX_CENTER;
     return;
   }
 
@@ -206,6 +227,29 @@ void readGamepadCommands()
   pulseWidthRaw[4] = (btn & GP_BTN_HORN) ? 2000 : 1000;                 // horn
   pulseWidthRaw[5] = (btn & GP_BTN_ENGINE) ? 2000 : ((btn & GP_BTN_JAKE) ? 1000 : 1500); // engine / jake
   pulseWidthRaw[6] = (btn & GP_BTN_LIGHTS) ? 2000 : 1500;               // lights
+
+#if GP_AUX_ENABLE
+  // --- AUX proportional servo (GPIO32) ---
+  {
+    int auxRaw;
+#if GP_AUX_SOURCE
+    auxRaw = -c->axisRY(); // right stick Y, up = + (-512..511)
+    uint16_t centered = gpAxisToPulse(auxRaw, 512, 40); // 1000..2000, 1500 center
+#else
+    int r2 = c->throttle();                 // R2 trigger 0..1023
+    int l2 = c->brake();                    // L2 trigger 0..1023
+    long p = 1500 + (long)(r2 - l2) * 500 / 1023;
+    uint16_t centered = (uint16_t)constrain(p, 1000, 2000);
+#endif
+    // Apply the user's AUX endpoints (min/center/max)
+    if (centered < 1500)
+      gpAuxServoMicros = map(centered, 1000, 1500, GP_AUX_MIN, GP_AUX_CENTER);
+    else if (centered > 1500)
+      gpAuxServoMicros = map(centered, 1500, 2000, GP_AUX_CENTER, GP_AUX_MAX);
+    else
+      gpAuxServoMicros = GP_AUX_CENTER;
+  }
+#endif
 
   // Fill any remaining channels with neutral so nothing floats
 #if !GP_TANKMIX

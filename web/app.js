@@ -583,6 +583,48 @@ function buildGamepadUI(root) {
     card.appendChild(toggle("Invert steering", "steerInvert", "Flip left/right if it steers the wrong way."));
     card.appendChild(toggle("Invert throttle", "throttleInvert", "Swap forward/reverse."));
     root.appendChild(card);
+
+    // --- AUX servo on GPIO32 ---
+    const acard = el("div", "card");
+    acard.appendChild(el("div", "sound-cat", "AUX servo (GPIO32)"));
+    acard.appendChild(el("p", "pane-sub", "One extra proportional servo output on GPIO32 — for a gripper, dump bed, crane, etc. (Throttle already drives the ESC output.)"));
+    const auxToggle = (label, key, hint) => {
+      const row = el("div", "ctrl");
+      const meta = el("div", "meta"); meta.appendChild(el("div", "name", esc(label)));
+      if (hint) meta.appendChild(el("div", "desc", esc(hint)));
+      row.appendChild(meta);
+      const input = el("div", "input");
+      const sw = el("label", "switch"); const inp = el("input"); inp.type = "checkbox"; inp.checked = !!c[key];
+      inp.onchange = () => { c[key] = inp.checked; buildGamepadUI(root); };
+      sw.appendChild(inp); sw.appendChild(el("span", "slider-ui")); input.appendChild(sw);
+      row.appendChild(input); return row;
+    };
+    acard.appendChild(auxToggle("Enable AUX servo", "aux", "Repurposes GPIO32 (normally 3rd brake light / coupler switch) as a servo output."));
+    if (c.aux) {
+      // control source
+      const srow = el("div", "ctrl");
+      srow.appendChild((() => { const m = el("div", "meta"); m.appendChild(el("div", "name", "Controlled by")); return m; })());
+      const sin = el("div", "input"); const ssel = el("select");
+      [["0", "Triggers (R2 / L2)"], ["1", "Right stick (up/down)"]].forEach(([v, t]) => {
+        const o = el("option"); o.value = v; o.textContent = t; if (String(c.auxSource) === v) o.selected = true; ssel.appendChild(o);
+      });
+      ssel.onchange = () => { c.auxSource = parseInt(ssel.value, 10); };
+      sin.appendChild(ssel); srow.appendChild(sin); acard.appendChild(srow);
+      // endpoints
+      const erow = el("div", "ctrl");
+      erow.appendChild((() => { const m = el("div", "meta"); m.appendChild(el("div", "name", "Endpoints (µs)")); return m; })());
+      const ein = el("div", "input gpends");
+      for (const [k, tag] of [["auxMin", "Min"], ["auxCenter", "Center"], ["auxMax", "Max"]]) {
+        const box = el("div", "gpend");
+        box.appendChild(el("span", "gpend-tag", tag));
+        const inp = el("input"); inp.type = "number"; inp.min = 500; inp.max = 2500; inp.step = 5;
+        inp.value = c[k] != null ? c[k] : (k === "auxCenter" ? 1500 : k === "auxMin" ? 1000 : 2000);
+        inp.oninput = () => { c[k] = parseInt(inp.value, 10) || 1500; };
+        box.appendChild(inp); ein.appendChild(box);
+      }
+      erow.appendChild(ein); acard.appendChild(erow);
+    }
+    root.appendChild(acard);
   }
 
   // --- Servo endpoints (always shown — apply in every mode) ---
