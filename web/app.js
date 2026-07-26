@@ -566,6 +566,8 @@ function buildGamepadUI(root) {
     };
     card.appendChild(toggle("Tank / dual-track mix", "tankmix",
       "For tracked vehicles (tanks, dozers). Blends throttle + steering into two track signals — LEFT track on CH1, RIGHT track on CH2. Plug an ESC into each; trim them with the CH1/CH2 endpoints below."));
+    card.appendChild(toggle("Engine-feel rumble", "rumble",
+      "Feel the engine through the controller — idle purr, revs rise with throttle, a bump on each gear shift. Turn off to save controller battery. (PS4/PS5/Xbox.)"));
 
     // steering source
     const srow = el("div", "ctrl");

@@ -49,6 +49,9 @@ volatile bool gamepadConnected = false;
 #ifndef GP_TANKMIX
 #define GP_TANKMIX 0 // 1 = tank/skid mix: throttle +/- steering -> left track (CH1) & right track (CH2)
 #endif
+#ifndef GP_RUMBLE
+#define GP_RUMBLE 0 // 1 = engine-feel haptics (idle purr, rev-follow, shift bumps). Off = save controller battery.
+#endif
 
 // ---- Per-output mapping (gamepad mode) ---------------------------------------------------------------
 // CH2, CH3, CH4 and the AUX pin (GPIO32) can each be assigned to ANY control: a stick axis, a trigger,

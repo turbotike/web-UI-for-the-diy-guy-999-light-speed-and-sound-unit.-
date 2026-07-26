@@ -6042,6 +6042,55 @@ void survonautsGate()
 
 //
 // =======================================================================================================
+// GAMEPAD ENGINE-FEEL RUMBLE — feel the engine through the controller (PS4/PS5/Xbox), optional
+// =======================================================================================================
+// Drives the controller's rumble motors from the engine sim: an idle purr when running, the strong
+// motor ramps with throttle (revs), a quick bump on each gear shift, and a shudder while cranking.
+// Self-throttled to ~8 Hz so it doesn't flood Bluetooth. Toggle with GP_RUMBLE (off = save pad battery).
+#if defined GAMEPAD_MODE
+void updateGamepadRumble()
+{
+#if GP_RUMBLE
+  if (!gpController || !gpController->isConnected() || !gpController->isGamepad())
+    return;
+  if (gpInCalMode)
+    return; // don't fight the teach-mode feedback
+
+  static uint8_t prevGear = 1;
+  static uint32_t lastMs = 0;
+
+  // Gear-shift bump: one immediate pulse per change
+  if (selectedGear != prevGear)
+  {
+    prevGear = selectedGear;
+    gpController->playDualRumble(0, 110, 0, 210);
+    lastMs = millis();
+    return;
+  }
+
+  if (millis() - lastMs < 120)
+    return; // ~8 Hz refresh
+  lastMs = millis();
+
+  uint8_t weak = 0, strong = 0;
+  if (engineState == STARTING)
+  {
+    weak = 90; // cranking shudder
+    strong = 140;
+  }
+  else if (engineRunning)
+  {
+    int rev = constrain(currentThrottle, 0, 500); // 0..500
+    weak = 28 + (uint8_t)(rev * 40 / 500);         // idle purr + a little buzz
+    strong = (uint8_t)(rev * 200 / 500);           // revs -> up to ~200
+  }
+  gpController->playDualRumble(0, 160, weak, strong); // duration > refresh -> continuous
+#endif
+}
+#endif
+
+//
+// =======================================================================================================
 // MAIN LOOP, RUNNING ON CORE 1
 // =======================================================================================================
 //
@@ -6068,6 +6117,7 @@ void loop()
 #elif defined GAMEPAD_MODE
   readGamepadCommands(); // Bluepad32 gamepad -> channels
   mcpwmOutput();         // PWM servo signal output
+  updateGamepadRumble(); // engine-feel haptics (only if GP_RUMBLE)
 
 #else
   // measure RC signals mark space ratio

@@ -1845,6 +1845,7 @@ def read_gamepad_config():
         "mode": "gamepad" if gamepad_mode_active() else "webui",
         "prevComm": active_comm_mode() or stored_prev_comm() or "IBUS_COMMUNICATION",
         "tankmix": int(d.get("GP_TANKMIX", "0")) != 0,
+        "rumble": int(d.get("GP_RUMBLE", "0")) != 0,
         "outputs": {name: {
             "src": int(d.get("GP_%s_SRC" % name, "0")),
             "btn": _norm_mask(d.get("GP_%s_BTN" % name, "0x0000"), "0x0000"),
@@ -1886,6 +1887,7 @@ def write_gamepad_defines(req, prev_comm):
         "// GP_PREV_COMM: %s" % (prev_comm or "IBUS_COMMUNICATION"),
         "",
         "#define GP_TANKMIX %d" % (1 if req.get("tankmix") else 0),
+        "#define GP_RUMBLE %d" % (1 if req.get("rumble") else 0),
         "#define GP_STEER_SOURCE %d" % (1 if i("steerSource", 1) else 0),
         "#define GP_STEER_INVERT %d" % (1 if req.get("steerInvert") else 0),
         "#define GP_THROTTLE_INVERT %d" % (1 if req.get("throttleInvert") else 0),
