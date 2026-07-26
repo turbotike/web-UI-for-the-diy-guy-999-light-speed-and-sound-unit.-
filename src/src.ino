@@ -349,6 +349,8 @@ uint16_t pulseWidthRaw[PULSE_ARRAY_SIZE];  // Current RC signal RAW pulse width 
 uint16_t pulseWidthRaw2[PULSE_ARRAY_SIZE]; // Current RC signal RAW pulse width with linearity compensation [X] = channel number
 uint16_t pulseWidthRaw3[PULSE_ARRAY_SIZE]; // Current RC signal RAW pulse width before averaging [X] = channel number
 uint16_t pulseWidth[PULSE_ARRAY_SIZE];     // Current RC signal pulse width [X] = channel number
+
+#include "src/gamepad.h" // Bluepad32 gamepad support (only active when GAMEPAD_MODE, uses pulseWidthRaw[] above)
 int16_t pulseOffset[PULSE_ARRAY_SIZE];     // Offset for auto zero adjustment
 
 uint16_t pulseMaxNeutral[PULSE_ARRAY_SIZE]; // PWM input signal configuration storage variables
@@ -1999,6 +2001,10 @@ void setup()
   sumd.begin(COMMAND_RX);                      // begin SUMD communication with compatible receivers
   setupMcpwm();                                // mcpwm servo output setup
 
+#elif defined GAMEPAD_MODE // Bluepad32 gamepad ----
+  setupGamepad();
+  setupMcpwm(); // mcpwm servo output setup
+
 #else
   // PWM ----
 #define PWM_COMMUNICATION
@@ -2123,6 +2129,8 @@ void setup()
 
 #elif defined PPM_COMMUNICATION
   readPpmCommands();
+#elif defined GAMEPAD_MODE
+  Serial.printf("... GAMEPAD (Bluepad32) mode active. Pair a PS4 / PS5 / Xbox controller.\n");
 #else
   // measure PWM RC signals mark space ratio
   readPwmSignals();
@@ -5974,6 +5982,10 @@ void loop()
 #elif defined PPM_COMMUNICATION
   readPpmCommands(); // PPM communication (pin 36)
   mcpwmOutput();     // PWM servo signal output
+
+#elif defined GAMEPAD_MODE
+  readGamepadCommands(); // Bluepad32 gamepad -> channels
+  mcpwmOutput();         // PWM servo signal output
 
 #else
   // measure RC signals mark space ratio

@@ -39,6 +39,10 @@ uint16_t sbusFailsafeTimeout = 100; // Failsafe is triggered after this timeout 
 // PPM communication (RX header, 8 channels, working fine, but channel signals are a bit jittery) --------
 // #define PPM_COMMUNICATION // control signals are coming in via the PPM interface (comment it out for classic PWM RC signals)
 
+// GAMEPAD (Bluepad32: PS4 / PS5 / Xbox over Bluetooth) --------
+// #define GAMEPAD_MODE // Drive with a Bluetooth game controller instead of an RC receiver. REQUIRES the
+//                      // esp32-bluepad32 board core, and DISABLES WiFi (ENABLE_WIRELESS) - one radio only!
+
 // CHANNEL LINEARITY SETTINGS  ****************************************************************************************************************
 
 #define EXPONENTIAL_THROTTLE // Exponential throttle curve. Ideal for enhanced slow speed control in crawlers
