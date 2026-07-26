@@ -584,47 +584,54 @@ function buildGamepadUI(root) {
     card.appendChild(toggle("Invert throttle", "throttleInvert", "Swap forward/reverse."));
     root.appendChild(card);
 
-    // --- AUX servo on GPIO32 ---
-    const acard = el("div", "card");
-    acard.appendChild(el("div", "sound-cat", "AUX servo (GPIO32)"));
-    acard.appendChild(el("p", "pane-sub", "One extra proportional servo output on GPIO32 — for a gripper, dump bed, crane, etc. (Throttle already drives the ESC output.)"));
-    const auxToggle = (label, key, hint) => {
-      const row = el("div", "ctrl");
-      const meta = el("div", "meta"); meta.appendChild(el("div", "name", esc(label)));
-      if (hint) meta.appendChild(el("div", "desc", esc(hint)));
-      row.appendChild(meta);
-      const input = el("div", "input");
-      const sw = el("label", "switch"); const inp = el("input"); inp.type = "checkbox"; inp.checked = !!c[key];
-      inp.onchange = () => { c[key] = inp.checked; buildGamepadUI(root); };
-      sw.appendChild(inp); sw.appendChild(el("span", "slider-ui")); input.appendChild(sw);
-      row.appendChild(input); return row;
-    };
-    acard.appendChild(auxToggle("Enable AUX servo", "aux", "Repurposes GPIO32 (normally 3rd brake light / coupler switch) as a servo output."));
-    if (c.aux) {
-      // control source
+    // --- Output mapping matrix: CH2 / CH3 / CH4 / AUX -> any control ---
+    const omcard = el("div", "card");
+    omcard.appendChild(el("div", "sound-cat", "Output mapping"));
+    omcard.appendChild(el("p", "pane-sub", "Assign each spare output to any control — a stick, a trigger, or a button (hold or toggle). Steering (CH1) and throttle (ESC) keep their jobs. Enabling an output takes over that pin from its stock function (e.g. AUX/GPIO32 = 3rd brake light / coupler switch)."));
+    c.outputs = c.outputs || {};
+    for (const [key, label] of (c.outputList || [])) {
+      const o = c.outputs[key] || (c.outputs[key] = { src: 0, btn: "0x0000", min: 1000, center: 1500, max: 2000 });
+      const block = el("div", "gpmap");
+      block.appendChild(el("div", "gpmap-h", esc(label)));
+
+      // control source (+ button picker if a button source)
       const srow = el("div", "ctrl");
-      srow.appendChild((() => { const m = el("div", "meta"); m.appendChild(el("div", "name", "Controlled by")); return m; })());
+      srow.appendChild((() => { const m = el("div", "meta"); m.appendChild(el("div", "name", "Control")); return m; })());
       const sin = el("div", "input"); const ssel = el("select");
-      [["0", "Triggers (R2 / L2)"], ["1", "Right stick (up/down)"]].forEach(([v, t]) => {
-        const o = el("option"); o.value = v; o.textContent = t; if (String(c.auxSource) === v) o.selected = true; ssel.appendChild(o);
-      });
-      ssel.onchange = () => { c.auxSource = parseInt(ssel.value, 10); };
-      sin.appendChild(ssel); srow.appendChild(sin); acard.appendChild(srow);
-      // endpoints
-      const erow = el("div", "ctrl");
-      erow.appendChild((() => { const m = el("div", "meta"); m.appendChild(el("div", "name", "Endpoints (µs)")); return m; })());
-      const ein = el("div", "input gpends");
-      for (const [k, tag] of [["auxMin", "Min"], ["auxCenter", "Center"], ["auxMax", "Max"]]) {
-        const box = el("div", "gpend");
-        box.appendChild(el("span", "gpend-tag", tag));
-        const inp = el("input"); inp.type = "number"; inp.min = 500; inp.max = 2500; inp.step = 5;
-        inp.value = c[k] != null ? c[k] : (k === "auxCenter" ? 1500 : k === "auxMin" ? 1000 : 2000);
-        inp.oninput = () => { c[k] = parseInt(inp.value, 10) || 1500; };
-        box.appendChild(inp); ein.appendChild(box);
+      for (const [id, slabel] of (c.sourceChoices || [])) {
+        const op = el("option"); op.value = id; op.textContent = slabel; if (Number(o.src) === Number(id)) op.selected = true; ssel.appendChild(op);
       }
-      erow.appendChild(ein); acard.appendChild(erow);
+      ssel.onchange = () => { o.src = parseInt(ssel.value, 10); buildGamepadUI(root); };
+      sin.appendChild(ssel);
+      if (o.src === 8 || o.src === 9) {
+        const bsel = el("select"); bsel.style.marginLeft = "8px";
+        for (const [mask, blabel] of (c.buttonChoices || [])) {
+          const op = el("option"); op.value = mask; op.textContent = blabel; if (parseInt(mask, 16) === parseInt(o.btn, 16)) op.selected = true; bsel.appendChild(op);
+        }
+        bsel.onchange = () => { o.btn = bsel.value; };
+        sin.appendChild(bsel);
+      }
+      srow.appendChild(sin); block.appendChild(srow);
+
+      // endpoints (only once assigned)
+      if (o.src !== 0) {
+        const isBtn = (o.src === 8 || o.src === 9);
+        const erow = el("div", "ctrl");
+        erow.appendChild((() => { const m = el("div", "meta"); m.appendChild(el("div", "name", "Endpoints (µs)")); m.appendChild(el("div", "desc", isBtn ? "Min = released, Max = pressed." : "Min / center / max travel.")); return m; })());
+        const ein = el("div", "input gpends");
+        for (const [k, tag] of [["min", "Min"], ["center", "Center"], ["max", "Max"]]) {
+          if (isBtn && k === "center") continue; // a button only uses min/max
+          const box = el("div", "gpend"); box.appendChild(el("span", "gpend-tag", tag));
+          const inp = el("input"); inp.type = "number"; inp.min = 500; inp.max = 2500; inp.step = 5;
+          inp.value = o[k] != null ? o[k] : (k === "center" ? 1500 : k === "min" ? 1000 : 2000);
+          inp.oninput = () => { o[k] = parseInt(inp.value, 10) || 1500; };
+          box.appendChild(inp); ein.appendChild(box);
+        }
+        erow.appendChild(ein); block.appendChild(erow);
+      }
+      omcard.appendChild(block);
     }
-    root.appendChild(acard);
+    root.appendChild(omcard);
   }
 
   // --- Servo endpoints (always shown — apply in every mode) ---

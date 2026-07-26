@@ -1714,6 +1714,27 @@ GP_CONFIG_REL = os.path.join("src", "gamepad_config.h")  # under SRC (next to ga
 GP_SERVO_VARS = ["CH1L", "CH1C", "CH1R", "CH2L", "CH2C", "CH2R",
                  "CH3L", "CH3C", "CH3R", "CH4L", "CH4R"]
 
+# Freely-mappable outputs (each can be assigned to any control) — (config key, label).
+GP_OUTPUTS = [
+    ["CH2", "CH2 output (GPIO12)"],
+    ["CH3", "CH3 output (GPIO14)"],
+    ["CH4", "CH4 output (GPIO27)"],
+    ["AUX", "AUX output (GPIO32)"],
+]
+# Control sources a mapped output can use — (id, label). Ids match gamepad.h's GP_SRC_*.
+GP_SOURCES = [
+    [0, "Unassigned"],
+    [1, "Left stick — left/right"],
+    [2, "Left stick — up/down"],
+    [3, "Right stick — left/right"],
+    [4, "Right stick — up/down"],
+    [5, "L2 trigger"],
+    [6, "R2 trigger"],
+    [7, "Triggers (R2 − L2)"],
+    [8, "Button (hold)"],
+    [9, "Button (toggle)"],
+]
+
 
 def _norm_mask(v, default="0x0000"):
     """Normalize a button-mask string ('2', '0x0002', 2) to 0xNNNN form."""
@@ -1820,11 +1841,15 @@ def read_gamepad_config():
         "prevComm": active_comm_mode() or stored_prev_comm() or "IBUS_COMMUNICATION",
         "shiftgate": int(d.get("GP_SHIFTGATE", "1")) != 0,
         "tankmix": int(d.get("GP_TANKMIX", "0")) != 0,
-        "aux": int(d.get("GP_AUX_ENABLE", "0")) != 0,
-        "auxSource": 1 if int(d.get("GP_AUX_SOURCE", "0")) else 0,
-        "auxMin": int(d.get("GP_AUX_MIN", "1000")),
-        "auxCenter": int(d.get("GP_AUX_CENTER", "1500")),
-        "auxMax": int(d.get("GP_AUX_MAX", "2000")),
+        "outputs": {name: {
+            "src": int(d.get("GP_%s_SRC" % name, "0")),
+            "btn": _norm_mask(d.get("GP_%s_BTN" % name, "0x0000"), "0x0000"),
+            "min": int(d.get("GP_%s_MIN" % name, "1000")),
+            "center": int(d.get("GP_%s_CENTER" % name, "1500")),
+            "max": int(d.get("GP_%s_MAX" % name, "2000")),
+        } for name, _label in GP_OUTPUTS},
+        "sourceChoices": GP_SOURCES,
+        "outputList": GP_OUTPUTS,
         "steerSource": 1 if int(d.get("GP_STEER_SOURCE", "1")) else 0,
         "steerInvert": int(d.get("GP_STEER_INVERT", "0")) != 0,
         "throttleInvert": int(d.get("GP_THROTTLE_INVERT", "0")) != 0,
@@ -1859,11 +1884,6 @@ def write_gamepad_defines(req, prev_comm):
         "",
         "#define GP_SHIFTGATE %d" % (1 if req.get("shiftgate", True) else 0),
         "#define GP_TANKMIX %d" % (1 if req.get("tankmix") else 0),
-        "#define GP_AUX_ENABLE %d" % (1 if req.get("aux") else 0),
-        "#define GP_AUX_SOURCE %d" % (1 if i("auxSource", 0) else 0),
-        "#define GP_AUX_MIN %d" % i("auxMin", 1000),
-        "#define GP_AUX_CENTER %d" % i("auxCenter", 1500),
-        "#define GP_AUX_MAX %d" % i("auxMax", 2000),
         "#define GP_STEER_SOURCE %d" % (1 if i("steerSource", 1) else 0),
         "#define GP_STEER_INVERT %d" % (1 if req.get("steerInvert") else 0),
         "#define GP_THROTTLE_INVERT %d" % (1 if req.get("throttleInvert") else 0),
@@ -1877,6 +1897,26 @@ def write_gamepad_defines(req, prev_comm):
         "#define GP_BTN_LIGHTS %s" % mask("GP_BTN_LIGHTS", "0x0001"),
         "",
     ]
+
+    # Per-output mapping (CH2/CH3/CH4/AUX): source, button mask, endpoints.
+    outs = req.get("outputs") or {}
+
+    def oi(o, key, default):
+        try:
+            return int(o.get(key, default))
+        except Exception:
+            return default
+
+    for name, _label in GP_OUTPUTS:
+        o = outs.get(name) or {}
+        lines += [
+            "#define GP_%s_SRC %d" % (name, oi(o, "src", 0)),
+            "#define GP_%s_BTN %s" % (name, _norm_mask(o.get("btn", "0x0000"), "0x0000")),
+            "#define GP_%s_MIN %d" % (name, oi(o, "min", 1000)),
+            "#define GP_%s_CENTER %d" % (name, oi(o, "center", 1500)),
+            "#define GP_%s_MAX %d" % (name, oi(o, "max", 2000)),
+            "",
+        ]
     write_text(os.path.join(SRC, GP_CONFIG_REL), "\n".join(lines))
 
 

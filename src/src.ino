@@ -1593,7 +1593,7 @@ void setupMcpwm()
   mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_0, &pwm_config); // Configure PWM0A & PWM0B
   mcpwm_init(MCPWM_UNIT_0, MCPWM_TIMER_1, &pwm_config); // Configure PWM1A & PWM1B
 
-#if GP_AUX_ENABLE // Gamepad AUX servo on GPIO32 -> MCPWM unit 1, timer 1 (free; unit1/timer0 = ESC)
+#if GP_AUX_SRC // Gamepad AUX servo on GPIO32 -> MCPWM unit 1, timer 1 (free; unit1/timer0 = ESC)
   mcpwm_gpio_init(MCPWM_UNIT_1, MCPWM1A, 32);
   mcpwm_init(MCPWM_UNIT_1, MCPWM_TIMER_1, &pwm_config);
 #endif
@@ -2779,6 +2779,9 @@ void mcpwmOutput()
       }
     }
 #endif
+#if GP_CH2_SRC && !GP_TANKMIX // Gamepad-mapped CH2 output (tank mix takes priority if both set)
+    shiftingServoMicros = gpOutMicros[2];
+#endif
     mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_0, MCPWM_OPR_B, shiftingServoMicros);
 
     // Winch CH3 **********************
@@ -2881,9 +2884,16 @@ void mcpwmOutput()
       couplerServoMicros = CH4R;
     else
       couplerServoMicros = CH4L;
+#if GP_CH4_SRC // Gamepad-mapped CH4 output
+    couplerServoMicros = gpOutMicros[4];
+#endif
     mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_A, couplerServoMicros);
 
-#if GP_AUX_ENABLE // Gamepad AUX servo on GPIO32 (gpAuxServoMicros already trimmed to its endpoints)
+#if GP_CH3_SRC // Gamepad-mapped CH3 output (written last so it wins over winch/beacon/hydraulic)
+    mcpwm_set_duty_in_us(MCPWM_UNIT_0, MCPWM_TIMER_1, MCPWM_OPR_B, gpOutMicros[3]);
+#endif
+
+#if GP_AUX_SRC // Gamepad AUX servo on GPIO32 (gpAuxServoMicros already trimmed to its endpoints)
     mcpwm_set_duty_in_us(MCPWM_UNIT_1, MCPWM_TIMER_1, MCPWM_OPR_A, gpAuxServoMicros);
 #endif
   }

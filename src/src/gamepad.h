@@ -56,16 +56,75 @@ volatile bool gamepadConnected = false;
 #define GP_TANKMIX 0 // 1 = tank/skid mix: throttle +/- steering -> left track (CH1) & right track (CH2)
 #endif
 
-// AUX proportional servo on GPIO32 (gamepad mode only). ESC(33) already carries throttle;
-// this adds one more analog output for a gripper / bed / crane etc.
-#ifndef GP_AUX_ENABLE
-#define GP_AUX_ENABLE 0 // 1 = drive a servo on GPIO32
+// ---- Per-output mapping (gamepad mode) ---------------------------------------------------------------
+// CH2, CH3, CH4 and the AUX pin (GPIO32) can each be assigned to ANY control: a stick axis, a trigger,
+// or a button (momentary / toggle), each with its own min/center/max endpoints. Steering (CH1) and
+// throttle (ESC) keep their dedicated roles. The flasher writes these via gamepad_config.h. Source ids:
+#define GP_SRC_NONE 0
+#define GP_SRC_LX 1      // left stick X
+#define GP_SRC_LY 2      // left stick Y (up = +)
+#define GP_SRC_RX 3      // right stick X
+#define GP_SRC_RY 4      // right stick Y (up = +)
+#define GP_SRC_L2 5      // left trigger (0..max)
+#define GP_SRC_R2 6      // right trigger (0..max)
+#define GP_SRC_TRIG 7    // R2 - L2, centered
+#define GP_SRC_BTN_MOM 8 // button: on while held
+#define GP_SRC_BTN_TOG 9 // button: press to toggle
+
+// Defaults (overridden by gamepad_config.h). SRC 0 = unassigned -> that channel keeps stock behavior.
+#ifndef GP_CH2_SRC
+#define GP_CH2_SRC 0
 #endif
-#ifndef GP_AUX_SOURCE
-#define GP_AUX_SOURCE 0 // 0 = triggers (R2 up / L2 down), 1 = right stick Y
+#ifndef GP_CH2_BTN
+#define GP_CH2_BTN 0x0000
+#endif
+#ifndef GP_CH2_MIN
+#define GP_CH2_MIN 1000
+#endif
+#ifndef GP_CH2_CENTER
+#define GP_CH2_CENTER 1500
+#endif
+#ifndef GP_CH2_MAX
+#define GP_CH2_MAX 2000
+#endif
+#ifndef GP_CH3_SRC
+#define GP_CH3_SRC 0
+#endif
+#ifndef GP_CH3_BTN
+#define GP_CH3_BTN 0x0000
+#endif
+#ifndef GP_CH3_MIN
+#define GP_CH3_MIN 1000
+#endif
+#ifndef GP_CH3_CENTER
+#define GP_CH3_CENTER 1500
+#endif
+#ifndef GP_CH3_MAX
+#define GP_CH3_MAX 2000
+#endif
+#ifndef GP_CH4_SRC
+#define GP_CH4_SRC 0
+#endif
+#ifndef GP_CH4_BTN
+#define GP_CH4_BTN 0x0000
+#endif
+#ifndef GP_CH4_MIN
+#define GP_CH4_MIN 1000
+#endif
+#ifndef GP_CH4_CENTER
+#define GP_CH4_CENTER 1500
+#endif
+#ifndef GP_CH4_MAX
+#define GP_CH4_MAX 2000
+#endif
+#ifndef GP_AUX_SRC
+#define GP_AUX_SRC 0 // AUX pin = GPIO32
+#endif
+#ifndef GP_AUX_BTN
+#define GP_AUX_BTN 0x0000
 #endif
 #ifndef GP_AUX_MIN
-#define GP_AUX_MIN 1000 // endpoints (us)
+#define GP_AUX_MIN 1000
 #endif
 #ifndef GP_AUX_CENTER
 #define GP_AUX_CENTER 1500
@@ -74,7 +133,8 @@ volatile bool gamepadConnected = false;
 #define GP_AUX_MAX 2000
 #endif
 
-volatile uint16_t gpAuxServoMicros = 1500; // AUX servo target (1000..2000), read by mcpwmOutput()
+volatile uint16_t gpOutMicros[5] = {1500, 1500, 1500, 1500, 1500}; // [1..4] gamepad servo out for CH1..CH4
+volatile uint16_t gpAuxServoMicros = 1500;                         // AUX (GPIO32) servo out
 
 // Digital-function button masks (Bluepad32 buttons() bitfield). Defaults; overridable by the flasher.
 #ifndef GP_BTN_HORN
@@ -133,6 +193,63 @@ static uint16_t gpAxisToPulse(int val, int range, int deadzone)
   return (uint16_t)p;
 }
 
+// map a centered analog value (-512..511) to endpoints (min..center..max) with a deadzone
+static uint16_t gpMapCentered(int v, uint16_t mn, uint16_t ct, uint16_t mx, int dz)
+{
+  if (v > -dz && v < dz)
+    return ct;
+  long p = (v >= 0) ? (long)ct + (long)v * ((int)mx - (int)ct) / 512
+                    : (long)ct + (long)v * ((int)ct - (int)mn) / 512;
+  long lo = min(mn, mx), hi = max(mn, mx);
+  return (uint16_t)constrain(p, lo, hi);
+}
+
+// map a unipolar value (0..1023, e.g. a trigger) to min..max
+static uint16_t gpMapUni(int v, uint16_t mn, uint16_t mx)
+{
+  long p = (long)mn + (long)v * ((int)mx - (int)mn) / 1023;
+  long lo = min(mn, mx), hi = max(mn, mx);
+  return (uint16_t)constrain(p, lo, hi);
+}
+
+// resolve one mapped output to servo microseconds. idx (0..3) keys the per-output toggle state.
+static uint16_t gpResolve(ControllerPtr c, uint8_t idx, uint8_t src, uint16_t btnMask,
+                          uint16_t mn, uint16_t ct, uint16_t mx)
+{
+  static bool tog[6] = {false, false, false, false, false, false};
+  static bool prev[6] = {false, false, false, false, false, false};
+  uint16_t btn = c->buttons();
+  switch (src)
+  {
+  case GP_SRC_LX:
+    return gpMapCentered(c->axisX(), mn, ct, mx, 40);
+  case GP_SRC_LY:
+    return gpMapCentered(-c->axisY(), mn, ct, mx, 40);
+  case GP_SRC_RX:
+    return gpMapCentered(c->axisRX(), mn, ct, mx, 40);
+  case GP_SRC_RY:
+    return gpMapCentered(-c->axisRY(), mn, ct, mx, 40);
+  case GP_SRC_L2:
+    return gpMapUni(c->brake(), mn, mx);
+  case GP_SRC_R2:
+    return gpMapUni(c->throttle(), mn, mx);
+  case GP_SRC_TRIG:
+    return gpMapCentered((c->throttle() - c->brake()) * 512 / 1023, mn, ct, mx, 20);
+  case GP_SRC_BTN_MOM:
+    return (btn & btnMask) ? mx : mn;
+  case GP_SRC_BTN_TOG:
+  {
+    bool pressed = (btn & btnMask) != 0;
+    if (pressed && !prev[idx])
+      tog[idx] = !tog[idx];
+    prev[idx] = pressed;
+    return tog[idx] ? mx : mn;
+  }
+  default:
+    return ct;
+  }
+}
+
 void readGamepadCommands()
 {
   BP32.update();
@@ -143,6 +260,9 @@ void readGamepadCommands()
     for (uint8_t i = 1; i <= 13; i++)
       pulseWidthRaw[i] = 1500;
     gpGear = GP_NEUTRAL;
+    gpOutMicros[2] = GP_CH2_CENTER;
+    gpOutMicros[3] = GP_CH3_CENTER;
+    gpOutMicros[4] = GP_CH4_CENTER;
     gpAuxServoMicros = GP_AUX_CENTER;
     return;
   }
@@ -228,27 +348,18 @@ void readGamepadCommands()
   pulseWidthRaw[5] = (btn & GP_BTN_ENGINE) ? 2000 : ((btn & GP_BTN_JAKE) ? 1000 : 1500); // engine / jake
   pulseWidthRaw[6] = (btn & GP_BTN_LIGHTS) ? 2000 : 1500;               // lights
 
-#if GP_AUX_ENABLE
-  // --- AUX proportional servo (GPIO32) ---
-  {
-    int auxRaw;
-#if GP_AUX_SOURCE
-    auxRaw = -c->axisRY(); // right stick Y, up = + (-512..511)
-    uint16_t centered = gpAxisToPulse(auxRaw, 512, 40); // 1000..2000, 1500 center
-#else
-    int r2 = c->throttle();                 // R2 trigger 0..1023
-    int l2 = c->brake();                    // L2 trigger 0..1023
-    long p = 1500 + (long)(r2 - l2) * 500 / 1023;
-    uint16_t centered = (uint16_t)constrain(p, 1000, 2000);
+  // --- Per-output mapping: CH2 / CH3 / CH4 / AUX (any assigned channel is driven here) ---
+#if GP_CH2_SRC
+  gpOutMicros[2] = gpResolve(c, 0, GP_CH2_SRC, GP_CH2_BTN, GP_CH2_MIN, GP_CH2_CENTER, GP_CH2_MAX);
 #endif
-    // Apply the user's AUX endpoints (min/center/max)
-    if (centered < 1500)
-      gpAuxServoMicros = map(centered, 1000, 1500, GP_AUX_MIN, GP_AUX_CENTER);
-    else if (centered > 1500)
-      gpAuxServoMicros = map(centered, 1500, 2000, GP_AUX_CENTER, GP_AUX_MAX);
-    else
-      gpAuxServoMicros = GP_AUX_CENTER;
-  }
+#if GP_CH3_SRC
+  gpOutMicros[3] = gpResolve(c, 1, GP_CH3_SRC, GP_CH3_BTN, GP_CH3_MIN, GP_CH3_CENTER, GP_CH3_MAX);
+#endif
+#if GP_CH4_SRC
+  gpOutMicros[4] = gpResolve(c, 2, GP_CH4_SRC, GP_CH4_BTN, GP_CH4_MIN, GP_CH4_CENTER, GP_CH4_MAX);
+#endif
+#if GP_AUX_SRC
+  gpAuxServoMicros = gpResolve(c, 3, GP_AUX_SRC, GP_AUX_BTN, GP_AUX_MIN, GP_AUX_CENTER, GP_AUX_MAX);
 #endif
 
   // Fill any remaining channels with neutral so nothing floats
