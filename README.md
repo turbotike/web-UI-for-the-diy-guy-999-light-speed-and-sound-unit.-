@@ -32,6 +32,8 @@ Unzip it, then run the app inside (details in [Quick Start](#-quick-start) below
 - 🔊 **Sound Forge** — preview any of 580+ engine/horn/brake sounds, swap them per slot, or **upload your own WAV** (converted automatically)
 - 🔌 **Flash over USB in one click** — hit **Flash** and it finds your board and uploads; uses the built-in **native uploader** (the same reliable tool the command line uses), so it works on any board
 - 💾 **Save, load & share vehicle files** — export any vehicle to a `.h` file, hand it to a friend, and they load it in one click
+- 📱 **Tune from your phone, on the truck** — the controller hosts its own WiFi page at `192.168.4.1` (skinned to match this app): live master + per-sound volumes, servo/ESC/light tuning, no cable
+- 🎮 **Drive with a game controller** *(experimental)* — PS4 / PS5 / Xbox over Bluetooth (Bluepad32), with a "shift-gate" drive mode
 
 ---
 
@@ -40,7 +42,8 @@ Unzip it, then run the app inside (details in [Quick Start](#-quick-start) below
 | Platform | What you need |
 |---|---|
 | **Windows** | **Nothing** — the app is a single `.exe` with everything inside (no Python, no Arduino IDE). |
-| **Mac / Linux** | **[Python 3](https://www.python.org/downloads/)** (on Mac, `brew install python3` works too). |
+| **Mac** | **Nothing** — the app bundles its own Python + tools (no install needed). |
+| **Linux** | **[Python 3](https://www.python.org/downloads/)** (run `python3 configure.py`). |
 
 Any modern web browser works (Chrome, Edge, Firefox, Safari). The first time you flash, the app quietly downloads its own compiler — **you never install the Arduino IDE.**
 
@@ -153,6 +156,25 @@ hardware/                    ← schematic & PCB files
 ```
 
 ---
+
+## 📱 Tune from your phone (on-chip WiFi page)
+
+The controller can host **its own web page** — adjust everything live over WiFi, right at the truck, no computer needed:
+
+1. Flash the firmware (wireless is on by default).
+2. On your phone, connect to the vehicle's WiFi network **`My_Truck`** (password **`123456789`**).
+3. Open **`http://192.168.4.1`**.
+
+It's skinned to match this app (flames, neon theme) and gives you **master volume + 13 per-sound volumes**, plus servo / ESC / light tuning — all live. *(You can change the WiFi name + password right on that page.)*
+
+## 🎮 Game controller support *(experimental)*
+
+Drive with a **PS4 / PS5 / Xbox** controller over Bluetooth instead of an RC transmitter, powered by [Bluepad32](https://github.com/ricardoquesada/bluepad32):
+
+- **One radio:** the ESP32 does WiFi **or** Bluetooth, not both — so a gamepad build turns the on-chip WiFi page **off**.
+- **Shift-gate drive** ("survonauts" style): starts in neutral — flick the left stick **down+right** for forward, **down+left** for reverse, then push **up** to throttle; it drops back to neutral if you coast for a second. Steering on the right stick; buttons for horn / lights / engine / jake.
+
+> ⚠️ **Experimental.** The firmware builds + runs Bluepad32 on the board, but pairing + driving + sound need testing on real hardware with a real controller. The flasher's point-and-click gamepad setup screen (remap every button, set servo endpoints per channel) is in progress.
 
 ## 🙌 Credits
 
