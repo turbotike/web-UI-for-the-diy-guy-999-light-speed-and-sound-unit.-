@@ -85,7 +85,10 @@ void webInterface()
               client.println("a{color:#39ff14;}");
               client.println("hr{border:none;border-top:2px solid #3f9f24;margin:16px 0;}");
               client.println(".multiColumn{display:inline-block;width:49%;text-align:left;vertical-align:top;}");
-              client.println("input[type=\"checkbox\"]{cursor:pointer;zoom:1.6;accent-color:#ff2e97;}");
+              client.println("input[type=\"checkbox\"]{-webkit-appearance:none;appearance:none;width:56px;height:30px;border-radius:999px;background:rgba(8,16,6,.85);border:2px solid #3f9f24;position:relative;cursor:pointer;vertical-align:middle;margin:4px 8px;flex:0 0 auto;transition:background .15s,border-color .15s;}");
+              client.println("input[type=\"checkbox\"]::after{content:'';position:absolute;top:2px;left:2px;width:22px;height:22px;border-radius:50%;background:#7A7A7A;transition:left .15s,background .15s;box-shadow:0 1px 3px rgba(0,0,0,.5);}");
+              client.println("input[type=\"checkbox\"]:checked{background:linear-gradient(135deg,#39ff14,#8fff5a);border-color:#39ff14;box-shadow:0 0 10px rgba(57,255,20,.5);}");
+              client.println("input[type=\"checkbox\"]:checked::after{left:28px;background:#0a1206;}");
               client.println(".slider{-webkit-appearance:none;appearance:none;width:95%;height:22px;background:rgba(8,16,6,.85);outline:none;border:2px solid #3f9f24;margin:6px auto;border-radius:999px;pointer-events:none;}");
               client.println(".slider::-webkit-slider-thumb{-webkit-appearance:none;cursor:pointer;width:34px;height:34px;background:radial-gradient(circle at 35% 30%,#eaffe0,#39ff14);border:2px solid #faff00;border-radius:50%;box-shadow:0 0 10px rgba(57,255,20,.8);}");
               client.println(".sliderServo1::-webkit-slider-thumb{background:radial-gradient(circle at 35% 30%,#ffd0e4,#ff2e97);border-color:#fff;}");
