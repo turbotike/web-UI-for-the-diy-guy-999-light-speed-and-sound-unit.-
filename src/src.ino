@@ -4959,6 +4959,10 @@ void triggerHorn()
 // =======================================================================================================
 //
 
+#if defined SURVONAUTS && !defined GAMEPAD_MODE
+bool survShiftZone = false; // true while the throttle stick is in the lower "select gear" zone
+#endif
+
 void triggerIndicators()
 {
 
@@ -4967,9 +4971,14 @@ void triggerIndicators()
   static boolean L;
   static boolean R;
 
+  bool survSuppress = false;
+#if defined SURVONAUTS && !defined GAMEPAD_MODE
+  survSuppress = survShiftZone; // steering flicks in the shift-select zone aren't turn-signals
+#endif
+
 #ifdef AUTO_INDICATORS // Automatic, steering triggered indicators ********
   // detect left indicator trigger -------------
-  if (pulseWidth[1] > (1500 + indicatorOn))
+  if (!survSuppress && pulseWidth[1] > (1500 + indicatorOn))
   {
     L = true;
     R = false;
@@ -4978,7 +4987,7 @@ void triggerIndicators()
     L = false;
 
   // detect right indicator trigger -------------
-  if (pulseWidth[1] < (1500 - indicatorOn))
+  if (!survSuppress && pulseWidth[1] < (1500 - indicatorOn))
   {
     R = true;
     L = false;
@@ -6019,6 +6028,9 @@ void survonautsGate()
   bool up = (thr > 1550);
   bool right = (str > 1650);
   bool left = (str < 1350);
+  // Lower half of the throttle stick = the gear-select "function" zone: while there, steering
+  // flicks pick a gear (not turn-signals), and the stick never drives the truck.
+  survShiftZone = (thr < 1480);
 
   if (down && right)
     survGear = 1; // engage forward
