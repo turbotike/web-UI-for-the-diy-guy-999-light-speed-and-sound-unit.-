@@ -6010,8 +6010,11 @@ int8_t survGear = 0; // 0 = neutral, 1 = forward, -1 = reverse
 unsigned long survLastDriveMillis = 0;
 void survonautsGate()
 {
-  int thr = pulseWidthRaw[3]; // throttle stick, 1000..2000 (1500 = center)
-  int str = pulseWidthRaw[1]; // steering stick, left/right of the same gimbal
+  // Operate on the CALIBRATED channels (auto-zeroed to 1500, per-channel reverse already
+  // applied by processRawChannels). Reading/writing raw here caused full-reverse on any
+  // setup with the throttle channel reversed.
+  int thr = pulseWidth[3]; // throttle stick, ~1000..2000 (1500 = center)
+  int str = pulseWidth[1]; // steering stick, left/right of the same gimbal
   bool down = (thr < 1300);
   bool up = (thr > 1550);
   bool right = (str > 1650);
@@ -6036,7 +6039,7 @@ void survonautsGate()
   if (survGear != 0 && millis() - survLastDriveMillis > 1000)
     survGear = 0; // parked (stopped) for ~1s -> back to neutral
 
-  pulseWidthRaw[3] = out; // hand the gated throttle to the normal drive / sound path
+  pulseWidth[3] = out; // hand the gated throttle straight to mapThrottle (already calibrated)
 }
 #endif
 
