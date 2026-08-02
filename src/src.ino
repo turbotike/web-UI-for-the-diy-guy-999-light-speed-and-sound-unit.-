@@ -1667,8 +1667,10 @@ void setupEspNow()
 #if defined ENABLE_WIRELESS
   Serial.printf("ENABLE_WIRELESS option enabled\n");
   // Serial.printf("Sound controller MAC address: %s\n", WiFi.macAddress().c_str());
-  //  Set device as a Wi-Fi Station for ESP-NOW
-  WiFi.mode(WIFI_STA); // WIFI_STA = Station
+  //  AP + Station: AP hosts the config page (192.168.4.1), STA carries ESP-NOW. Was WIFI_STA alone,
+  //  which is station-only right before creating an access point — leaves the AP unstable so phones
+  //  fail the WPA2 login ("wrong password"). WIFI_AP_STA brings the AP interface up properly.
+  WiFi.mode(WIFI_AP_STA);
 
   // Set IP address
   IPAddress IP = WiFi.softAPIP();
@@ -6032,10 +6034,19 @@ void survonautsGate()
   // flicks pick a gear (not turn-signals), and the stick never drives the truck.
   survShiftZone = (thr < 1480);
 
+  // Engaging a gear also resets the auto-neutral timer. Without this, engaging from a park longer
+  // than 1s would satisfy the "stopped > 1s" auto-neutral test on the SAME loop and drop straight
+  // back to neutral before you could ever push up to drive — i.e. the gesture did nothing.
   if (down && right)
+  {
     survGear = 1; // engage forward
+    survLastDriveMillis = millis();
+  }
   else if (down && left)
+  {
     survGear = -1; // engage reverse
+    survLastDriveMillis = millis();
+  }
 
   int upAmount = up ? (thr - 1500) : 0; // 0..500
   uint16_t out = 1500;
