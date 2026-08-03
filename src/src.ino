@@ -1678,16 +1678,18 @@ void setupEspNow()
   Serial.printf("\nInformations for web configuration via your cell phone or computer *******************************\n");
   Serial.print("SSID: ");
   Serial.println(ssid);
-  Serial.print("Password: ");
-  Serial.println(password);
+  Serial.println("Password: (none - OPEN network)");
   Serial.print("IP address: ");
   Serial.println(IP);
 
   // shut down wifi
   WiFi.disconnect();
 
-  // Start access point
-  WiFi.softAP(ssid.c_str(), password.c_str());
+  // Start access point as an OPEN network (no password). The old ESP32 core (1.0.6) WiFi stack does
+  // WPA2 in a way modern phones (randomized MAC / PMF) intermittently reject as "wrong password /
+  // needs WPA2 password", even on a strong AP. It's only a local setup page (192.168.4.1) that's up
+  // briefly, so dropping the password removes the failing handshake and lets any device connect.
+  WiFi.softAP(ssid.c_str());
 
   Serial.printf("\nWiFi Tx Power Level: %u", WiFi.getTxPower());
   WiFi.setTxPower(cpType); // WiFi and ESP-Now power according to "0_generalSettings.h"
