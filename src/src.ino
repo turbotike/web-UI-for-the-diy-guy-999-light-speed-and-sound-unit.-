@@ -6126,32 +6126,32 @@ void loop()
 
 #if defined SBUS_COMMUNICATION
   readSbusCommands(); // SBUS communication (pin 36)
-  mcpwmOutput();      // PWM servo signal output
-
 #elif defined IBUS_COMMUNICATION
   readIbusCommands(); // IBUS communication (pin 36)
-  mcpwmOutput();      // PWM servo signal output
-
 #elif defined SUMD_COMMUNICATION
   readSumdCommands(); // SUMD communication (pin 36)
-  mcpwmOutput();      // PWM servo signal output
-
 #elif defined PPM_COMMUNICATION
   readPpmCommands(); // PPM communication (pin 36)
-  mcpwmOutput();     // PWM servo signal output
-
 #elif defined GAMEPAD_MODE
   readGamepadCommands(); // Bluepad32 gamepad -> channels
-  mcpwmOutput();         // PWM servo signal output
-  updateGamepadRumble(); // engine-feel haptics (only if GP_RUMBLE)
-
 #else
   // measure RC signals mark space ratio
   readPwmSignals();
 #endif
 
+  // Survonauts shift-gate: rewrite the throttle from the park/gear state BEFORE anything consumes it.
+  // The servo output, ESC direction (reverse lights/beep), engine sound and indicators all key off
+  // pulseWidth[3]; running this AFTER mcpwmOutput let the raw down-stick reach the outputs first —
+  // flashing the reverse lights and lurching the drive during the down-flick to select a gear.
 #if defined SURVONAUTS && !defined GAMEPAD_MODE
-  survonautsGate(); // shift-gate: rewrite the throttle channel from the park/forward/reverse state
+  survonautsGate();
+#endif
+
+#if defined SBUS_COMMUNICATION || defined IBUS_COMMUNICATION || defined SUMD_COMMUNICATION || defined PPM_COMMUNICATION || defined GAMEPAD_MODE
+  mcpwmOutput();      // PWM servo signal output (PWM-input mode outputs via its own path)
+#endif
+#if defined GAMEPAD_MODE
+  updateGamepadRumble(); // engine-feel haptics (only if GP_RUMBLE)
 #endif
 
   // Horn triggering
