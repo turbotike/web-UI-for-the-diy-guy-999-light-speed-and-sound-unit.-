@@ -266,11 +266,26 @@ void webInterface()
               {
                 useTrailer1 = true;
                 Serial.println("Trailer 1 enabled");
+#if defined ENABLE_WIRELESS
+                // Add the ESP-NOW link on the spot, so the trailer goes live without a reboot.
+                if (!esp_now_is_peer_exist(broadcastAddress1))
+                {
+                  esp_now_peer_info_t p = {};
+                  memcpy(p.peer_addr, broadcastAddress1, 6);
+                  p.channel = 0;
+                  p.encrypt = false;
+                  esp_now_add_peer(&p);
+                }
+#endif
               }
               else if (header.indexOf("GET /?CheckboxTr1=false") >= 0)
               {
                 useTrailer1 = false;
                 Serial.println("Trailer 1 disabled");
+#if defined ENABLE_WIRELESS
+                if (esp_now_is_peer_exist(broadcastAddress1))
+                  esp_now_del_peer(broadcastAddress1); // drop the link live
+#endif
               }
 
               // MAC0 ----------------------------------
@@ -402,11 +417,25 @@ void webInterface()
               {
                 useTrailer2 = true;
                 Serial.println("Trailer 2 enabled");
+#if defined ENABLE_WIRELESS
+                if (!esp_now_is_peer_exist(broadcastAddress2))
+                {
+                  esp_now_peer_info_t p = {};
+                  memcpy(p.peer_addr, broadcastAddress2, 6);
+                  p.channel = 0;
+                  p.encrypt = false;
+                  esp_now_add_peer(&p);
+                }
+#endif
               }
               else if (header.indexOf("GET /?CheckboxTr2=false") >= 0)
               {
                 useTrailer2 = false;
                 Serial.println("Trailer 2 disabled");
+#if defined ENABLE_WIRELESS
+                if (esp_now_is_peer_exist(broadcastAddress2))
+                  esp_now_del_peer(broadcastAddress2);
+#endif
               }
 
               // MAC0 ----------------------------------
@@ -537,11 +566,25 @@ void webInterface()
               {
                 useTrailer3 = true;
                 Serial.println("Trailer 3 enabled");
+#if defined ENABLE_WIRELESS
+                if (!esp_now_is_peer_exist(broadcastAddress3))
+                {
+                  esp_now_peer_info_t p = {};
+                  memcpy(p.peer_addr, broadcastAddress3, 6);
+                  p.channel = 0;
+                  p.encrypt = false;
+                  esp_now_add_peer(&p);
+                }
+#endif
               }
               else if (header.indexOf("GET /?CheckboxTr3=false") >= 0)
               {
                 useTrailer3 = false;
                 Serial.println("Trailer 3 disabled");
+#if defined ENABLE_WIRELESS
+                if (esp_now_is_peer_exist(broadcastAddress3))
+                  esp_now_del_peer(broadcastAddress3);
+#endif
               }
 
               // MAC0 ----------------------------------
