@@ -16,6 +16,7 @@
 #if defined GAMEPAD_MODE
 
 #include <Bluepad32.h>
+#include <esp_bt.h> // esp_bredr_tx_power_set — crank Bluetooth range up
 
 // The configurator's Gamepad tab writes gamepad_config.h with the user's button
 // map, drive options and axis choices. It is #included here (before the #ifndef
@@ -213,6 +214,8 @@ void setupGamepad()
   Serial.printf("%02x:%02x:%02x:%02x:%02x:%02x\n", a[0], a[1], a[2], a[3], a[4], a[5]);
   BP32.setup(&gpOnConnect, &gpOnDisconnect);
   BP32.enableVirtualDevice(false);
+  BP32.enableNewBluetoothConnections(true);            // accept a controller that's in pairing mode
+  esp_bredr_tx_power_set(ESP_PWR_LVL_P9, ESP_PWR_LVL_P9); // max BT TX power (+9 dBm) for the best range
   Serial.println("Put your controller in pairing mode to connect...");
 }
 

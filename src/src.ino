@@ -1853,6 +1853,24 @@ void setupNeopixel()
 }
 
 //
+// Start the two DAC playback timers (the 44 kHz audio interrupt engine). On gamepad builds this is
+// held off until a controller connects — a silent, interrupt-free chip pairs far more reliably.
+bool audioTimersStarted = false;
+void startAudioTimers()
+{
+  if (audioTimersStarted)
+    return;
+  audioTimersStarted = true;
+  variableTimer = timerBegin(0, 20, true);
+  timerAttachInterrupt(variableTimer, &variablePlaybackTimer, true);
+  timerAlarmWrite(variableTimer, variableTimerTicks, true);
+  timerAlarmEnable(variableTimer);
+  fixedTimer = timerBegin(1, 20, true);
+  timerAttachInterrupt(fixedTimer, &fixedPlaybackTimer, true);
+  timerAlarmWrite(fixedTimer, fixedTimerTicks, true);
+  timerAlarmEnable(fixedTimer);
+}
+
 // =======================================================================================================
 // MAIN ARDUINO SETUP (1x during startup)
 // =======================================================================================================
@@ -2074,17 +2092,12 @@ void setup()
   dacWrite(DAC1, 0);
   dacWrite(DAC2, 0);
 
-  // Interrupt timer for variable sample rate playback
-  variableTimer = timerBegin(0, 20, true);                           // timer 0, MWDT clock period = 12.5 ns * TIMGn_Tx_WDT_CLK_PRESCALE -> 12.5 ns * 20 -> 250 ns = 0.25 us, countUp
-  timerAttachInterrupt(variableTimer, &variablePlaybackTimer, true); // edge (not level) triggered
-  timerAlarmWrite(variableTimer, variableTimerTicks, true);          // autoreload true
-  timerAlarmEnable(variableTimer);                                   // enable
-
-  // Interrupt timer for fixed sample rate playback
-  fixedTimer = timerBegin(1, 20, true);                        // timer 1, MWDT clock period = 12.5 ns * TIMGn_Tx_WDT_CLK_PRESCALE -> 12.5 ns * 20 -> 250 ns = 0.25 us, countUp
-  timerAttachInterrupt(fixedTimer, &fixedPlaybackTimer, true); // edge (not level) triggered
-  timerAlarmWrite(fixedTimer, fixedTimerTicks, true);          // autoreload true
-  timerAlarmEnable(fixedTimer);                                // enable
+  // Audio playback timers. On RC builds, start now. On gamepad builds, HOLD OFF until a controller
+  // connects (see loop) so the 44 kHz interrupt storm doesn't jitter the Bluetooth pairing/handshake —
+  // nothing to hear before you pair anyway, and it makes the PS4/PS5/Xbox connect far more reliable.
+#if !defined GAMEPAD_MODE
+  startAudioTimers();
+#endif
 
   // wait for RC receiver to initialize
   while (millis() <= 1000)
@@ -6136,6 +6149,8 @@ void loop()
   readPpmCommands(); // PPM communication (pin 36)
 #elif defined GAMEPAD_MODE
   readGamepadCommands(); // Bluepad32 gamepad -> channels
+  if (gamepadConnected && !audioTimersStarted)
+    startAudioTimers();  // fire up audio once a controller is connected — pairing stays interrupt-free
 #else
   // measure RC signals mark space ratio
   readPwmSignals();
