@@ -191,10 +191,15 @@ void gpWriteCalDefaultsToEeprom() // called from the eeprom_id factory-init bloc
 #define GP_BTN_JAKE 0x0004 // Square / X
 #endif
 
+// Set once a controller has connected since boot - the pairing watchdog below uses it.
+static bool gpEverConnected = false;
+static bool gpKeysCleared = false;
+
 static void gpOnConnect(ControllerPtr ctl)
 {
   gpController = ctl;
   gamepadConnected = true;
+  gpEverConnected = true;
   Serial.printf("Gamepad connected: %s\n", ctl->getModelName().c_str());
 }
 static void gpOnDisconnect(ControllerPtr ctl)
@@ -217,6 +222,41 @@ void setupGamepad()
   BP32.enableNewBluetoothConnections(true);            // accept a controller that's in pairing mode
   esp_bredr_tx_power_set(ESP_PWR_LVL_P9, ESP_PWR_LVL_P9); // max BT TX power (+9 dBm) for the best range
   Serial.println("Put your controller in pairing mode to connect...");
+  Serial.println("PS4: hold SHARE + PS until the light bar double-flashes white.");
+}
+
+// --- Pairing watchdog -------------------------------------------------------------------------
+// Two things go wrong for people pairing a controller for the first time:
+//   1. Nothing tells them whether the board is even running a gamepad build, so a failed flash
+//      looks exactly like a failed pairing. -> print a heartbeat they can see in the Serial
+//      Monitor (115200 baud), so the board says what it is doing.
+//   2. The ESP32 keeps Bluetooth keys from an earlier or half-finished pairing and then quietly
+//      refuses the controller. -> if nothing has connected GP_PAIR_RESET_MS after boot, drop the
+//      stored keys once and keep listening, so a pad in pairing mode can always get in.
+// A pad that is already paired reconnects within a few seconds, well before the reset fires.
+#define GP_PAIR_RESET_MS 30000UL
+
+static void gpPairingWatchdog()
+{
+  static uint32_t lastBeat = 0;
+  uint32_t now = millis();
+
+  if (!gpKeysCleared && !gpEverConnected && now > GP_PAIR_RESET_MS)
+  {
+    gpKeysCleared = true;
+    BP32.forgetBluetoothKeys();               // stale keys silently block new controllers
+    BP32.enableNewBluetoothConnections(true); // make sure we are still accepting
+    Serial.println("No controller after 30s - cleared stored Bluetooth pairings, still listening.");
+    Serial.println("Put the pad in pairing mode now (PS4: hold SHARE + PS until it double-flashes).");
+  }
+
+  if (now - lastBeat >= 3000)
+  {
+    lastBeat = now;
+    Serial.print("[gamepad] waiting for a controller... ");
+    Serial.print(now / 1000);
+    Serial.println(gpKeysCleared ? "s (pairings cleared)" : "s");
+  }
 }
 
 // map a signed analog value (-range..range) to a 1000..2000us pulse (1500 center), with deadzone
@@ -401,6 +441,7 @@ void readGamepadCommands()
   if (!gpController || !gpController->isConnected() || !gpController->isGamepad())
   {
     // No pad -> hold everything at neutral (failsafe)
+    gpPairingWatchdog(); // heartbeat + one-shot pairing reset so a pad can always get in
     for (uint8_t i = 1; i <= 13; i++)
       pulseWidthRaw[i] = 1500;
     gpOutMicros[2] = gpCalCenter[0];

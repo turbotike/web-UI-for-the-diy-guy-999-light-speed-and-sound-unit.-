@@ -174,9 +174,23 @@ Drive with a **PS4 / PS5 / Xbox** controller over Bluetooth instead of an RC tra
 - **Pick your mode** — one big switch between the **WiFi tuning page** (normal RC + phone tuning) and the **game controller**. The ESP32 has one radio, so it's one or the other; the app handles the wiring (and even downloads the right compiler core for you).
 - **Remap the buttons** — bind horn / lights / engine / jake to whichever controller buttons you like.
 - **Servo endpoints** — set the travel limits (left / center / right) for each channel, CH1–CH4.
-- **Shift-gate drive** ("survonauts" style): start in neutral — flick the left stick **down+right** for forward, **down+left** for reverse, then push **up** to throttle; it drops back to neutral if you coast for a second.
+- **Drive** with the sticks: left stick up/down = throttle, the steering stick = steer. *(The "survonauts" shift-gate is an **RC transmitter** mode, not a controller one — it lives in the Transmission tab.)*
 
-> ⚠️ **Experimental.** The firmware builds + runs Bluepad32 on the board and the setup UI is done, but pairing + driving + sound still need testing on real hardware with a real controller.
+### Pairing it
+
+1. In the app's **🎮 Controls** tab pick the **🎮 Game controller** card, then **⚡ Save & Flash**. The first controller flash downloads the Bluepad32 core — that takes a few minutes, let it finish.
+2. Power the board. Put the pad in **pairing mode**: PS4 = hold **SHARE + PS** until the light bar double-flashes white; Xbox = hold the small **pair** button until the logo flashes fast. A pad that just shows a steady light is trying to reach its console, not the board.
+3. It connects in a few seconds. Sound starts the moment the pad connects — before that the board is deliberately silent, which keeps Bluetooth pairing reliable.
+
+**It's one or the other.** A game-controller build turns the RC receiver *and* the 192.168.4.1 WiFi page **off** — the ESP32 has a single radio. So if your RC transmitter still drives the model, you're running the RC build and the flash didn't take: go back to the Controls tab, pick **Game controller**, and flash again.
+
+**If it still won't pair,** plug in USB and open the Serial Monitor at **115200**. A gamepad build prints `GAMEPAD_MODE — Bluepad32 ...` at boot and then `[gamepad] waiting for a controller... 3s`, `6s`, ... every few seconds:
+
+- **Nothing like that at all** → it's not a gamepad build (see above), or the flash failed.
+- **The heartbeat counts up but the pad never joins** → the pad isn't in pairing mode, or it's a clone that Bluepad32 doesn't support. After 30 s with no controller the firmware **clears its stored Bluetooth pairings automatically** (stale keys from an old pairing are the usual culprit) and keeps listening — so put the pad in pairing mode and it should get in.
+- **`Gamepad connected: ...`** → pairing is fine; anything still wrong is drive/servo setup in the Controls tab.
+
+> ⚠️ **Experimental.** Bluepad32 works best with genuine PS4 / PS5 / Xbox controllers — clone pads are hit and miss.
 
 ## 🙌 Credits
 
