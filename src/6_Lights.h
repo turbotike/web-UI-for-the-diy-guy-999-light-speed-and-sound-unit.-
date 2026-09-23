@@ -41,7 +41,7 @@ bool flickeringWileCranking = false;      // if true: The lights will flicker a 
 bool ledIndicators = false;               // indicators are switching "hard" (without fading like an incandescent bulb), if true (was LED_INDICATORS)
 bool swap_L_R_indicators = false;         // If you want to swap L & R indicators
 bool indicatorsAsSidemarkers = false;     // "US Mode" The indicators are used as side markers as well. This is commonly used in US trucks.
-bool combinedRearLights = false;           // "US Mode" One red lamp per side does tail + turn signal + brake, like an American
+bool combinedRearLights = true;            // "US Mode" One red lamp per side does tail + turn signal + brake, like an American
                                           // pickup or trailer: running lights = half brightness, turn signal flashes on top of that,
                                           // and the brakes take both lamps to full. Uses the two indicator outputs (pins 2 & 4).
 bool separateFullBeam = false;            // The full beam is a separate bulb, connected to roof lights pin. Connect roof lights to side lights in this case
