@@ -3792,18 +3792,41 @@ static unsigned long xenonMillis;
 uint32_t indicatorFade = 300; // 300 is the fading time, simulating an incandescent bulb
 
 // Brake light sub function ---------------------------------
+// "brightness" is what the rear lights show when the brakes are off (0 = lights off, otherwise
+// the parking or dimmed level). Braking always takes them to full.
 void brakeLightsSub(uint8_t brightness)
 {
-  if (escIsBraking)
+  uint8_t steady = escIsBraking
+                       ? (uint8_t)(255 - crankingDim)                                              // braking: full
+                       : (uint8_t)constrain(brightness - (crankingDim / 2), (brightness / 2), 255); // tail: reduced
+
+  if (combinedRearLights)
   {
-    tailLight.pwm(255 - crankingDim);  // Taillights (full brightness)
-    brakeLight.pwm(255 - crankingDim); // Brakelight on
+    // "US Mode": one red lamp per side does tail, turn signal AND brake, like an American pickup
+    // or trailer. The two lamps live on the rear light outputs, one per side:
+    //     LEFT  rear -> tail light output        (pin 15)
+    //     RIGHT rear -> third brake light output (pin 32, needs THIRD_BRAKELIGHT)
+    // The indicator outputs are deliberately NOT touched, so the front turn signals carry on as
+    // normal amber blinkers and stay dark under braking.
+    // A blinking side dips back to the tail level rather than the brake level between flashes, so
+    // the signal stays visible while you're on the brakes - just like a real combined rear lamp.
+    uint8_t dip = constrain(brightness - (crankingDim / 2), 0, 255);
+
+    if (indicatorLon || hazard)
+      tailLight.flash(375, 375, 0, 0, 0, indicatorFade, dip); // left rear: blink over tail/brake
+    else
+      tailLight.pwm(steady);
+
+    if (indicatorRon || hazard)
+      brakeLight.flash(375, 375, 0, 0, 0, indicatorFade, dip); // right rear
+    else
+      brakeLight.pwm(steady);
+
+    return;
   }
-  else
-  {
-    tailLight.pwm(constrain(brightness - (crankingDim / 2), (brightness / 2), 255));  // Taillights (reduced brightness)
-    brakeLight.pwm(constrain(brightness - (crankingDim / 2), (brightness / 2), 255)); // Brakelight (reduced brightness)
-  }
+
+  tailLight.pwm(steady);  // Taillights
+  brakeLight.pwm(steady); // Brakelight
 }
 
 // Headlights sub function ---------------------------------
@@ -3962,34 +3985,17 @@ void led()
 #endif
 
   // Indicators (turn signals, blinkers) ----
-  // Two levels are needed here:
-  //   indicatorOffBrightness    - the level a flashing lamp dips down to, so the flash stays
-  //                               visible on top of whatever the lamp is already doing.
-  //   indicatorSteadyBrightness - what the lamp sits at when it is NOT signalling.
   uint8_t indicatorOffBrightness;
-  uint8_t indicatorSteadyBrightness;
-  uint8_t rearRunningBrightness =
-      (lightsState > 1) ? (uint8_t)constrain(rearlightDimmedBrightness - crankingDim / 2, 0, 255) : 0;
-
-  if (combinedRearLights)
+  if (indicatorsAsSidemarkers) // Indicators used as US style side markers as well
   {
-    // "US Mode": ONE red lamp per side is tail light, turn signal AND brake light at once, like
-    // an American pickup or trailer. Running lights -> half brightness, brakes -> full, turn
-    // signal -> flashes on top. Braking lights the lamps even with the running lights off, and a
-    // flashing side still dips to the running-light level (not to the brake level), so the signal
-    // stays visible while you're on the brakes - exactly how a real combined rear lamp behaves.
-    indicatorOffBrightness = rearRunningBrightness;
-    indicatorSteadyBrightness = escIsBraking ? (uint8_t)(255 - crankingDim) : rearRunningBrightness;
-  }
-  else if (indicatorsAsSidemarkers) // Indicators used as US style side markers as well
-  {
-    indicatorOffBrightness = rearRunningBrightness;
-    indicatorSteadyBrightness = rearRunningBrightness;
+    if (lightsState > 1)
+      indicatorOffBrightness = rearlightDimmedBrightness - crankingDim / 2;
+    else
+      indicatorOffBrightness = 0;
   }
   else
   {
     indicatorOffBrightness = 0;
-    indicatorSteadyBrightness = 0;
   }
 
   if (!hazard && !unlock5thWheel && !batteryProtection && hazardsWhile5thWheelUnlocked || !hazard && !batteryProtection && !hazardsWhile5thWheelUnlocked)
@@ -4002,10 +4008,8 @@ void led()
     }
     else
     {
-      if (combinedRearLights && (escIsBraking || lightsState > 1))
-        indicatorL.pwm(indicatorSteadyBrightness); // tail (half) or brake (full)
-      else if (indicatorsAsSidemarkers && lightsState > 1)
-        indicatorL.pwm(indicatorSteadyBrightness);
+      if (lightsState > 1 && indicatorsAsSidemarkers)
+        indicatorL.pwm(indicatorOffBrightness);
       else
         indicatorL.off(indicatorFade);
     }
@@ -4018,10 +4022,8 @@ void led()
     }
     else
     {
-      if (combinedRearLights && (escIsBraking || lightsState > 1))
-        indicatorR.pwm(indicatorSteadyBrightness); // tail (half) or brake (full)
-      else if (indicatorsAsSidemarkers && lightsState > 1)
-        indicatorR.pwm(indicatorSteadyBrightness);
+      if (lightsState > 1)
+        indicatorR.pwm(indicatorOffBrightness);
       else
         indicatorR.off(indicatorFade);
     }
