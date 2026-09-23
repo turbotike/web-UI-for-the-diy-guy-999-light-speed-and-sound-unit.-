@@ -3792,26 +3792,18 @@ static unsigned long xenonMillis;
 uint32_t indicatorFade = 300; // 300 is the fading time, simulating an incandescent bulb
 
 // Brake light sub function ---------------------------------
-// "brightness" is the level the tail lights sit at when the brakes are off (0 = lights off,
-// parking or dimmed brightness otherwise). Braking always takes them to full.
 void brakeLightsSub(uint8_t brightness)
 {
-  uint8_t steady = escIsBraking
-                       ? (uint8_t)(255 - crankingDim)                                              // braking: full
-                       : (uint8_t)constrain(brightness - (crankingDim / 2), (brightness / 2), 255); // tail: reduced
-
-  // "US Mode" combined rear lamps: the tail lights are also the rear turn signal, so they blink
-  // along with whichever indicator is on. Between flashes they fall back to the TAIL level rather
-  // than the brake level, so the blink stays visible even while you're on the brakes - that's how
-  // a real combined rear lamp behaves. The indicator outputs themselves are left alone, so front
-  // turn signals keep working normally.
-  if (combinedRearLights && (indicatorLon || indicatorRon || hazard))
-    tailLight.flash(375, 375, 0, 0, 0, indicatorFade,
-                    constrain(brightness - (crankingDim / 2), 0, 255));
+  if (escIsBraking)
+  {
+    tailLight.pwm(255 - crankingDim);  // Taillights (full brightness)
+    brakeLight.pwm(255 - crankingDim); // Brakelight on
+  }
   else
-    tailLight.pwm(steady);
-
-  brakeLight.pwm(steady); // separate / third brake light: unchanged
+  {
+    tailLight.pwm(constrain(brightness - (crankingDim / 2), (brightness / 2), 255));  // Taillights (reduced brightness)
+    brakeLight.pwm(constrain(brightness - (crankingDim / 2), (brightness / 2), 255)); // Brakelight (reduced brightness)
+  }
 }
 
 // Headlights sub function ---------------------------------
