@@ -51,7 +51,7 @@ bool hazardsWhile5thWheelUnlocked = true; // Hazards on, if 5th wheel is unlocke
 // Light brightness values 0 - 255
 uint8_t cabLightsBrightness = 100;      // Usually 255, 100 for Actros & Ural
 uint8_t sideLightsBrightness = 150;     // Usually 200, 100 for WPL C44, 50 for Landy, 100 for P407, 150 for Actros
-uint8_t rearlightDimmedBrightness = 30; // tailligt brightness, if not braking, about 30
+uint8_t rearlightDimmedBrightness = 110; // tailligt brightness, if not braking, about 30 (110 = 'half' for US combined rear lamps)
 uint8_t rearlightParkingBrightness = 3; // 0, if you want the taillights being off, if side lights are on, or about 5 if you want them on (0 for US Mode)
 uint8_t headlightParkingBrightness = 3; // 0, if you want the headlights being off, if side lights are on, or about 5 if you want them on (0 for US Mode)
 uint8_t reversingLightBrightness = 140; // Around 140, 50 for Landy & Ural
