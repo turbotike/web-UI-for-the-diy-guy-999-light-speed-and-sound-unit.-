@@ -5760,6 +5760,46 @@ def _controls_for_file(rel_path):
     return controls
 
 
+# The receiver protocol is a ONE-OF choice, not a set of independent switches: src.ino
+# dispatches them as "#if SBUS ... #elif IBUS ... #elif PPM ... #elif SUMD ... #else PWM",
+# so enabling two silently gives you whichever comes first in that chain, and the board then
+# sits in its boot loop waiting for a bus that never speaks. The UI used to render them as
+# five separate toggles, which made exactly that mistake easy to hit. Collapse them into a
+# single dropdown so only one can ever be active.
+PROTOCOL_OPTIONS = [
+    ["", "Classic PWM (one wire per channel)"],
+    ["SBUS_COMMUNICATION", "SBUS (FrSky, Futaba, RadioLink)"],
+    ["IBUS_COMMUNICATION", "iBUS (FlySky)"],
+    ["SUMD_COMMUNICATION", "SUMD (Graupner)"],
+    ["PPM_COMMUNICATION", "PPM (sum signal)"],
+]
+PROTOCOL_FLAGS = [o[0] for o in PROTOCOL_OPTIONS if o[0]]
+
+
+def _collapse_protocol_controls(controls):
+    """Replace the individual *_COMMUNICATION toggles with one exclusive dropdown."""
+    active = ""
+    kept = []
+    for c in controls:
+        if c.get("name") in PROTOCOL_FLAGS:
+            if c.get("enabled"):
+                active = c["name"]
+            continue  # drop the individual toggle
+        kept.append(c)
+    picker = {
+        "name": "__protocol__",
+        "label": "Receiver protocol",
+        "desc": "How your receiver talks to the board - pick the one it actually outputs. "
+                "Only one can be active, and the signal wire goes to the RX header (GPIO36).",
+        "saveKind": "exclusive_flag",
+        "control": "select",
+        "value": active,
+        "group": PROTOCOL_FLAGS,
+        "options": PROTOCOL_OPTIONS,
+    }
+    return [picker] + kept
+
+
 def build_config_schema():
     """Full configuration as JSON for the SPA: vehicles, the active vehicle's
     tuning, and the General/Remote/ESC/... setting tabs."""
@@ -5770,6 +5810,8 @@ def build_config_schema():
         if fname == "1_Vehicle.h":
             continue  # vehicle choice is handled by the picker, not a tab
         controls = _controls_for_file(fname)
+        if fname == "2_Remote.h":
+            controls = _collapse_protocol_controls(controls)
         if controls:
             tabs.append({
                 "file": fname,
@@ -6638,6 +6680,16 @@ class Handler(BaseHTTPRequestHandler):
                         elif kind == "define_val":
                             flag_changes[name] = bool(info.get("enabled"))
                             value_changes[name] = str(info.get("value", ""))
+                        elif kind == "exclusive_flag":
+                            # One-of choice (receiver protocol): enable the picked #define and
+                            # switch every other one in the group off, so they can't conflict.
+                            chosen = str(info.get("value", "")).strip()
+                            for opt in info.get("group", []):
+                                flag_changes[opt] = (opt == chosen)
+                            if chosen:
+                                # A receiver protocol shadows GAMEPAD_MODE (it's last in the
+                                # #elif chain), so turn it off rather than leave a half state.
+                                flag_changes["GAMEPAD_MODE"] = False
                         elif kind == "text_var":
                             value_changes[name] = str(info.get("value", ""))
                         elif kind == "sound_choice" and name.startswith("__sound__"):
