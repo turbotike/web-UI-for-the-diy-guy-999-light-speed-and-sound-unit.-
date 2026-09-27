@@ -1988,6 +1988,30 @@ def list_serial_ports():
         except Exception:
             pass
 
+    if not ports and os.name == "nt":
+        # Last resort on Windows: read the COM ports straight out of the registry. This needs
+        # neither pyserial nor PlatformIO, so "Detect board" still works on a machine where the
+        # pip install of pyserial quietly failed - a very common cause of "no USB device found"
+        # when the board and driver are actually fine.
+        try:
+            import winreg
+
+            key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DEVICEMAP\SERIALCOMM")
+            try:
+                i = 0
+                while True:
+                    try:
+                        _name, value, _type = winreg.EnumValue(key, i)
+                    except OSError:
+                        break
+                    if isinstance(value, str) and value.upper().startswith("COM"):
+                        ports.append(value)
+                    i += 1
+            finally:
+                winreg.CloseKey(key)
+        except Exception:
+            pass
+
     cleaned = sorted(set(ports), key=lambda p: (len(p), p))
     return cleaned
 

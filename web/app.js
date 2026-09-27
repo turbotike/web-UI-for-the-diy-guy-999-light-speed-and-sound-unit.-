@@ -798,7 +798,13 @@ function wireFlashPane() {
       const j = await (await fetch("/native_ports")).json();
       sel.innerHTML = "";
       const ports = (j.ports || []);
-      if (!ports.length) { sel.innerHTML = "<option value=''>No serial ports found — check USB/driver</option>"; setStatus("No board detected. Check the USB cable/driver.", "err"); return; }
+      if (!ports.length) {
+        sel.innerHTML = "<option value=''>No serial ports found</option>";
+        setStatus("No board detected. 1) Use a DATA USB cable — charge-only cables have no data wires and are the usual culprit. " +
+                  "2) Install the USB-serial driver for your board: CP210x (Silicon Labs) or CH340. " +
+                  "3) Check Windows Device Manager under 'Ports (COM & LPT)' — if nothing appears there, it's the cable or the driver.", "err");
+        return;
+      }
       for (const p of ports) {
         const o = el("option"); o.value = p.address;
         o.textContent = p.address + (p.likely ? "  ✅ (board)" : "");
