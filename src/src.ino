@@ -4479,14 +4479,29 @@ void esc()
   { // Check battery voltage every 300ms
     lastBatteryTime = millis();
     batteryVoltage = batteryVolts(); // Store voltage in global variable (also used in dashboard)
+    // Require a few consecutive low readings before tripping. A single dip - a bench supply
+    // current-limiting, or the amp and servos pulling at once - is not a flat battery, and
+    // tripping on it used to be unrecoverable (see the hysteresis note below).
+    static uint8_t lowReadings;
     if (batteryVoltage < batteryCutoffvoltage)
-    {
+      lowReadings++;
+    else
+      lowReadings = 0;
+
+    if (lowReadings >= 3 && !batteryProtection)
+    { // ~1 s below the cutoff (readings are 300 ms apart)
       Serial.printf("Battery protection triggered, slowing down! Battery: %.2f V Threshold: %.2f V \n", batteryVoltage, batteryCutoffvoltage);
       Serial.printf("Disconnect battery to prevent it from overdischarging!\n", batteryVoltage, batteryCutoffvoltage);
       batteryProtection = true;
     }
-    if (batteryVoltage > batteryCutoffvoltage + (FULLY_CHARGED_VOLTAGE * numberOfCells))
-    { // Recovery hysteresis
+
+    // Recovery hysteresis. This used to be "batteryCutoffvoltage + (FULLY_CHARGED_VOLTAGE *
+    // numberOfCells)", which on a 2S pack is 6.6 + 8.4 = 15.0 V - a voltage a 2S can never
+    // reach. So once the protection tripped it could NEVER clear: the ESC stayed derated and
+    // the hazard lights flashed until a reboot, with no way to switch them off. A hysteresis
+    // only needs a small margin above the cutoff, not a full charge on top of it.
+    if (batteryProtection && batteryVoltage > batteryCutoffvoltage + (RECOVERY_HYSTERESIS * numberOfCells))
+    {
       batteryProtection = false;
     }
     // Out of fuel message triggering
