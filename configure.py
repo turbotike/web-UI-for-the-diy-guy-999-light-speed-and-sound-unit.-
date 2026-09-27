@@ -1613,44 +1613,81 @@ def get_current_vehicle():
     return m.group(1) if m else None
 
 
+def _remote_blocks(lines):
+    """Top-level '#ifdef NAME ... #endif' blocks in 2_Remote.h -> [(name, start, end)]."""
+    depth, stack, blocks = 0, [], []
+    for i, l in enumerate(lines):
+        t = l.strip()
+        if re.match(r"#if(def|ndef)?\b", t):
+            m = re.match(r"#ifdef\s+(\w+)", t)
+            stack.append((m.group(1) if (m and depth == 0) else None, i))
+            depth += 1
+        elif t.startswith("#endif"):
+            depth -= 1
+            name, start = stack.pop() if stack else (None, i)
+            if depth == 0 and name:
+                blocks.append((name, start, i))
+    return blocks
+
+
+def _remote_editable_mask(lines):
+    """2_Remote.h keeps one '#ifdef PROFILE ... #endif' block per radio, each with its own copy
+    of AUTO_LIGHTS / AUTO_INDICATORS / sbusInverted / channel maps. A file-wide substitution
+    edits every profile at once - which is exactly how AUTO_INDICATORS ended up forced on in all
+    of them - so only lines outside the blocks plus the ACTIVE profile's block are editable."""
+    blocks = _remote_blocks(lines)
+    inside = [False] * len(lines)
+    for _n, a, b in blocks:
+        for k in range(a, b + 1):
+            inside[k] = True
+    names = {n for n, _a, _b in blocks}
+    active = set()
+    for i, l in enumerate(lines):
+        m = re.match(r"^\s*#define\s+(\w+)", l)   # the selector list at the top of the file
+        if m and not inside[i] and m.group(1) in names:
+            active.add(m.group(1))
+    # Lines inside a /* ... */ comment (the explanatory block near the top lists the very same
+    # #defines as documentation) are never edited either.
+    incomment, inc = [False] * len(lines), False
+    for i, l in enumerate(lines):
+        if inc:
+            incomment[i] = True
+            if "*/" in l:
+                inc = False
+        elif "/*" in l:
+            incomment[i] = True
+            if "*/" not in l[l.find("/*") + 2:]:
+                inc = True
+    mask = [not x for x in inside]
+    for n, a, b in blocks:
+        if n in active:
+            for k in range(a, b + 1):
+                mask[k] = True
+    return [mask[i] and not incomment[i] for i in range(len(lines))]
+
+
 def apply_changes(rel_path, changes):
     path = os.path.join(SRC, rel_path)
-    text = read_text(path)
+    lines = read_text(path).split("\n")
+    mask = _remote_editable_mask(lines) if rel_path == "2_Remote.h" else [True] * len(lines)
+
+    def sub(pattern, repl):
+        for i, l in enumerate(lines):
+            if mask[i]:
+                lines[i] = re.sub(pattern, repl, l)
 
     for name, val in changes.items():
         if isinstance(val, bool):
-            # (.*)$ preserves any trailing comment on the #define line.
-            if val:
-                # Uncomment: strip a leading // from "// #define NAME ..."
-                text = re.sub(
-                    r"^(\s*)//+\s*(#define\s+" + re.escape(name) + r"\b)(.*)$",
-                    r"\1\2\3",
-                    text,
-                    flags=re.MULTILINE,
-                )
-            else:
-                # Comment out an active "#define NAME ..." (not already commented)
-                text = re.sub(
-                    r"^(\s*)(#define\s+" + re.escape(name) + r"\b)(.*)$",
-                    r"\1// \2\3",
-                    text,
-                    flags=re.MULTILINE,
-                )
+            if val:   # uncomment "// #define NAME ..." (keeps the trailing comment)
+                sub(r"^(\s*)//+\s*(#define\s+" + re.escape(name) + r"\b)(.*)$", r"\1\2\3")
+            else:     # comment out an active "#define NAME ..."
+                sub(r"^(\s*)(#define\s+" + re.escape(name) + r"\b)(.*)$", r"\1// \2\3")
         else:
-            text = re.sub(
-                r"^(\s*#define\s+" + re.escape(name) + r"\s+).+$",
-                lambda m, nv=val: m.group(1) + nv,
-                text,
-                flags=re.MULTILINE,
-            )
-            # Replace a specific "name = value" in a (possibly comma-separated) declaration
-            text = re.sub(
-                r"(" + re.escape(name) + r"\s*=\s*)([^,;]+)",
-                lambda m, nv=val: m.group(1) + nv,
-                text,
-            )
+            sub(r"^(\s*#define\s+" + re.escape(name) + r"\s+).+$", lambda m, nv=val: m.group(1) + nv)
+            # a specific "name = value" in a (possibly comma-separated) declaration
+            sub(r"(" + re.escape(name) + r"\s*=\s*)([^,;]+)", lambda m, nv=val: m.group(1) + nv)
 
-    write_text(path, text)
+    write_text(path, "\n".join(lines))
 
 
 def apply_vehicle(vehicle_file):
@@ -5821,7 +5858,43 @@ def _collapse_protocol_controls(controls):
         "group": PROTOCOL_FLAGS,
         "options": PROTOCOL_OPTIONS,
     }
-    return [picker] + kept
+    # Same treatment for the radio profile: one '#ifdef' block per remote, selected by a
+    # '#define NAME' in the list at the top. Two selected = duplicate definitions and a build
+    # error; none selected = no channel map at all. Make it a dropdown too.
+    profiles = _remote_profiles()
+    pnames = [n for n, _l in profiles]
+    active_profile, kept2 = "", []
+    for c in kept:
+        if c.get("name") in pnames:
+            if c.get("enabled"):
+                active_profile = c["name"]
+            continue
+        kept2.append(c)
+    profile_picker = {
+        "name": "__profile__",
+        "label": "Radio / transmitter profile",
+        "desc": "The channel map for your transmitter. Pick the one that matches the radio in your "
+                "hands - it decides which stick and switch does what.",
+        "saveKind": "exclusive_flag",
+        "control": "select",
+        "value": active_profile,
+        "group": pnames,
+        "options": [[n, l] for n, l in profiles],
+    }
+    return [picker, profile_picker] + kept2
+
+
+def _remote_profiles():
+    """[(define name, label)] for every radio profile block in 2_Remote.h, label taken from
+    the '// <------- Flysky FS-i6x' comment on its selector line when there is one."""
+    lines = read_text(os.path.join(SRC, "2_Remote.h")).split(chr(10))
+    names = [n for n, _a, _b in _remote_blocks(lines)]
+    labels = {}
+    for l in lines:
+        m = re.match(r"^\s*(?://\s*)?#define\s+(\w+)\s*//\s*<-+\s*(.+?)\s*$", l)
+        if m and m.group(1) in names:
+            labels[m.group(1)] = m.group(2)
+    return [(n, labels.get(n, n)) for n in names]
 
 
 def build_config_schema():
@@ -6710,7 +6783,7 @@ class Handler(BaseHTTPRequestHandler):
                             chosen = str(info.get("value", "")).strip()
                             for opt in info.get("group", []):
                                 flag_changes[opt] = (opt == chosen)
-                            if chosen:
+                            if chosen in PROTOCOL_FLAGS:
                                 # A receiver protocol shadows GAMEPAD_MODE (it's last in the
                                 # #elif chain), so turn it off rather than leave a half state.
                                 flag_changes["GAMEPAD_MODE"] = False
