@@ -1782,6 +1782,18 @@ void setupBattery()
   { // Only 2S & 3S batteries are supported!
     Serial.printf("Number of cells: %i (%iS battery detected) Based on setpoint: %.2f V\n", numberOfCells, numberOfCells, (CELL_SETPOINT * numberOfCells));
     Serial.printf("Battery cutoff voltage: %.2f V (%i * %.2f V) \n", batteryCutoffvoltage, numberOfCells, CUTOFF_VOLTAGE);
+    if (batteryVolts() < batteryCutoffvoltage)
+    { // Supply sits below the cutoff for the pack size just detected - the low-voltage
+      // protection trips straight away and stays on (hazards flashing, ESC derated). A bench
+      // supply set between the bands lands here: above 8.55 V it is taken for a 3S, but a 3S
+      // does not clear its own cutoff until 9.9 V. Real packs sit at 7.4 / 11.1 V nominal and
+      // never hit this, which is why it only shows up on the bench.
+      Serial.printf("WARNING: %.2f V is BELOW the %iS cutoff of %.2f V - battery protection will stay ON!\n",
+                    batteryVolts(), numberOfCells, batteryCutoffvoltage);
+      Serial.printf("         Use %.2f - %.2f V for 2S, or %.2f - %.2f V for 3S. Avoid %.2f - %.2f V.\n",
+                    CUTOFF_VOLTAGE * 2, CELL_SETPOINT * 3, CUTOFF_VOLTAGE * 3, FULLY_CHARGED_VOLTAGE * 3,
+                    CELL_SETPOINT * 3, CUTOFF_VOLTAGE * 3);
+    }
     for (uint8_t beeps = 0; beeps < numberOfCells; beeps++)
     { // Number of beeps = number of cells in series
       tone(26, 3000, 4, 0);
