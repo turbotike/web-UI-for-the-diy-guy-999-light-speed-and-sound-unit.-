@@ -2120,6 +2120,7 @@ void setup()
   sbusInit = false;
   Serial.printf("Initializing SBUS (sbusInverted = %s, needs to be true for most standard radios) ...\n", sbusInverted ? "true" : "false");
   Serial.printf("(Make sure radio and receiver are connected, turned on, bound and configured for SBUS output.)\n");
+  uint32_t sbusPolarityTry = millis();
   while (!sbusInit)
   {
     readSbusCommands();               // SBUS communication (pin 36)
@@ -2128,8 +2129,22 @@ void setup()
     serialInterface();
     webInterface();
     rtc_wdt_feed(); // Feed watchdog timer
+
+    // No valid packet after 3 s? Try the other signal polarity. Standard SBUS is an inverted
+    // UART signal, but plenty of receivers (FlySky X6B / A8S, "uninverted SBUS" pads) are not,
+    // and the setting is buried in the radio profile. Rather than hang here for ever with the
+    // indicators flashing, flip it and keep listening - whichever polarity produces a valid
+    // frame wins. If it keeps flipping, nothing is arriving at all: check the receiver has
+    // power (LED on), is bound, is set to S.BUS output, and its signal wire is on the RX header.
+    if (millis() - sbusPolarityTry > 3000)
+    {
+      sbusInverted = !sbusInverted;
+      sBus.begin(COMMAND_RX, COMMAND_TX, sbusInverted, sbusBaud);
+      Serial.printf("No SBUS packets yet - trying sbusInverted = %s ...\n", sbusInverted ? "true" : "false");
+      sbusPolarityTry = millis();
+    }
   }
-  Serial.printf("... SBUS initialization succesful!\n");
+  Serial.printf("... SBUS initialization succesful! (sbusInverted = %s)\n", sbusInverted ? "true" : "false");
 
 #elif defined IBUS_COMMUNICATION
   ibusInit = false;
