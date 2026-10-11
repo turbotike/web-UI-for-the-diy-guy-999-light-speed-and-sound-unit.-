@@ -4511,7 +4511,10 @@ void esc()
     // tripping on it used to be unrecoverable (see the hysteresis note below).
     static uint8_t lowReadings;
     if (batteryVoltage < batteryCutoffvoltage)
-      lowReadings++;
+    {
+      if (lowReadings < 255)
+        lowReadings++; // saturate - a uint8_t wrapping to 0 would briefly re-arm the trip
+    }
     else
       lowReadings = 0;
 

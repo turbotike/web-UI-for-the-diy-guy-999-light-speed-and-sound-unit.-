@@ -952,6 +952,13 @@ def extract_description(lines, i):
     return ""
 
 
+def _strip_block_comments(text):
+    """Blank out every /* ... */ region (newlines kept, so line numbers still line up).
+    2_Remote.h carries a documentation block that repeats the AUTO_* / pulseSpan / IBUS
+    #defines verbatim; any scanner that does not skip it reads the wrong copy."""
+    return re.sub(r"/\*.*?\*/", lambda m: re.sub(r"[^\n]", " ", m.group(0)), text, flags=re.S)
+
+
 def parse_items(rel_path):
     path = os.path.join(SRC, rel_path)
     if not os.path.exists(path):
@@ -959,6 +966,11 @@ def parse_items(rel_path):
 
     text = read_text(path)
     lines = text.splitlines()
+    lines = _strip_block_comments(chr(10).join(lines)).split(chr(10))
+    if rel_path == "2_Remote.h":
+        # one '#ifdef PROFILE' block per radio: show the ACTIVE profile's copy, not the first
+        _mask = _remote_editable_mask(lines)
+        lines = [l if _mask[i] else "" for i, l in enumerate(lines)]
     items = []
     seen = set()
 
@@ -1341,12 +1353,14 @@ def validate_and_fix_vehicle(vehicle_file):
     section_start = -1
     section_has_active = False
     # Track section spans so we can patch
-    sections = []  # list of (key, start_line, end_line, has_active_include)
+    sections = []  # list of (key, start_line, end_line, has_active_include, guard)
+    section_guard = None  # '#ifdef X' seen inside the section, e.g. JAKE_BRAKE_SOUND
 
     def _flush(end_at=None):
-        nonlocal current_key, section_start, section_has_active
+        nonlocal current_key, section_start, section_has_active, section_guard
         if current_key and section_start >= 0:
-            sections.append((current_key, section_start, end_at if end_at is not None else len(lines) - 1, section_has_active))
+            sections.append((current_key, section_start, end_at if end_at is not None else len(lines) - 1, section_has_active, section_guard))
+        section_guard = None
         current_key = ""
         section_start = -1
         section_has_active = False
@@ -1371,6 +1385,9 @@ def validate_and_fix_vehicle(vehicle_file):
             m_inc = re.match(r'^\s*#include\s+"sounds/([^"]+)"', raw)
             if m_inc:
                 section_has_active = True
+            m_g = re.match(r'^\s*#ifdef\s+(\w+)', raw)
+            if m_g and section_guard is None:
+                section_guard = m_g.group(1)
 
     _flush()
 
@@ -1383,9 +1400,12 @@ def validate_and_fix_vehicle(vehicle_file):
 
     # 3) For each section that has no active include, inject a dummy
     inserted = 0
-    for sk, s_start, s_end, has_active in sections:
+    defined = set(re.findall(r'^\s*#define\s+(\w+)', _strip_block_comments(chr(10).join(lines)), re.M))
+    for sk, s_start, s_end, has_active, guard in sections:
         if has_active:
             continue
+        if guard and guard not in defined:
+            continue  # section is compiled out ('//#define JAKE_BRAKE_SOUND') - nothing to fix
         dummy = _dummy_for_section(sk)
         if not dummy:
             continue
@@ -1791,13 +1811,13 @@ def _norm_mask(v, default="0x0000"):
 
 def gamepad_mode_active():
     """True if GAMEPAD_MODE is uncommented in 2_Remote.h."""
-    text = read_text(os.path.join(SRC, "2_Remote.h"))
+    text = _strip_block_comments(read_text(os.path.join(SRC, "2_Remote.h")))
     return re.search(r"^\s*#define\s+GAMEPAD_MODE\b", text, re.MULTILINE) is not None
 
 
 def active_comm_mode():
     """Return the one uncommented *_COMMUNICATION mode in 2_Remote.h, or None."""
-    text = read_text(os.path.join(SRC, "2_Remote.h"))
+    text = _strip_block_comments(read_text(os.path.join(SRC, "2_Remote.h")))
     for m in GP_COMM_MODES:
         if re.search(r"^\s*#define\s+" + m + r"\b", text, re.MULTILINE):
             return m
