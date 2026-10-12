@@ -176,6 +176,9 @@ Drive with a **PS4 / PS5 / Xbox** controller over Bluetooth instead of an RC tra
 - **Servo endpoints** — set the travel limits (left / center / right) for each channel, CH1–CH4.
 - **Drive** with the sticks: left stick up/down = throttle, the steering stick = steer. *(The "survonauts" shift-gate is an **RC transmitter** mode, not a controller one — it lives in the Transmission tab.)*
 
+- **Buttons** (defaults, remappable): Circle = horn · **hold** Triangle ~0.3 s = engine on/off · **hold** Cross ~0.3 s = next light step · Square = jake brake while held · **D-pad left / right** = turn signals (flick the other way to cancel) · **hold D-pad down** = hazards.
+- **Forget pairings:** type `b` on the serial monitor (115200). There is deliberately no automatic reset — you can power the truck first and pick the pad up later.
+
 ### Pairing it
 
 1. In the app's **🎮 Controls** tab pick the **🎮 Game controller** card, then **⚡ Save & Flash**. The first controller flash downloads the Bluepad32 core — that takes a few minutes, let it finish.
@@ -187,10 +190,14 @@ Drive with a **PS4 / PS5 / Xbox** controller over Bluetooth instead of an RC tra
 **If it still won't pair,** plug in USB and open the Serial Monitor at **115200**. A gamepad build prints `GAMEPAD_MODE — Bluepad32 ...` at boot and then `[gamepad] waiting for a controller... 3s`, `6s`, ... every few seconds:
 
 - **Nothing like that at all** → it's not a gamepad build (see above), or the flash failed.
-- **The heartbeat counts up but the pad never joins** → the pad isn't in pairing mode, or it's a clone that Bluepad32 doesn't support. After 30 s with no controller the firmware **clears its stored Bluetooth pairings automatically** (stale keys from an old pairing are the usual culprit) and keeps listening — so put the pad in pairing mode and it should get in.
+- **The heartbeat counts up but the pad never joins** → the pad isn't in pairing mode, or it's a clone that Bluepad32 doesn't support. Stale keys from an old pairing are the other usual culprit: type `b` on the serial monitor to clear them, then put the pad in pairing mode again.
 - **`Gamepad connected: ...`** → pairing is fine; anything still wrong is drive/servo setup in the Controls tab.
 
 > ⚠️ **Experimental.** Bluepad32 works best with genuine PS4 / PS5 / Xbox controllers — clone pads are hit and miss.
+
+## 🔒 Security note
+
+The configurator is a local web app that listens on **every network interface** while it's open, with no login — that's what lets you use it from a phone on the same Wi-Fi. Treat it like any open local tool: run it on a network you trust and close it when you're done. Builds before v1.8.0 could be made to run commands or read files by another device on the same network; update if you use it on a shared Wi-Fi.
 
 ## 🙌 Credits
 
