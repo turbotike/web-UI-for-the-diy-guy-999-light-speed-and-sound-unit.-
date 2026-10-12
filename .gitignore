@@ -23,7 +23,6 @@ __pycache__/
 *.pyc
 
 # User-specific
-backups/
 presets/
 *.wav
 

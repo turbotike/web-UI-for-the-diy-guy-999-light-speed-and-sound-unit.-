@@ -6494,6 +6494,7 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_json({"ok": False, "error": "Vehicle file not found"}, 404)
                     return
 
+                ensure_vehicle_backup(vehicle)  # the 'Reset vehicle' original - taken before any edit
                 apply_vehicle(vehicle)
                 self.send_json({"ok": True, "vehicle": vehicle})
             except Exception as e:
@@ -6522,6 +6523,7 @@ class Handler(BaseHTTPRequestHandler):
                     n += 1
                 write_text(dest, content)
                 apply_vehicle(new_file)
+                ensure_vehicle_backup(vehicle)  # imported file is its own 'Reset vehicle' original
                 self.send_json({"ok": True, "vehicle": new_file})
             except Exception as e:
                 self.send_json({"ok": False, "error": str(e)}, 500)
@@ -6621,7 +6623,8 @@ class Handler(BaseHTTPRequestHandler):
                 bp = backup_path_for(vehicle)
                 dest = os.path.join(SRC, "vehicles", vehicle)
                 if not os.path.isfile(bp):
-                    self.send_json({"ok": False, "error": "No backup found for " + vehicle}, 404)
+                    self.send_json({"ok": False, "error": "No original saved for " + vehicle +
+                                    " yet - one is kept the first time a vehicle is selected, imported or saved."}, 404)
                     return
                 import shutil
                 shutil.copy2(bp, dest)
