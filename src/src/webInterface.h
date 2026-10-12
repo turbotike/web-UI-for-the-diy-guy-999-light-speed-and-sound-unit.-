@@ -23,6 +23,28 @@ void volSlider(WiFiClient &client, String &header, const char *param, const char
   }
 }
 
+// The page sends values percent-encoded (XMLHttpRequest does that), so 'My Truck' arrived as
+// 'My%20Truck' and was stored and broadcast like that. Decode before use.
+static String urlDecode(const String &in)
+{
+  String out;
+  out.reserve(in.length());
+  for (unsigned int i = 0; i < in.length(); i++)
+  {
+    char c = in[i];
+    if (c == '+')
+      out += ' ';
+    else if (c == '%' && i + 2 < in.length())
+    {
+      out += (char)strtol(in.substring(i + 1, i + 3).c_str(), NULL, 16);
+      i += 2;
+    }
+    else
+      out += c;
+  }
+  return out;
+}
+
 void webInterface()
 {
 
@@ -223,7 +245,9 @@ void webInterface()
                 pos2 = header.indexOf('&');
                 valueString = header.substring(pos1 + 1, pos2);
                 Serial.println(valueString);
-                ssid = valueString;
+                ssid = urlDecode(valueString);
+                if (ssid.length() > 31)
+                  ssid = ssid.substring(0, 31); // softAP() accepts at most 32 bytes
               }
 
               // Set2 (password) ----------------------------------
@@ -241,7 +265,7 @@ void webInterface()
                 pos1 = header.indexOf('='); // Start pos
                 pos2 = header.indexOf('&'); // End pos
                 valueString = header.substring(pos1 + 1, pos2);
-                password = valueString;
+                password = urlDecode(valueString);
               }
               client.println("</div>");
 

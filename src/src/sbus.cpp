@@ -50,36 +50,36 @@ bool SbusRx::read() {
     do {
         if (parse()) {
             new_data_ = true;
+            // Decode NOW, while buf_ holds exactly this frame. Decoding after the drain loop let a
+            // partial following frame overwrite buf_[1..k] first - torn channel values whenever the
+            // main loop stalled longer than one 7-14 ms SBUS period (EEPROM commit, web page, prints).
+            /* Grab the channel data */
+            ch_[0]  = static_cast<uint16_t>(buf_[1]       | buf_[2]  << 8                    & 0x07FF);
+            ch_[1]  = static_cast<uint16_t>(buf_[2]  >> 3 | buf_[3]  << 5                    & 0x07FF);
+            ch_[2]  = static_cast<uint16_t>(buf_[3]  >> 6 | buf_[4]  << 2  |buf_[5] << 10    & 0x07FF);
+            ch_[3]  = static_cast<uint16_t>(buf_[5]  >> 1 | buf_[6]  << 7                    & 0x07FF);
+            ch_[4]  = static_cast<uint16_t>(buf_[6]  >> 4 | buf_[7]  << 4                    & 0x07FF);
+            ch_[5]  = static_cast<uint16_t>(buf_[7]  >> 7 | buf_[8]  << 1  |buf_[9] << 9     & 0x07FF);
+            ch_[6]  = static_cast<uint16_t>(buf_[9]  >> 2 | buf_[10] << 6                    & 0x07FF);
+            ch_[7]  = static_cast<uint16_t>(buf_[10] >> 5 | buf_[11] << 3                    & 0x07FF);
+            ch_[8]  = static_cast<uint16_t>(buf_[12]      | buf_[13] << 8                    & 0x07FF);
+            ch_[9]  = static_cast<uint16_t>(buf_[13] >> 3 | buf_[14] << 5                    & 0x07FF);
+            ch_[10] = static_cast<uint16_t>(buf_[14] >> 6 | buf_[15] << 2  |buf_[16] << 10   & 0x07FF);
+            ch_[11] = static_cast<uint16_t>(buf_[16] >> 1 | buf_[17] << 7                    & 0x07FF);
+            ch_[12] = static_cast<uint16_t>(buf_[17] >> 4 | buf_[18] << 4                    & 0x07FF);
+            ch_[13] = static_cast<uint16_t>(buf_[18] >> 7 | buf_[19] << 1  |buf_[20] << 9    & 0x07FF);
+            ch_[14] = static_cast<uint16_t>(buf_[20] >> 2 | buf_[21] << 6                    & 0x07FF);
+            ch_[15] = static_cast<uint16_t>(buf_[21] >> 5 | buf_[22] << 3                    & 0x07FF);
+            /* CH 17 */
+            ch17_ = buf_[23] & CH17_MASK_;
+            /* CH 18 */
+            ch18_ = buf_[23] & CH18_MASK_;
+            /* Grab the lost frame */
+            lost_frame_ = buf_[23] & LOST_FRAME_MASK_;
+            /* Grab the failsafe */
+            failsafe_ = buf_[23] & FAILSAFE_MASK_;
         }
     } while (uart_->available());
-    /* Parse new data, if available */
-    if (new_data_) {
-        /* Grab the channel data */
-        ch_[0]  = static_cast<uint16_t>(buf_[1]       | buf_[2]  << 8                    & 0x07FF);
-        ch_[1]  = static_cast<uint16_t>(buf_[2]  >> 3 | buf_[3]  << 5                    & 0x07FF);
-        ch_[2]  = static_cast<uint16_t>(buf_[3]  >> 6 | buf_[4]  << 2  |buf_[5] << 10    & 0x07FF);
-        ch_[3]  = static_cast<uint16_t>(buf_[5]  >> 1 | buf_[6]  << 7                    & 0x07FF);
-        ch_[4]  = static_cast<uint16_t>(buf_[6]  >> 4 | buf_[7]  << 4                    & 0x07FF);
-        ch_[5]  = static_cast<uint16_t>(buf_[7]  >> 7 | buf_[8]  << 1  |buf_[9] << 9     & 0x07FF);
-        ch_[6]  = static_cast<uint16_t>(buf_[9]  >> 2 | buf_[10] << 6                    & 0x07FF);
-        ch_[7]  = static_cast<uint16_t>(buf_[10] >> 5 | buf_[11] << 3                    & 0x07FF);
-        ch_[8]  = static_cast<uint16_t>(buf_[12]      | buf_[13] << 8                    & 0x07FF);
-        ch_[9]  = static_cast<uint16_t>(buf_[13] >> 3 | buf_[14] << 5                    & 0x07FF);
-        ch_[10] = static_cast<uint16_t>(buf_[14] >> 6 | buf_[15] << 2  |buf_[16] << 10   & 0x07FF);
-        ch_[11] = static_cast<uint16_t>(buf_[16] >> 1 | buf_[17] << 7                    & 0x07FF);
-        ch_[12] = static_cast<uint16_t>(buf_[17] >> 4 | buf_[18] << 4                    & 0x07FF);
-        ch_[13] = static_cast<uint16_t>(buf_[18] >> 7 | buf_[19] << 1  |buf_[20] << 9    & 0x07FF);
-        ch_[14] = static_cast<uint16_t>(buf_[20] >> 2 | buf_[21] << 6                    & 0x07FF);
-        ch_[15] = static_cast<uint16_t>(buf_[21] >> 5 | buf_[22] << 3                    & 0x07FF);
-        /* CH 17 */
-        ch17_ = buf_[23] & CH17_MASK_;
-        /* CH 18 */
-        ch18_ = buf_[23] & CH18_MASK_;
-        /* Grab the lost frame */
-        lost_frame_ = buf_[23] & LOST_FRAME_MASK_;
-        /* Grab the failsafe */
-        failsafe_ = buf_[23] & FAILSAFE_MASK_;
-    }
     return new_data_;
 }
 

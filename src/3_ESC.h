@@ -132,7 +132,8 @@ uint16_t globalAccelerationPercentage = 100; // about 100 - 200% (200 for Jeep, 
 #define BATTERY_PROTECTION               // This will disable the ESC output, if the battery cutout voltage is reached. 2 fast flashes = battery error!
 const float CUTOFF_VOLTAGE = 3.3;        // Usually 3.3 V per LiPo cell. NEVER below 3.2 V!
 const float FULLY_CHARGED_VOLTAGE = 4.2; // Usually 4.2 V per LiPo cell, NEVER above!
-const float RECOVERY_HYSTERESIS = 0.2;   // V per cell the pack must climb back above the cutoff before the low-voltage protection releases (around 0.2)
+const float RECOVERY_HYSTERESIS = 0.6;   // V per cell above the cutoff before the low-voltage protection releases. Must exceed a LiPo's unloaded rebound (~0.4), or it cycles on/off under load
+#define BATTERY_CELLS 0                  // 0 = detect automatically (2S or 3S). 2 or 3 forces it - e.g. a bench supply between the bands (8.55 - 9.9 V otherwise reads as a flat 3S)
 /* Note on resistor values: These values will be used to calculate the actual ratio between these two resistors (which is also called a "voltage divider").
  * When selecting resistors, always use two of the same magnitude: Like, for example, 10k/2k, 20k/4k or 100k/20k. NEVER exceed a ratio LOWER than (4:1 = 4)!
  * WARNING: If the ratio is too LOW, like 10k/5k (2:1 = 2), the battery voltage will most likely DAMAGE the controller permanently!

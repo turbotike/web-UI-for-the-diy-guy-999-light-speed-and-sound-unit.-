@@ -41,9 +41,10 @@ bool flickeringWileCranking = false;      // if true: The lights will flicker a 
 bool ledIndicators = false;               // indicators are switching "hard" (without fading like an incandescent bulb), if true (was LED_INDICATORS)
 bool swap_L_R_indicators = false;         // If you want to swap L & R indicators
 bool indicatorsAsSidemarkers = false;     // "US Mode" The indicators are used as side markers as well. This is commonly used in US trucks.
-bool combinedRearLights = false;            // "US Mode" One red lamp per side does tail + turn signal + brake, like an American
-                                          // pickup or trailer: running lights = half brightness, turn signal flashes on top of that,
-                                          // and the brakes take both lamps to full. Uses the two indicator outputs (pins 2 & 4).
+bool combinedRearLights = false;         // "US Mode": one red lamp per side is tail + turn signal + brake, like an American pickup or
+                                         // trailer. Left rear on the tail light output (pin 15), right rear on the third brake light
+                                         // output (pin 32, needs THIRD_BRAKELIGHT). Front indicators on pins 2 & 4 are untouched.
+uint8_t combinedRearDimBrightness = 110; // "US Mode" tail level with the running lights on (the "half"); brakes take it to 255
 bool separateFullBeam = false;            // The full beam is a separate bulb, connected to roof lights pin. Connect roof lights to side lights in this case
 bool flashingBlueLight = true;            // double flash blue lights if "true", "rotating" beacons if "false"
 bool hazardsWhile5thWheelUnlocked = true; // Hazards on, if 5th wheel is unlocked
@@ -51,7 +52,7 @@ bool hazardsWhile5thWheelUnlocked = true; // Hazards on, if 5th wheel is unlocke
 // Light brightness values 0 - 255
 uint8_t cabLightsBrightness = 100;      // Usually 255, 100 for Actros & Ural
 uint8_t sideLightsBrightness = 150;     // Usually 200, 100 for WPL C44, 50 for Landy, 100 for P407, 150 for Actros
-uint8_t rearlightDimmedBrightness = 110; // tailligt brightness, if not braking, about 30 (110 = 'half' for US combined rear lamps)
+uint8_t rearlightDimmedBrightness = 30; // tailligt brightness, if not braking, about 30
 uint8_t rearlightParkingBrightness = 3; // 0, if you want the taillights being off, if side lights are on, or about 5 if you want them on (0 for US Mode)
 uint8_t headlightParkingBrightness = 3; // 0, if you want the headlights being off, if side lights are on, or about 5 if you want them on (0 for US Mode)
 uint8_t reversingLightBrightness = 140; // Around 140, 50 for Landy & Ural

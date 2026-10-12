@@ -351,6 +351,11 @@ uint16_t pulseWidthRaw3[PULSE_ARRAY_SIZE]; // Current RC signal RAW pulse width 
 uint16_t pulseWidth[PULSE_ARRAY_SIZE];     // Current RC signal pulse width [X] = channel number
 
 #include "src/gamepad.h" // Bluepad32 gamepad support (only active when GAMEPAD_MODE, uses pulseWidthRaw[] above)
+// The loop dispatches SBUS, IBUS, PPM, SUMD, then GAMEPAD_MODE - so a receiver protocol left defined
+// beside GAMEPAD_MODE silently wins. Gamepad-only behaviour (deferred audio timers) keys off this.
+#if defined GAMEPAD_MODE && !defined SBUS_COMMUNICATION && !defined IBUS_COMMUNICATION && !defined SUMD_COMMUNICATION && !defined PPM_COMMUNICATION
+#define GAMEPAD_ACTIVE
+#endif
 int16_t pulseOffset[PULSE_ARRAY_SIZE];     // Offset for auto zero adjustment
 
 uint16_t pulseMaxNeutral[PULSE_ARRAY_SIZE]; // PWM input signal configuration storage variables
@@ -1763,33 +1768,36 @@ void setupBattery()
 {
 #if defined BATTERY_PROTECTION
 
-  Serial.printf("Battery voltage: %.2f V\n", batteryVolts());
+  float bootVolts = batteryVolts(); // ONE reading - every call shifts the moving average, so the
+                                    // cell count, the warning and the printout must share it
+  Serial.printf("Battery voltage: %.2f V\n", bootVolts);
   Serial.printf("Cutoff voltage per cell: %.2f V\n", CUTOFF_VOLTAGE);
   Serial.printf("Fully charged voltage per cell: %.2f V\n", FULLY_CHARGED_VOLTAGE);
 
 #define CELL_SETPOINT (CUTOFF_VOLTAGE - ((FULLY_CHARGED_VOLTAGE - CUTOFF_VOLTAGE) / 2))
 
-  if (batteryVolts() <= CELL_SETPOINT * 2)
-    numberOfCells = 1;
-  if (batteryVolts() > CELL_SETPOINT * 2)
+  numberOfCells = 1;
+  if (bootVolts > CELL_SETPOINT * 2)
     numberOfCells = 2;
-  if (batteryVolts() > CELL_SETPOINT * 3)
+  if (bootVolts > CELL_SETPOINT * 3)
     numberOfCells = 3;
-  if (batteryVolts() > FULLY_CHARGED_VOLTAGE * 3)
+  if (bootVolts > FULLY_CHARGED_VOLTAGE * 3)
     numberOfCells = 4;
+  if (BATTERY_CELLS == 2 || BATTERY_CELLS == 3)
+    numberOfCells = BATTERY_CELLS; // forced in 3_ESC.h, e.g. a bench supply sitting between the bands
   batteryCutoffvoltage = CUTOFF_VOLTAGE * numberOfCells; // Calculate cutoff voltage for battery protection
   if (numberOfCells > 1 && numberOfCells < 4)
   { // Only 2S & 3S batteries are supported!
     Serial.printf("Number of cells: %i (%iS battery detected) Based on setpoint: %.2f V\n", numberOfCells, numberOfCells, (CELL_SETPOINT * numberOfCells));
     Serial.printf("Battery cutoff voltage: %.2f V (%i * %.2f V) \n", batteryCutoffvoltage, numberOfCells, CUTOFF_VOLTAGE);
-    if (batteryVolts() < batteryCutoffvoltage)
+    if (bootVolts < batteryCutoffvoltage)
     { // Supply sits below the cutoff for the pack size just detected - the low-voltage
       // protection trips straight away and stays on (hazards flashing, ESC derated). A bench
       // supply set between the bands lands here: above 8.55 V it is taken for a 3S, but a 3S
       // does not clear its own cutoff until 9.9 V. Real packs sit at 7.4 / 11.1 V nominal and
       // never hit this, which is why it only shows up on the bench.
       Serial.printf("WARNING: %.2f V is BELOW the %iS cutoff of %.2f V - battery protection will stay ON!\n",
-                    batteryVolts(), numberOfCells, batteryCutoffvoltage);
+                    bootVolts, numberOfCells, batteryCutoffvoltage);
       Serial.printf("         Use %.2f - %.2f V for 2S, or %.2f - %.2f V for 3S. Avoid %.2f - %.2f V.\n",
                     CUTOFF_VOLTAGE * 2, CELL_SETPOINT * 3, CUTOFF_VOLTAGE * 3, FULLY_CHARGED_VOLTAGE * 3,
                     CELL_SETPOINT * 3, CUTOFF_VOLTAGE * 3);
@@ -1913,6 +1921,13 @@ void setup()
   delay(1000); // Give serial port/connection some time to get ready
   Serial.printf("\n**************************************************************************************************\n");
   Serial.printf("TheDIYGuy999 RC engine sound & light controller for ESP32 software version %s\n", codeVersion);
+#if !defined THIRD_BRAKELIGHT
+  if (combinedRearLights)
+  {
+    Serial.printf("WARNING: combinedRearLights needs THIRD_BRAKELIGHT (pin 32 is the right rear lamp) - switching it off.\n");
+    combinedRearLights = false;
+  }
+#endif
   Serial.printf("https://github.com/TheDIYGuy999/Rc_Engine_Sound_ESP32\n");
   Serial.printf("Please read carefully: https://github.com/TheDIYGuy999/Rc_Engine_Sound_ESP32/blob/master/README.md\n");
   Serial.printf("XTAL Frequency: %i MHz, CPU Clock: %i MHz, APB Bus Clock: %i Hz\n", getXtalFrequencyMhz(), getCpuFrequencyMhz(), getApbFrequency());
@@ -2107,7 +2122,7 @@ void setup()
   // Audio playback timers. On RC builds, start now. On gamepad builds, HOLD OFF until a controller
   // connects (see loop) so the 44 kHz interrupt storm doesn't jitter the Bluetooth pairing/handshake —
   // nothing to hear before you pair anyway, and it makes the PS4/PS5/Xbox connect far more reliable.
-#if !defined GAMEPAD_MODE
+#if !defined GAMEPAD_ACTIVE
   startAudioTimers();
 #endif
 
@@ -2977,8 +2992,13 @@ void mcpwmOutput()
 void disableAllInterrupts()
 {
 
-  timerDetachInterrupt(variableTimer);
-  timerDetachInterrupt(fixedTimer);
+  // Gamepad builds start the audio timers only once a controller connects, so an EEPROM save
+  // before that (serial 'p'/'t', the web page) reached here with NULL handles - and
+  // timerDetachInterrupt(NULL) dereferences timer->dev: LoadProhibited reset, settings lost.
+  if (variableTimer)
+    timerDetachInterrupt(variableTimer);
+  if (fixedTimer)
+    timerDetachInterrupt(fixedTimer);
 
   Serial.print("Interrupts disabled, reboot required!\n");
 }
@@ -3244,6 +3264,11 @@ void eepromRead()
 
   cabLightsBrightness = EEPROM.readUShort(adr_eprom_cabLightBrightness);                // Cab lights brightness usually 255
   rearlightParkingBrightness = EEPROM.readUShort(adr_eprom_tailLightParkingBrightness); // Taillight brightness, if sidelights only are on. 3 - 5, 0 for US mode
+  { // written at the same spot in eepromWrite/eepromInit but never read back, so the on-board slider never stuck
+    uint16_t v = EEPROM.readUShort(adr_eprom_rearLightDimmedBrightness);
+    if (v <= 255) // a board initialised by an older build has 0xFFFF here - keep the header default then
+      rearlightDimmedBrightness = v;
+  }
   headlightParkingBrightness = EEPROM.readUShort(adr_eprom_headLightParkingBrightness); // Headlight brightness, if sidelights only are on. 3 - 5, 0 for US mode
   sideLightsBrightness = EEPROM.readUShort(adr_eprom_sideLightBrightness);              // Sidelights brightness about 100 - 200
   reversingLightBrightness = EEPROM.readUShort(adr_eprom_reversingLightBrightness);     // Reversing lights brightness about 140
@@ -3823,6 +3848,8 @@ uint32_t indicatorFade = 300; // 300 is the fading time, simulating an incandesc
 // the parking or dimmed level). Braking always takes them to full.
 void brakeLightsSub(uint8_t brightness)
 {
+  if (combinedRearLights && brightness > 0)
+    brightness = combinedRearDimBrightness; // US combined lamps: 'running lights on' = this level
   uint8_t steady = escIsBraking
                        ? (uint8_t)(255 - crankingDim)                                              // braking: full
                        : (uint8_t)constrain(brightness - (crankingDim / 2), (brightness / 2), 255); // tail: reduced
@@ -3837,14 +3864,16 @@ void brakeLightsSub(uint8_t brightness)
     // normal amber blinkers and stay dark under braking.
     // A blinking side dips back to the tail level rather than the brake level between flashes, so
     // the signal stays visible while you're on the brakes - just like a real combined rear lamp.
-    uint8_t dip = constrain(brightness - (crankingDim / 2), 0, 255);
+    uint8_t dip = constrain(brightness - (crankingDim / 2), (brightness / 2), 255); // same floor as 'steady'
+    // led() flashes the front indicators for these as well - the rear lamps must agree
+    bool rearHazard = hazard || batteryProtection || (unlock5thWheel && hazardsWhile5thWheelUnlocked);
 
-    if (indicatorLon || hazard)
+    if (indicatorLon || rearHazard)
       tailLight.flash(375, 375, 0, 0, 0, indicatorFade, dip); // left rear: blink over tail/brake
     else
       tailLight.pwm(steady);
 
-    if (indicatorRon || hazard)
+    if (indicatorRon || rearHazard)
       brakeLight.flash(375, 375, 0, 0, 0, indicatorFade, dip); // right rear
     else
       brakeLight.pwm(steady);
@@ -4016,7 +4045,7 @@ void led()
   if (indicatorsAsSidemarkers) // Indicators used as US style side markers as well
   {
     if (lightsState > 1)
-      indicatorOffBrightness = rearlightDimmedBrightness - crankingDim / 2;
+      indicatorOffBrightness = constrain(rearlightDimmedBrightness - crankingDim / 2, 0, 255);
     else
       indicatorOffBrightness = 0;
   }
@@ -4081,8 +4110,13 @@ void led()
   else
   {
     headLight.off();
-    tailLight.off();
-    brakeLight.off();
+    if (combinedRearLights)
+      brakeLightsSub(0); // lights off - the combined rear lamps still blink and brake
+    else
+    {
+      tailLight.off();
+      brakeLight.off();
+    }
     xenonMillis = millis();
     headLightsHighBeamOn = false;
   }
@@ -4509,30 +4543,36 @@ void esc()
     // Require a few consecutive low readings before tripping. A single dip - a bench supply
     // current-limiting, or the amp and servos pulling at once - is not a flat battery, and
     // tripping on it used to be unrecoverable (see the hysteresis note below).
-    static uint8_t lowReadings;
+    // Trip only after a full second below the cutoff - a momentary dip (bench supply
+    // current-limiting, amp + servos pulling together) is not a flat battery.
+    static uint32_t lowSince = 0, protectionSince = 0;
     if (batteryVoltage < batteryCutoffvoltage)
     {
-      if (lowReadings < 255)
-        lowReadings++; // saturate - a uint8_t wrapping to 0 would briefly re-arm the trip
+      if (!lowSince)
+        lowSince = millis();
     }
     else
-      lowReadings = 0;
+      lowSince = 0;
 
-    if (lowReadings >= 3 && !batteryProtection)
-    { // ~1 s below the cutoff (readings are 300 ms apart)
+    if (lowSince && millis() - lowSince >= 1000 && !batteryProtection)
+    {
       Serial.printf("Battery protection triggered, slowing down! Battery: %.2f V Threshold: %.2f V \n", batteryVoltage, batteryCutoffvoltage);
-      Serial.printf("Disconnect battery to prevent it from overdischarging!\n", batteryVoltage, batteryCutoffvoltage);
+      Serial.printf("Disconnect battery to prevent it from overdischarging!\n");
       batteryProtection = true;
+      protectionSince = millis();
     }
 
-    // Recovery hysteresis. This used to be "batteryCutoffvoltage + (FULLY_CHARGED_VOLTAGE *
-    // numberOfCells)", which on a 2S pack is 6.6 + 8.4 = 15.0 V - a voltage a 2S can never
-    // reach. So once the protection tripped it could NEVER clear: the ESC stayed derated and
-    // the hazard lights flashed until a reboot, with no way to switch them off. A hysteresis
-    // only needs a small margin above the cutoff, not a full charge on top of it.
-    if (batteryProtection && batteryVoltage > batteryCutoffvoltage + (RECOVERY_HYSTERESIS * numberOfCells))
+    // Release only when the pack sits RECOVERY_HYSTERESIS per cell above the cutoff for 5 s. The
+    // margin is deliberately larger than a LiPo's unloaded rebound (~0.3-0.4 V/cell): a pack that
+    // tripped under load rests at ~3.6-3.7 V/cell once the ESC is derated, and releasing there just
+    // reloads it below the cutoff and cycles on/off every second or two - the over-discharge this
+    // exists to prevent. (The original test needed 15 V on a 2S, so it could never release at all.)
+    if (batteryProtection && millis() - protectionSince >= 5000 &&
+        batteryVoltage > batteryCutoffvoltage + (RECOVERY_HYSTERESIS * numberOfCells))
     {
+      Serial.printf("Battery recovered: %.2f V - protection released.\n", batteryVoltage);
       batteryProtection = false;
+      lowSince = 0;
     }
     // Out of fuel message triggering
     if (batteryProtection && !outOfFuelMessageLock)
@@ -6217,6 +6257,13 @@ void loop()
   readPpmCommands(); // PPM communication (pin 36)
 #elif defined GAMEPAD_MODE
   readGamepadCommands(); // Bluepad32 gamepad -> channels
+  // The RC readers hand their channels to processRawChannels(); the pad already builds its
+  // channels in calibrated 1000..2000 form (the radio profile's reversing / auto-zero would only
+  // mangle them), so publish them straight to pulseWidth[]. Without this nothing downstream ever
+  // saw the pad: pulseWidth[] stayed 0 and autoZeroDone was never set.
+  for (uint8_t i = 1; i < PULSE_ARRAY_SIZE; i++)
+    pulseWidth[i] = pulseWidthRaw[i];
+  autoZeroDone = true;
   if (gamepadConnected && !audioTimersStarted)
     startAudioTimers();  // fire up audio once a controller is connected — pairing stays interrupt-free
 #else

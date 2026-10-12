@@ -162,7 +162,8 @@ def should_skip_entry(lines, i, name):
     for offset in (-2, -1, 0):
         j = i + offset
         if 0 <= j < len(lines):
-            probe.append(lines[j].lower())
+            if "#define" not in lines[j]:  # the directive's own comment is not a warning about it
+                probe.append(lines[j].lower())
     blob = " ".join(probe)
 
     if re.search(r"do\s*not\s*use", blob):
@@ -967,8 +968,8 @@ def parse_items(rel_path):
     text = read_text(path)
     lines = text.splitlines()
     lines = _strip_block_comments(chr(10).join(lines)).split(chr(10))
-    if rel_path == "2_Remote.h":
-        # one '#ifdef PROFILE' block per radio: show the ACTIVE profile's copy, not the first
+    if rel_path in PROFILE_SCOPED_HEADERS:
+        # one '#ifdef PROFILE' block per profile: show the ACTIVE block's copy, not the first
         _mask = _remote_editable_mask(lines)
         lines = [l if _mask[i] else "" for i, l in enumerate(lines)]
     items = []
@@ -1686,28 +1687,80 @@ def _remote_editable_mask(lines):
     return [mask[i] and not incomment[i] for i in range(len(lines))]
 
 
+def _safe_rel_path(rel):
+    """Only the headers the UI may edit: a CONFIG_FILES entry or vehicles/<file>.h that exists.
+    Anything else (absolute paths, '..', case/./ variants that dodge the scoped mask) is refused."""
+    rel = str(rel or "").replace("\\", "/")
+    if rel in CONFIG_FILES:
+        return rel
+    m = re.match(r"^vehicles/([A-Za-z0-9_.-]+\.h)$", rel)
+    if m and os.path.isfile(os.path.join(SRC, "vehicles", m.group(1))):
+        return rel
+    return None
+
+
 def apply_changes(rel_path, changes):
     path = os.path.join(SRC, rel_path)
     lines = read_text(path).split("\n")
-    mask = _remote_editable_mask(lines) if rel_path == "2_Remote.h" else [True] * len(lines)
+    mask = _remote_editable_mask(lines) if rel_path in PROFILE_SCOPED_HEADERS else [True] * len(lines)
 
     def sub(pattern, repl):
         for i, l in enumerate(lines):
             if mask[i]:
                 lines[i] = re.sub(pattern, repl, l)
 
-    for name, val in changes.items():
-        if isinstance(val, bool):
-            if val:   # uncomment "// #define NAME ..." (keeps the trailing comment)
-                sub(r"^(\s*)//+\s*(#define\s+" + re.escape(name) + r"\b)(.*)$", r"\1\2\3")
-            else:     # comment out an active "#define NAME ..."
-                sub(r"^(\s*)(#define\s+" + re.escape(name) + r"\b)(.*)$", r"\1// \2\3")
+    # A real directive is '#define NAME', at most ONE value token, then optionally a '// comment'.
+    # Documentation lines such as '// #define VIRTUAL_3_SPEED allows to simulate a 3 speed ...'
+    # must not match - uncommenting one turns the sentence into a #define body.
+    tail = r"((?:\s+[^\s/]\S*)?\s*(?://.*)?)$"
+
+    def set_flag(name, enabled):
+        if enabled:
+            sub(r"^(\s*)//+\s*(#define\s+" + re.escape(name) + r"\b)" + tail, r"\1\2\3")
         else:
-            sub(r"^(\s*#define\s+" + re.escape(name) + r"\s+).+$", lambda m, nv=val: m.group(1) + nv)
-            # a specific "name = value" in a (possibly comma-separated) declaration
-            sub(r"(" + re.escape(name) + r"\s*=\s*)([^,;]+)", lambda m, nv=val: m.group(1) + nv)
+            sub(r"^(\s*)(#define\s+" + re.escape(name) + r"\b)" + tail, r"\1// \2\3")
+
+    def set_value(name, value):
+        value = str(value)
+        # '#define NAME value // comment' - keep the comment, it is the control's description
+        sub(r"^(\s*#define\s+" + re.escape(name) + r"\s+)(\S+)(.*)$",
+            lambda m, nv=value: m.group(1) + nv + m.group(3))
+
+        # 'type name = value;' (possibly comma-separated). A String keeps its quotes.
+        def repl(m, nv=value):
+            cur = m.group(2).strip()
+            if cur.startswith('"') and not nv.startswith('"'):
+                nv = '"' + nv.replace('"', "") + '"'
+            return m.group(1) + nv
+        sub(r"(\b" + re.escape(name) + r"\s*=\s*)([^,;]+)", repl)
+
+    for name, val in changes.items():
+        if isinstance(val, tuple):            # define_val: (enabled, value) - toggle, then set
+            set_flag(name, bool(val[0]))
+            if val[0] and str(val[1]) != "":
+                set_value(name, val[1])
+        elif isinstance(val, bool):
+            set_flag(name, val)
+        else:
+            set_value(name, val)
 
     write_text(path, "\n".join(lines))
+
+
+def bump_eeprom_id():
+    """Increment `uint8_t eeprom_id = N;` in 0_generalSettings.h (1..255, never 0). The firmware
+    copies the header defaults into EEPROM only when this id differs from the stored one, so a
+    save that changes an EEPROM-backed value (ESC, lights, servo endpoints, WiFi name) is a silent
+    no-op on a board that has booted before unless the id moves."""
+    path = os.path.join(SRC, "0_generalSettings.h")
+    text = read_text(path)
+    m = re.search(r"^(\s*uint8_t eeprom_id\s*=\s*)(\d+)(\s*;.*)$", text, re.M)
+    if not m:
+        return None
+    nxt = int(m.group(2)) % 255 + 1
+    text = text[:m.start()] + m.group(1) + str(nxt) + m.group(3) + text[m.end():]
+    write_text(path, text)
+    return nxt
 
 
 def apply_vehicle(vehicle_file):
@@ -1750,8 +1803,25 @@ def apply_vehicle(vehicle_file):
 
 # RC input modes, in the same #elif order src.ino dispatches them. GAMEPAD_MODE is the
 # LAST #elif, so an active comm mode must be commented out for the gamepad branch to run.
-GP_COMM_MODES = ["SBUS_COMMUNICATION", "IBUS_COMMUNICATION",
-                 "SUMD_COMMUNICATION", "PPM_COMMUNICATION"]
+PROTOCOL_OPTIONS = [
+    ["", "Classic PWM (one wire per channel)"],
+    ["SBUS_COMMUNICATION", "SBUS (FrSky, Futaba, RadioLink)"],
+    ["IBUS_COMMUNICATION", "iBUS (FlySky)"],
+    ["SUMD_COMMUNICATION", "SUMD (Graupner)"],
+    ["PPM_COMMUNICATION", "PPM (sum signal)"],
+]
+PROTOCOL_FLAGS = [o[0] for o in PROTOCOL_OPTIONS if o[0]]
+# Same list, so a protocol added to the picker can never be missed when entering gamepad mode.
+GP_COMM_MODES = PROTOCOL_FLAGS
+# The order src.ino's #if/#elif chain tests them in - the FIRST one defined wins.
+PROTOCOL_FIRMWARE_ORDER = ["SBUS_COMMUNICATION", "IBUS_COMMUNICATION", "PPM_COMMUNICATION", "SUMD_COMMUNICATION"]
+# Headers built as a selector list + one '#ifdef PROFILE ... #endif' block per profile. Reads and
+# writes are scoped to the active block for these (see _remote_editable_mask).
+PROFILE_SCOPED_HEADERS = ("2_Remote.h", "7_Servos.h", "5_Shaker.h")
+# Values the firmware restores from EEPROM on every boot and only re-seeds from the headers when
+# eeprom_id changes - so a save that touches them has to bump eeprom_id or it does nothing.
+EEPROM_BACKED_HEADERS = ("3_ESC.h", "6_Lights.h", "7_Servos.h")
+
 
 # Bluepad32 buttons() bitmask -> friendly label (PlayStation / Xbox faces share bits).
 GP_BUTTON_CHOICES = [
@@ -1871,6 +1941,7 @@ def write_servo_endpoints(vals):
         v = max(500, min(2500, int(val)))
         scope = re.sub(r"(\b" + var + r"\s*=\s*)\d+", r"\g<1>" + str(v), scope)
     write_text(path, head + scope + tail)
+    bump_eeprom_id()  # endpoints live in EEPROM after the first boot - re-seed them
     return True
 
 
@@ -1994,9 +2065,7 @@ def write_gamepad_config(req):
         # One radio: the WiFi page must go off.
         apply_changes(general, {"ENABLE_WIRELESS": False})
         # GAMEPAD_MODE is the last #elif — the active comm mode has to be off.
-        for m in GP_COMM_MODES:
-            apply_changes(remote, {m: False})
-        apply_changes(remote, {"GAMEPAD_MODE": True})
+        apply_changes(remote, {**{m: False for m in GP_COMM_MODES}, "GAMEPAD_MODE": True})
         write_gamepad_defines(req, prev)
     else:
         apply_changes(remote, {"GAMEPAD_MODE": False})
@@ -2045,29 +2114,8 @@ def list_serial_ports():
         except Exception:
             pass
 
-    if not ports and os.name == "nt":
-        # Last resort on Windows: read the COM ports straight out of the registry. This needs
-        # neither pyserial nor PlatformIO, so "Detect board" still works on a machine where the
-        # pip install of pyserial quietly failed - a very common cause of "no USB device found"
-        # when the board and driver are actually fine.
-        try:
-            import winreg
-
-            key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DEVICEMAP\SERIALCOMM")
-            try:
-                i = 0
-                while True:
-                    try:
-                        _name, value, _type = winreg.EnumValue(key, i)
-                    except OSError:
-                        break
-                    if isinstance(value, str) and value.upper().startswith("COM"):
-                        ports.append(value)
-                    i += 1
-            finally:
-                winreg.CloseKey(key)
-        except Exception:
-            pass
+    if not ports:
+        ports = _winreg_com_ports()  # no pyserial, no PlatformIO needed
 
     cleaned = sorted(set(ports), key=lambda p: (len(p), p))
     return cleaned
@@ -2172,10 +2220,8 @@ def ensure_arduino_cli(chunk_fn=None):
         contexts.append(ssl.create_default_context())
     except Exception:
         pass
-    try:
-        contexts.append(ssl._create_unverified_context())
-    except Exception:
-        pass
+    # No unverified fallback: this binary gets executed, so a download whose certificate cannot
+    # be checked is refused (the user gets the 'install Arduino IDE' message instead).
 
     last_err = None
     downloaded = False
@@ -2267,43 +2313,82 @@ def find_boot_app0():
     return None
 
 
-def native_serial_ports():
-    """Serial ports via `arduino-cli board list` (no pyserial needed). Used for
-    the reliable native-uploader flash path. Likely-ESP32 USB-serial chips are
-    flagged and sorted first."""
-    cli = find_arduino_cli() or vendored_cli_path()
-    if not cli:
-        return []
-    try:
-        p = subprocess.run(
-            [cli, "board", "list", "--format", "json"],
-            capture_output=True, text=True, encoding="utf-8", errors="replace",
-            shell=(os.name == "nt"), check=False,
-        )
-        data = json.loads(p.stdout or "[]")
-    except Exception:
-        return []
-    entries = data if isinstance(data, list) else data.get("detected_ports", [])
-    esp_vids = ("0X10C4", "0X1A86", "0X0403", "0X303A", "0X067B")  # CP210x, CH34x, FTDI, ESP32-S USB, PL2303
+ESP_VIDS = {0x10C4, 0x1A86, 0x0403, 0x303A, 0x067B}  # CP210x, CH34x, FTDI, ESP32-S USB, PL2303
+PORTS_LAST_REASON = "no_ports"  # ok | no_ports | no_cli | cli_error - why the last scan came back empty
+
+
+def _winreg_com_ports():
+    """COM ports straight from the Windows registry - no pyserial, no arduino-cli."""
     out = []
-    for e in entries:
-        port = e.get("port", e) if isinstance(e, dict) else {}
-        if port.get("protocol") != "serial":
-            continue
-        props = port.get("properties") or {}
-        vid = str(props.get("vid") or "").upper()
-        addr = port.get("address")
-        if not addr:
-            continue
-        likely = vid in esp_vids
-        out.append({
-            "address": addr,
-            "label": port.get("label") or addr,
-            "likely": likely,
-        })
-    out.sort(key=lambda x: (not x["likely"], x["address"]))
+    if os.name != "nt":
+        return out
+    try:
+        import winreg
+
+        key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, r"HARDWARE\DEVICEMAP\SERIALCOMM")
+        try:
+            i = 0
+            while True:
+                try:
+                    _name, value, _type = winreg.EnumValue(key, i)
+                except OSError:
+                    break
+                if isinstance(value, str) and value.upper().startswith("COM"):
+                    out.append(value)
+                i += 1
+        finally:
+            winreg.CloseKey(key)
+    except Exception:
+        pass
     return out
 
+
+def native_serial_ports():
+    """[{address, likely, label}] for the flash path. pyserial first (150 ms, exposes the USB VID
+    so the ESP32 can be flagged), then the Windows registry, and only then `arduino-cli board
+    list` - which takes 3-6 s because it loads the platform index, and used to be the ONLY source,
+    so a missing/broken CLI read as 'no USB device found'."""
+    global PORTS_LAST_REASON
+    out = []
+    try:
+        from serial.tools import list_ports  # type: ignore
+
+        for p in list_ports.comports():
+            if p.device:
+                out.append({"address": p.device, "likely": bool(p.vid) and p.vid in ESP_VIDS,
+                            "label": p.description or p.device})
+    except Exception:
+        pass
+    if not out:
+        out = [{"address": a, "likely": False, "label": a} for a in _winreg_com_ports()]
+    if not out:
+        cli = find_arduino_cli() or vendored_cli_path()
+        if not cli:
+            PORTS_LAST_REASON = "no_cli"
+            return []
+        try:
+            p = subprocess.run([cli, "board", "list", "--format", "json"], capture_output=True, text=True,
+                               encoding="utf-8", errors="replace", shell=(os.name == "nt"), check=False, timeout=20)
+            data = json.loads(p.stdout or "[]")
+        except Exception:
+            PORTS_LAST_REASON = "cli_error"
+            return []
+        entries = data if isinstance(data, list) else data.get("detected_ports", [])
+        for e in entries:
+            port = e.get("port", e) if isinstance(e, dict) else {}
+            if port.get("protocol") != "serial":
+                continue
+            addr = port.get("address")
+            if not addr:
+                continue
+            try:
+                vid = int(str((port.get("properties") or {}).get("vid") or "0"), 16)
+            except ValueError:
+                vid = 0
+            out.append({"address": addr, "likely": vid in ESP_VIDS, "label": addr})
+    out.sort(key=lambda d: (not d["likely"], d["address"]))
+    PORTS_LAST_REASON = "ok" if out else "no_ports"
+    return out
 
 def _is_ascii(s):
     try:
@@ -5847,31 +5932,27 @@ def _controls_for_file(rel_path):
 # sits in its boot loop waiting for a bus that never speaks. The UI used to render them as
 # five separate toggles, which made exactly that mistake easy to hit. Collapse them into a
 # single dropdown so only one can ever be active.
-PROTOCOL_OPTIONS = [
-    ["", "Classic PWM (one wire per channel)"],
-    ["SBUS_COMMUNICATION", "SBUS (FrSky, Futaba, RadioLink)"],
-    ["IBUS_COMMUNICATION", "iBUS (FlySky)"],
-    ["SUMD_COMMUNICATION", "SUMD (Graupner)"],
-    ["PPM_COMMUNICATION", "PPM (sum signal)"],
-]
-PROTOCOL_FLAGS = [o[0] for o in PROTOCOL_OPTIONS if o[0]]
-
-
 def _collapse_protocol_controls(controls):
     """Replace the individual *_COMMUNICATION toggles with one exclusive dropdown."""
-    active = ""
-    kept = []
+    enabled, kept = [], []
     for c in controls:
         if c.get("name") in PROTOCOL_FLAGS:
             if c.get("enabled"):
-                active = c["name"]
+                enabled.append(c["name"])
             continue  # drop the individual toggle
+        if c.get("name") == "GAMEPAD_MODE":
+            continue  # owned by the Controls tab; as a loose toggle it could sit next to a protocol
         kept.append(c)
+    # src.ino tests SBUS, IBUS, PPM, SUMD in that order and the first one defined wins
+    active = next((n for n in PROTOCOL_FIRMWARE_ORDER if n in enabled), "")
+    conflict = len(enabled) > 1
     picker = {
         "name": "__protocol__",
         "label": "Receiver protocol",
-        "desc": "How your receiver talks to the board - pick the one it actually outputs. "
-                "Only one can be active, and the signal wire goes to the RX header (GPIO36).",
+        "desc": ("How your receiver talks to the board - pick the one it actually outputs. "
+                 "Only one can be active, and the signal wire goes to the RX header (GPIO36)."
+                 + (" WARNING: more than one protocol is defined in 2_Remote.h right now; the firmware "
+                    "uses the one shown. Re-select it and save to clean this up." if conflict else "")),
         "saveKind": "exclusive_flag",
         "control": "select",
         "value": active,
@@ -6084,6 +6165,11 @@ class Handler(BaseHTTPRequestHandler):
                 self.end_headers()
                 return
             full = os.path.join(TOOLS, rel)
+            # os.path.join drops the base when rel is drive-absolute (C:/...) - keep it inside
+            if not os.path.realpath(full).startswith(os.path.realpath(TOOLS) + os.sep):
+                self.send_response(404)
+                self.end_headers()
+                return
             if not os.path.exists(full) or not os.path.isfile(full):
                 self.send_response(404)
                 self.end_headers()
@@ -6107,6 +6193,11 @@ class Handler(BaseHTTPRequestHandler):
             if not rel or ".." in rel:
                 self.send_response(400); self.end_headers(); return
             full = os.path.join(WEB, rel)
+            # os.path.join drops the base when rel is drive-absolute (C:/...) - keep it inside
+            if not os.path.realpath(full).startswith(os.path.realpath(WEB) + os.sep):
+                self.send_response(404)
+                self.end_headers()
+                return
             if not os.path.isfile(full):
                 self.send_response(404); self.end_headers(); return
             ext = os.path.splitext(full)[1].lower()
@@ -6143,7 +6234,8 @@ class Handler(BaseHTTPRequestHandler):
 
         # --- Serial ports for the native (arduino-cli) flash path ---
         if self.path == "/native_ports":
-            self.send_json({"ok": True, "ports": native_serial_ports()})
+            ports = native_serial_ports()
+            self.send_json({"ok": True, "ports": ports, "reason": PORTS_LAST_REASON})
             return
 
         # --- Compiled firmware images for the browser flasher ---
@@ -6774,8 +6866,16 @@ class Handler(BaseHTTPRequestHandler):
         if self.path == "/save":
             try:
                 payload = json.loads(body)
+                eeprom_bump = False
                 for rel_path, fields in payload.items():
+                    rel_path = _safe_rel_path(rel_path)
+                    if not rel_path:
+                        continue  # not a header the UI may edit (also blocks path tricks)
                     vehicle = fields.pop("__vehicle__", None)
+                    if vehicle:
+                        vehicle = os.path.basename(str(vehicle))
+                        if not os.path.isfile(os.path.join(SRC, "vehicles", vehicle)):
+                            vehicle = None
                     if vehicle:
                         apply_vehicle(vehicle)
                         ensure_vehicle_backup(vehicle)
@@ -6784,39 +6884,44 @@ class Handler(BaseHTTPRequestHandler):
                     if target_vehicle:
                         ensure_vehicle_backup(target_vehicle)
 
-                    flag_changes = {}
-                    value_changes = {}
+                    changes = {}  # name -> bool (flag) | str (value) | (bool, str) (define_val)
                     sound_changes = {}
+                    wifi_back = False
 
                     for name, info in fields.items():
                         kind = info.get("kind", "")
                         if kind == "flag":
-                            flag_changes[name] = bool(info.get("enabled"))
+                            changes[name] = bool(info.get("enabled"))
                         elif kind == "bool_var":
-                            value_changes[name] = str(info.get("value", "false"))
+                            changes[name] = str(info.get("value", "false"))
                         elif kind == "define_val":
-                            flag_changes[name] = bool(info.get("enabled"))
-                            value_changes[name] = str(info.get("value", ""))
+                            changes[name] = (bool(info.get("enabled")), str(info.get("value", "")))
                         elif kind == "exclusive_flag":
                             # One-of choice (receiver protocol): enable the picked #define and
                             # switch every other one in the group off, so they can't conflict.
                             chosen = str(info.get("value", "")).strip()
-                            for opt in info.get("group", []):
-                                flag_changes[opt] = (opt == chosen)
-                            if chosen in PROTOCOL_FLAGS:
-                                # A receiver protocol shadows GAMEPAD_MODE (it's last in the
-                                # #elif chain), so turn it off rather than leave a half state.
-                                flag_changes["GAMEPAD_MODE"] = False
+                            group = list(info.get("group", []))
+                            for opt in group:
+                                changes[opt] = (opt == chosen)
+                            if set(group) == set(PROTOCOL_FLAGS):
+                                # Any receiver choice - classic PWM included - means 'not the
+                                # gamepad': GAMEPAD_MODE is last in the #elif chain and would be
+                                # shadowed anyway, and WiFi comes back on with the RC build.
+                                changes["GAMEPAD_MODE"] = False
+                                wifi_back = gamepad_mode_active()
                         elif kind == "text_var":
-                            value_changes[name] = str(info.get("value", ""))
+                            changes[name] = str(info.get("value", ""))
                         elif kind == "sound_choice" and name.startswith("__sound__"):
                             sound_key = name.replace("__sound__", "", 1)
                             sound_changes[sound_key] = str(info.get("value", "")).strip()
 
-                    if flag_changes:
-                        apply_changes(rel_path, flag_changes)
-                    if value_changes:
-                        apply_changes(rel_path, value_changes)
+                    if changes:
+                        apply_changes(rel_path, changes)
+                        if rel_path in EEPROM_BACKED_HEADERS or (rel_path == "0_generalSettings.h" and
+                                                                  {"default_ssid", "default_password"} & set(changes)):
+                            eeprom_bump = True
+                    if wifi_back:
+                        apply_changes("0_generalSettings.h", {"ENABLE_WIRELESS": True})
                     if rel_path.startswith("vehicles/") and sound_changes:
                         apply_sound_choices(rel_path, sound_changes)
                     if rel_path == "1_Vehicle.h" and target_vehicle and sound_changes:
@@ -6829,7 +6934,12 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     auto_fixes = []
 
-                self.send_json({"ok": True, "fixes": auto_fixes})
+                if eeprom_bump:
+                    bump_eeprom_id()
+                    auto_fixes.append("EEPROM defaults will be re-seeded on the next boot (eeprom_id bumped), "
+                                      "so the new ESC / lights / servo values actually take effect")
+
+                self.send_json({"ok": True, "fixes": auto_fixes, "eepromBumped": eeprom_bump})
             except Exception as e:
                 self.send_json({"ok": False, "error": str(e)}, 500)
             return
@@ -6873,6 +6983,11 @@ class Handler(BaseHTTPRequestHandler):
                 # port comes from the request (native_ports), or the legacy
                 # CONNECTED_PORT global.
                 flash_port = (req.get("port") or "").strip() or CONNECTED_PORT
+                # The port lands in an argv that Windows runs through cmd.exe (shell=True), so a
+                # value like "COM3&calc" would execute. Only a plain port name is accepted.
+                if flash_port and not re.match(r"^(COM\d{1,3}|/dev/[A-Za-z0-9._-]+)$", str(flash_port)):
+                    self.send_json({"ok": False, "error": "Invalid serial port name: %r" % flash_port}, 400)
+                    return
                 if cmd_type == "flash" and not flash_port:
                     self.send_json({"ok": False, "error": "No serial port selected. Click Detect board first."}, 400)
                     return
@@ -7096,9 +7211,17 @@ def main():
     # Watchdog: once a browser has connected, exit if its heartbeats stop
     # (tab closed). A refresh only pauses pings briefly, so it survives that.
     def _idle_watchdog():
+        global LAST_PING
+        last_tick = time.time()
         while True:
             time.sleep(3)
-            if CLIENT_SEEN and (time.time() - LAST_PING) > IDLE_SHUTDOWN_SECS:
+            now = time.time()
+            if now - last_tick > 30:
+                # the process (or the whole laptop) was suspended - the page could not ping meanwhile,
+                # and treating that gap as 'tab closed' killed the server on every wake from sleep
+                LAST_PING = now
+            last_tick = now
+            if CLIENT_SEEN and (now - LAST_PING) > IDLE_SHUTDOWN_SECS:
                 os._exit(0)
     threading.Thread(target=_idle_watchdog, daemon=True).start()
 

@@ -163,9 +163,18 @@ void gpLoadCalFromEeprom()
   int a = GP_EEPROM_CAL_ADDR;
   for (uint8_t i = 0; i < 4; i++)
   {
-    gpCalMin[i]    = EEPROM.readUShort(a); a += 2;
-    gpCalCenter[i] = EEPROM.readUShort(a); a += 2;
-    gpCalMax[i]    = EEPROM.readUShort(a); a += 2;
+    uint16_t mn = EEPROM.readUShort(a); a += 2;
+    uint16_t ct = EEPROM.readUShort(a); a += 2;
+    uint16_t mx = EEPROM.readUShort(a); a += 2;
+    // A board first initialised by an older or stock build never had this block seeded (eeprom_id
+    // unchanged), so it reads 0xFFFF or 0 - which would drive the outputs as 65535 us / 0 us pulses.
+    // Keep the header defaults unless the block holds plausible servo values.
+    if (mn >= 500 && mn <= 2500 && ct >= 500 && ct <= 2500 && mx >= 500 && mx <= 2500)
+    {
+      gpCalMin[i] = mn;
+      gpCalCenter[i] = ct;
+      gpCalMax[i] = mx;
+    }
   }
 }
 void gpWriteCalDefaultsToEeprom() // called from the eeprom_id factory-init block
@@ -191,6 +200,23 @@ void gpWriteCalDefaultsToEeprom() // called from the eeprom_id factory-init bloc
 #define GP_BTN_JAKE 0x0004 // Square / X
 #endif
 
+// Latches for 'Button (toggle)' outputs - file scope so a disconnect can reset them; otherwise a
+// toggled coupler or winch snaps straight back to 'on' the moment the pad reconnects.
+static bool gpTog[6] = {false, false, false, false, false, false};
+static bool gpPrev[6] = {false, false, false, false, false, false};
+
+static inline bool gpIsButtonSrc(uint8_t src) { return src == GP_SRC_BTN_MOM || src == GP_SRC_BTN_TOG; }
+
+// Outputs while no pad is connected: axis-driven outputs rest at centre, button-driven ones at
+// their 'off' endpoint - a trailer coupler on a toggle must not drift to half-way when the pad sleeps.
+static void gpOutputsFailsafe()
+{
+  gpOutMicros[2] = gpIsButtonSrc(GP_CH2_SRC) ? gpCalMin[0] : gpCalCenter[0];
+  gpOutMicros[3] = gpIsButtonSrc(GP_CH3_SRC) ? gpCalMin[1] : gpCalCenter[1];
+  gpOutMicros[4] = gpIsButtonSrc(GP_CH4_SRC) ? gpCalMin[2] : gpCalCenter[2];
+  gpAuxServoMicros = gpIsButtonSrc(GP_AUX_SRC) ? gpCalMin[3] : gpCalCenter[3];
+}
+
 // Set once a controller has connected since boot - the pairing watchdog below uses it.
 static bool gpEverConnected = false;
 static bool gpKeysCleared = false;
@@ -208,6 +234,9 @@ static void gpOnDisconnect(ControllerPtr ctl)
   {
     gpController = nullptr;
     gamepadConnected = false;
+    for (uint8_t i = 0; i < 6; i++)
+      gpTog[i] = gpPrev[i] = false; // a toggled output must not come back 'on' by itself
+    gpOutputsFailsafe();
     Serial.println("Gamepad disconnected");
   }
 }
@@ -231,24 +260,14 @@ void setupGamepad()
 //      looks exactly like a failed pairing. -> print a heartbeat they can see in the Serial
 //      Monitor (115200 baud), so the board says what it is doing.
 //   2. The ESP32 keeps Bluetooth keys from an earlier or half-finished pairing and then quietly
-//      refuses the controller. -> if nothing has connected GP_PAIR_RESET_MS after boot, drop the
-//      stored keys once and keep listening, so a pad in pairing mode can always get in.
-// A pad that is already paired reconnects within a few seconds, well before the reset fires.
-#define GP_PAIR_RESET_MS 30000UL
+//      refuses the controller. Clearing them is EXPLICIT: type 'b' on the serial monitor. (A timer
+//      that wiped them 30 s after boot was tried first; it punished the normal routine of powering
+//      the truck and picking the pad up a minute later - every session needed SHARE+PS again.)
 
 static void gpPairingWatchdog()
 {
   static uint32_t lastBeat = 0;
   uint32_t now = millis();
-
-  if (!gpKeysCleared && !gpEverConnected && now > GP_PAIR_RESET_MS)
-  {
-    gpKeysCleared = true;
-    BP32.forgetBluetoothKeys();               // stale keys silently block new controllers
-    BP32.enableNewBluetoothConnections(true); // make sure we are still accepting
-    Serial.println("No controller after 30s - cleared stored Bluetooth pairings, still listening.");
-    Serial.println("Put the pad in pairing mode now (PS4: hold SHARE + PS until it double-flashes).");
-  }
 
   if (now - lastBeat >= 3000)
   {
@@ -295,8 +314,6 @@ static uint16_t gpMapUni(int v, uint16_t mn, uint16_t mx)
 static uint16_t gpResolve(ControllerPtr c, uint8_t idx, uint8_t src, uint16_t btnMask,
                           uint16_t mn, uint16_t ct, uint16_t mx)
 {
-  static bool tog[6] = {false, false, false, false, false, false};
-  static bool prev[6] = {false, false, false, false, false, false};
   uint16_t btn = c->buttons();
   switch (src)
   {
@@ -319,10 +336,10 @@ static uint16_t gpResolve(ControllerPtr c, uint8_t idx, uint8_t src, uint16_t bt
   case GP_SRC_BTN_TOG:
   {
     bool pressed = (btn & btnMask) != 0;
-    if (pressed && !prev[idx])
-      tog[idx] = !tog[idx];
-    prev[idx] = pressed;
-    return tog[idx] ? mx : mn;
+    if (pressed && !gpPrev[idx])
+      gpTog[idx] = !gpTog[idx];
+    gpPrev[idx] = pressed;
+    return gpTog[idx] ? mx : mn;
   }
   default:
     return ct;
@@ -417,10 +434,7 @@ static bool gpHandleCal(ControllerPtr c)
 
   // Hold the truck still; move only the selected servo, live, over its full range.
   for (uint8_t i = 1; i <= 13; i++) pulseWidthRaw[i] = 1500;
-  gpOutMicros[2] = gpCalCenter[0];
-  gpOutMicros[3] = gpCalCenter[1];
-  gpOutMicros[4] = gpCalCenter[2];
-  gpAuxServoMicros = gpCalCenter[3];
+  gpOutputsFailsafe();
   uint16_t live = gpAxisToPulse(c->axisRX(), 512, 0); // right stick X -> 1000..2000
   gpCalWriteLive(ch, live);
 
@@ -444,10 +458,7 @@ void readGamepadCommands()
     gpPairingWatchdog(); // heartbeat + one-shot pairing reset so a pad can always get in
     for (uint8_t i = 1; i <= 13; i++)
       pulseWidthRaw[i] = 1500;
-    gpOutMicros[2] = gpCalCenter[0];
-    gpOutMicros[3] = gpCalCenter[1];
-    gpOutMicros[4] = gpCalCenter[2];
-    gpAuxServoMicros = gpCalCenter[3];
+    gpOutputsFailsafe();
     return;
   }
 
@@ -498,11 +509,32 @@ void readGamepadCommands()
   pulseWidthRaw[3] = 1500 + (int)((long)abs(thrDev) * 500 / 512); // engine sound follows throttle
 #endif
 
-  // --- Digital functions -> the channels the profile reads them on ---
-  // CH4 = HORN, CH5 = FUNCTION_R (engine/jake/lights), CH6 = FUNCTION_L (indicators)
-  pulseWidthRaw[4] = (btn & GP_BTN_HORN) ? 2000 : 1000;                 // horn
-  pulseWidthRaw[5] = (btn & GP_BTN_ENGINE) ? 2000 : ((btn & GP_BTN_JAKE) ? 1000 : 1500); // engine / jake
-  pulseWidthRaw[6] = (btn & GP_BTN_LIGHTS) ? 2000 : 1500;               // lights
+  // --- Digital functions -> the channels the firmware reads them on ---
+  // rcTrigger windows (src.ino rcTriggerRead / triggerHorn / triggerIndicators):
+  //   CH4  > 1900 horn              < 1100 siren + blue light                 idle 1500
+  //   CH5  1850 (hold) engine on/off   1150 (hold) lights step   2000 (hold) jake   idle 1500
+  //   CH6  > 1900 left indicator    < 1100 right indicator   1150 (hold) hazards   idle 1500
+  // Idle MUST be 1500: the old 1000 on CH4 is the siren position (so the siren wailed whenever the
+  // horn button was NOT held), 2000 on CH5 is the jake brake and 1000 the headlight flasher - the
+  // engine could never be started from the pad at all.
+  pulseWidthRaw[4] = (btn & GP_BTN_HORN) ? 2000 : 1500;
+  if (btn & GP_BTN_ENGINE)
+    pulseWidthRaw[5] = 1850; // hold ~0.3 s to toggle the engine
+  else if (btn & GP_BTN_JAKE)
+    pulseWidthRaw[5] = 2000; // jake brake while held
+  else if (btn & GP_BTN_LIGHTS)
+    pulseWidthRaw[5] = 1150; // hold ~0.3 s to step the lights
+  else
+    pulseWidthRaw[5] = 1500;
+  uint8_t dp = c->dpad(); // 0x01 up, 0x02 down, 0x04 right, 0x08 left
+  if (dp & 0x08)
+    pulseWidthRaw[6] = 2000; // D-pad left  -> left indicator (flick the other way to cancel)
+  else if (dp & 0x04)
+    pulseWidthRaw[6] = 1000; // D-pad right -> right indicator
+  else if (dp & 0x02)
+    pulseWidthRaw[6] = 1150; // D-pad down (hold) -> hazards
+  else
+    pulseWidthRaw[6] = 1500;
 
   // --- Per-output mapping: CH2 / CH3 / CH4 / AUX (any assigned channel is driven here) ---
 #if GP_CH2_SRC

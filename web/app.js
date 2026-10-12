@@ -396,7 +396,7 @@ async function useLibrarySound(file, group) {
   try {
     const j = await (await fetch("/sound_text/" + encodeURIComponent(file))).json();
     if (!j.ok) throw new Error(j.error || "Could not read sound");
-    await post("/install_header", { filename: file, text: j.text, category: group.key });
+    await post("/install_header", { filename: file, text: j.text, category: group.key }); allSoundsCache = null;
     closeModal(); toast("Installed " + file.replace(/\.h$/, ""), "ok");
     await reloadKeepTab();
   } catch (e) { toast(e.message, "err"); }
@@ -439,7 +439,7 @@ async function handleWavFile(file) {
     const audio = await audioCtx.decodeAudioData(await file.arrayBuffer());
     const text = wavToHeader(audio, group.varPrefix);
     const base = file.name.replace(/\.[^.]+$/, "").replace(/[^A-Za-z0-9_-]/g, "_") || "customSound";
-    await post("/install_header", { filename: base + ".h", text, category: group.key });
+    await post("/install_header", { filename: base + ".h", text, category: group.key }); allSoundsCache = null;
     closeModal(); toast("Added " + base, "ok");
     await reloadKeepTab();
   } catch (e) { toast("WAV import failed: " + e.message, "err"); }
@@ -616,6 +616,7 @@ function buildGamepadUI(root) {
       sin.appendChild(ssel);
       if (o.src === 8 || o.src === 9) {
         const bsel = el("select"); bsel.style.marginLeft = "8px";
+        if (!parseInt(o.btn, 16)) { const ph = el("option"); ph.value = "0x0000"; ph.textContent = "— pick a button —"; ph.selected = true; bsel.appendChild(ph); }
         for (const [mask, blabel] of (c.buttonChoices || [])) {
           const op = el("option"); op.value = mask; op.textContent = blabel; if (parseInt(mask, 16) === parseInt(o.btn, 16)) op.selected = true; bsel.appendChild(op);
         }
@@ -755,13 +756,40 @@ async function importVehicle(file) {
   } catch (e) { toast("Import failed: " + e.message, "err"); }
 }
 
+// ---------- serial port detection (shared by Detect board and the header Flash button) ----------
+async function detectPorts(sel) {
+  const res = await fetch("/native_ports");
+  if (!res.ok) throw new Error("HTTP " + res.status);
+  const j = await res.json();
+  if (!j.ok) throw new Error(j.error || "port scan failed");
+  const ports = j.ports || [];
+  sel.innerHTML = "";
+  if (!ports.length) sel.innerHTML = "<option value=''>No serial ports found</option>";
+  for (const p of ports) {
+    const o = el("option"); o.value = p.address;
+    o.textContent = p.address + (p.likely ? "  ✅ (board)" : "");
+    sel.appendChild(o);
+  }
+  return { ports, reason: j.reason || (ports.length ? "ok" : "no_ports") };
+}
+function noBoardMessage(reason) {
+  if (reason === "no_cli") return "No ports found and the Arduino compiler isn't installed yet — click Flash once to let the app download it (needs internet), then Detect board again.";
+  if (reason === "cli_error") return "Port detection crashed — restart the app and try again.";
+  return "No board detected. 1) Use a DATA USB cable — charge-only cables have no data wires and are the usual culprit. " +
+         "2) Install the USB-serial driver for your board: CP210x (Silicon Labs) or CH340. " +
+         "3) Check Windows Device Manager under 'Ports (COM & LPT)' — if nothing appears there, it's the cable or the driver.";
+}
+
 // ---------- flash pane wiring ----------
 function wireFlashPane() {
-  const logEl = $("log"), statusEl = $("status"), barEl = $("bar");
-  const log = (t) => { logEl.textContent += t; logEl.scrollTop = logEl.scrollHeight; };
-  const setStatus = (t, k = "") => { statusEl.textContent = t; statusEl.className = "status " + k; };
-  const setProgress = (p) => { barEl.style.width = Math.max(0, Math.min(100, p)) + "%"; };
-  const resetLog = () => { logEl.textContent = ""; };
+  // Looked up on every call, never captured: save() -> reloadKeepTab() -> render() rebuilds this
+  // pane while a build/flash handler is still running, and a handle captured at wire time would
+  // then point at a detached node - the log and status silently stop moving ("stuck").
+  const logEl = () => $("log"), statusEl = () => $("status"), barEl = () => $("bar");
+  const log = (t) => { const e = logEl(); if (!e) return; e.textContent += t; e.scrollTop = e.scrollHeight; };
+  const setStatus = (t, k = "") => { const e = statusEl(); if (!e) return; e.textContent = t; e.className = "status " + k; };
+  const setProgress = (p) => { const e = barEl(); if (e) e.style.width = Math.max(0, Math.min(100, p)) + "%"; };
+  const resetLog = () => { const e = logEl(); if (e) e.textContent = ""; };
   const busy = (on) => {
     // Lock everything that could interfere mid-flash — including the port
     // dropdown and the header Flash button — so nothing gets changed underneath.
@@ -770,8 +798,9 @@ function wireFlashPane() {
     }
   };
   const setIndeterminate = (on) => {
-    if (on) { barEl.classList.add("indeterminate"); barEl.style.width = ""; }
-    else { barEl.classList.remove("indeterminate"); }
+    const e = barEl(); if (!e) return;
+    if (on) { e.classList.add("indeterminate"); e.style.width = ""; }
+    else { e.classList.remove("indeterminate"); }
   };
   // auto-open the collapsed details panel (so errors are never hidden)
   const showDetails = () => { const d = document.querySelector(".logwrap"); if (d) d.open = true; };
@@ -795,22 +824,9 @@ function wireFlashPane() {
     const sel = $("nativePort");
     sel.innerHTML = "<option value=''>Detecting…</option>";
     try {
-      const j = await (await fetch("/native_ports")).json();
-      sel.innerHTML = "";
-      const ports = (j.ports || []);
-      if (!ports.length) {
-        sel.innerHTML = "<option value=''>No serial ports found</option>";
-        setStatus("No board detected. 1) Use a DATA USB cable — charge-only cables have no data wires and are the usual culprit. " +
-                  "2) Install the USB-serial driver for your board: CP210x (Silicon Labs) or CH340. " +
-                  "3) Check Windows Device Manager under 'Ports (COM & LPT)' — if nothing appears there, it's the cable or the driver.", "err");
-        return;
-      }
-      for (const p of ports) {
-        const o = el("option"); o.value = p.address;
-        o.textContent = p.address + (p.likely ? "  ✅ (board)" : "");
-        sel.appendChild(o);
-      }
-      setStatus("Found " + ports.length + " port(s). Pick your board, then Flash via cable.", "ok");
+      const r = await detectPorts(sel);
+      if (!r.ports.length) { setStatus(noBoardMessage(r.reason), "err"); return; }
+      setStatus("Found " + r.ports.length + " port(s). Pick your board, then Flash via cable.", "ok");
     } catch (e) { sel.innerHTML = "<option value=''>Detect failed</option>"; setStatus("Detect failed: " + e.message, "err"); }
   };
   $("nativeFlash").onclick = async () => {
@@ -863,24 +879,19 @@ $("flashBtnTop").onclick = async () => {
   if (!sel || !flashBtn || !statusEl) return;
   statusEl.textContent = "🔍 Looking for your board…"; statusEl.className = "status work";
   try {
-    const j = await (await fetch("/native_ports")).json();
-    const ports = j.ports || [];
-    sel.innerHTML = "";
-    for (const p of ports) {
-      const o = el("option"); o.value = p.address;
-      o.textContent = p.address + (p.likely ? "  ✅ (board)" : "");
-      sel.appendChild(o);
-    }
+    const r = await detectPorts(sel);
+    const ports = r.ports;
     const pick = ports.find((p) => p.likely) || (ports.length === 1 ? ports[0] : null);
     if (pick) { sel.value = pick.address; flashBtn.click(); }        // -> resets log + streams
     else if (ports.length) { statusEl.textContent = "Several ports found — pick your board below, then Flash."; statusEl.className = "status"; }
-    else { statusEl.textContent = "No board found. Plug the ESP32 in with a USB data cable, then click Flash again."; statusEl.className = "status err"; }
+    else { statusEl.textContent = noBoardMessage(r.reason); statusEl.className = "status err"; }
   } catch (e) {
     statusEl.textContent = "Couldn't detect the board: " + ((e && e.message) || e); statusEl.className = "status err";
   }
 };
 $("quitBtn").onclick = async () => {
   if (isDirty() && !confirm("You have unsaved changes. Quit anyway?")) return;
+  state.changes = {}; // nothing left to protect once the server is gone
   try { await fetch("/quit", { method: "POST" }); } catch (_) {}
   document.title = "Closed";
   document.body.innerHTML =
@@ -900,7 +911,7 @@ window.addEventListener("beforeunload", (e) => { if (isDirty()) { e.preventDefau
 // stray Python process is left running. A refresh only pauses it for a moment.
 const ping = () => fetch("/ping").catch(() => {});
 ping();
-setInterval(ping, 3000);
+setInterval(ping, 20000);
 // ping the moment the tab regains focus, so a throttled background tab
 // re-checks in immediately instead of waiting for the next interval
 document.addEventListener("visibilitychange", () => { if (!document.hidden) ping(); });
