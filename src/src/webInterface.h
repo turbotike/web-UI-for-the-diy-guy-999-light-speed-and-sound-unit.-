@@ -53,6 +53,12 @@ void webInterface()
   const long timeoutTime = 2000;               // Define timeout time in milliseconds (example: 2000ms = 2s)
 
   static bool Mode = false; // TODO
+  static bool headerReserved = false;
+  if (!headerReserved)
+  {
+    header.reserve(768); // a browser request is ~600 bytes: grow once, not once per byte
+    headerReserved = true;
+  }
 
   if (true)
   { // Wifi on
@@ -71,7 +77,7 @@ void webInterface()
         if (client.available())
         {                         // if there's bytes to read from the client,
           char c = client.read(); // read a byte, then
-          Serial.write(c);        // print it out the serial monitor
+          // (not echoed to the serial monitor: ~600 bytes at 115200 baud was ~50 ms of blocking per request)
           header += c;
           if (c == '\n')
           { // if the byte is a newline character

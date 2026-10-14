@@ -58,6 +58,12 @@ char codeVersion[] = "9.13.0"; // Software revision.
 #include "9_Dashboard.h"       // <<------- Dashboard related adjustments
 #include "10_Trailer.h"        // <<------- Trailer related adjustments
 
+// The receiver protocols are a one-of choice (the loop dispatches the first one found). Two of them
+// enabled used to compile silently and then hang at boot waiting for the wrong bus.
+#if (defined SBUS_COMMUNICATION + defined IBUS_COMMUNICATION + defined SUMD_COMMUNICATION + defined PPM_COMMUNICATION) > 1
+#error "2_Remote.h: more than one receiver protocol is enabled (SBUS / IBUS / SUMD / PPM). Pick ONE - the Remote tab's Receiver protocol dropdown does this for you."
+#endif
+
 // TODO = Things to clean up!
 
 //
@@ -119,6 +125,7 @@ void eepromRead();
 void eepromInit();
 void serialInterface();
 void webInterface();
+void webTaskCode(void *pvParameters);
 
 // The following tasks are only required for Arduino IDE! ----
 // Install ESP32 board according to: https://randomnerdtutorials.com/installing-the-esp32-board-in-arduino-ide-windows-instructions/
@@ -620,6 +627,7 @@ uint8_t broadcastAddress3[6];
 #define adr_eprom_transmission_servo_right 240
 #define adr_eprom_coupler_servo_left 244
 #define adr_eprom_coupelr_servo_right 248
+#define adr_eprom_sbusInverted 330 // 1 byte: 0 / 1 = the SBUS polarity that last produced valid frames (learned in setup), 0xFF = unknown
 
 #define adr_eprom_ssid 384     // 384 (64)
 #define adr_eprom_password 448 // 448 (64)
@@ -2033,6 +2041,12 @@ void setup()
 #if defined SBUS_COMMUNICATION // SBUS ----
   if (MAX_RPM_PERCENTAGE > maxSbusRpmPercentage)
     MAX_RPM_PERCENTAGE = maxSbusRpmPercentage;                // Limit RPM range
+  { // Start with the polarity that worked last time (learned by the auto-flip below), so a non-standard
+    // receiver does not cost 3 s of flashing indicators on every single boot.
+    uint8_t storedPol = EEPROM.read(adr_eprom_sbusInverted);
+    if (storedPol == 0 || storedPol == 1)
+      sbusInverted = (storedPol == 1);
+  }
   sBus.begin(COMMAND_RX, COMMAND_TX, sbusInverted, sbusBaud); // begin SBUS communication with compatible receivers
   setupMcpwm();                                               // mcpwm servo output setup
 
@@ -2113,6 +2127,11 @@ void setup()
       &Task1,    // Task handle to keep track of created task
       0);        // pin task to core 0
 
+  // Configuration web page server - see webTaskCode(). The battery-lock loop in setupBattery()
+  // still polls webInterface() directly because it runs before this task exists.
+  TaskHandle_t WebTask;
+  xTaskCreatePinnedToCore(webTaskCode, "WebTask", 10240, NULL, 1, &WebTask, 0);
+
   // once write with the "normal" way, the write registers directly according to: https://forum.arduino.cc/t/esp32-dacwrite-ersetzen/653954/5
   // all further writes are done directly in the register since
   // it's much faster
@@ -2141,8 +2160,7 @@ void setup()
     readSbusCommands();               // SBUS communication (pin 36)
     indicatorL.flash(70, 75, 500, 3); // Show 3 fast flashes on indicators!
     indicatorR.flash(70, 75, 500, 3);
-    serialInterface();
-    webInterface();
+    serialInterface(); // (the web page is served by WebTask)
     rtc_wdt_feed(); // Feed watchdog timer
 
     // No valid packet after 3 s? Try the other signal polarity. Standard SBUS is an inverted
@@ -2160,6 +2178,12 @@ void setup()
     }
   }
   Serial.printf("... SBUS initialization succesful! (sbusInverted = %s)\n", sbusInverted ? "true" : "false");
+  if (EEPROM.read(adr_eprom_sbusInverted) != (sbusInverted ? 1 : 0))
+  {
+    EEPROM.write(adr_eprom_sbusInverted, sbusInverted ? 1 : 0); // remember it for the next boot
+    eepromCommitSafely();
+    Serial.printf("    (stored - next boot starts with sbusInverted = %s. The value in the Remote tab is only the first guess.)\n", sbusInverted ? "true" : "false");
+  }
 
 #elif defined IBUS_COMMUNICATION
   ibusInit = false;
@@ -2170,8 +2194,7 @@ void setup()
     readIbusCommands();               // IBUS communication (pin 36)
     indicatorL.flash(70, 75, 500, 3); // Show 3 fast flashes on indicators!
     indicatorR.flash(70, 75, 500, 3);
-    serialInterface();
-    webInterface();
+    serialInterface(); // (the web page is served by WebTask)
     rtc_wdt_feed(); // Feed watchdog timer
   }
   Serial.printf("... IBUS initialization succesful!\n");
@@ -2185,8 +2208,7 @@ void setup()
     readSumdCommands();
     indicatorL.flash(70, 75, 500, 3); // Show 3 fast flashes on indicators!
     indicatorR.flash(70, 75, 500, 3);
-    serialInterface();
-    webInterface();
+    serialInterface(); // (the web page is served by WebTask)
     rtc_wdt_feed(); // Feed watchdog timer
   }
   Serial.printf("... SUMD initialization succesful!\n");
@@ -2989,6 +3011,22 @@ void mcpwmOutput()
 //
 
 // it is required to disable interrupts prior to EEPROM access!
+// Commit EEPROM while the audio timers are running. NVS writes disable the flash cache and the
+// playback ISRs read their samples from flash, so the alarms are paused for the few ms it takes -
+// a tiny click at most, instead of the 'reboot required' route disableAllInterrupts() takes.
+void eepromCommitSafely()
+{
+  if (variableTimer)
+    timerAlarmDisable(variableTimer);
+  if (fixedTimer)
+    timerAlarmDisable(fixedTimer);
+  EEPROM.commit();
+  if (variableTimer)
+    timerAlarmEnable(variableTimer);
+  if (fixedTimer)
+    timerAlarmEnable(fixedTimer);
+}
+
 void disableAllInterrupts()
 {
 
@@ -3058,6 +3096,7 @@ void eepromInit()
     EEPROM.write(adr_eprom_init, eeprom_id);
 
     EEPROM.write(adr_eprom_useTrailer1, defaultUseTrailer1);
+    EEPROM.write(adr_eprom_sbusInverted, 0xFF); // unknown until SBUS locks on (then learned and stored)
     EEPROM.write(adr_eprom_Trailer1Mac0, defaultBroadcastAddress1[0]); // Should always be 0xFE!
     EEPROM.write(adr_eprom_Trailer1Mac1, defaultBroadcastAddress1[1]); // Country number
     EEPROM.write(adr_eprom_Trailer1Mac2, defaultBroadcastAddress1[2]); // Region number
@@ -6335,8 +6374,8 @@ void loop()
   // Trailer control, using ESP NOW
   trailerControl();
 
-  // Configuration website
-  webInterface();
+  // Configuration website: served by WebTask on core 0 (see setup), no longer from here - a page
+  // load blocks for up to 2 s and used to freeze receiver input and servo output while it ran.
 
   // Serial configuration comamnds
   serialInterface();
@@ -6356,6 +6395,19 @@ void loop()
 // 1st MAIN TASK, RUNNING ON CORE 0 (Interrupts are running on this core as well)
 // =======================================================================================================
 //
+
+// Configuration web page, served from its own task on core 0 (created in setup). Serving a page
+// blocks for up to timeoutTime (2 s); that used to run inside loop(), so the receiver was not read
+// and the servos / ESC were not updated while someone opened 192.168.4.1 - and the SBUS failsafe
+// could trip on resume. Here it only costs core 0 a little time.
+void webTaskCode(void *pvParameters)
+{
+  for (;;)
+  {
+    webInterface();               // returns at once when no client is connected
+    vTaskDelay(pdMS_TO_TICKS(5)); // give Task1 and the WiFi stack their turn
+  }
+}
 
 void Task1code(void *pvParameters)
 {

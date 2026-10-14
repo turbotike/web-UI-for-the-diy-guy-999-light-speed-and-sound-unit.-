@@ -5,6 +5,9 @@
 // Select the shaker configuration you have:
 #define GT_POWER_STOCK // <------- Select (remove //) one of the shaker configurations below
 //#define GT_POWER_PLASTIC
+#if !defined GT_POWER_STOCK && !defined GT_POWER_PLASTIC
+#error "5_Shaker.h: select a shaker configuration (GT_POWER_STOCK or GT_POWER_PLASTIC) - the Shaker tab's dropdown does this for you."
+#endif
 
 
 // SHAKER SETTINGS ********************************************************************************************************************

@@ -20,6 +20,9 @@
 
 // #define VIRTUAL_16_SPEED_SEQUENTIAL will enable a sequencial transmission, shifted by up / down impulses via 3 position switch
 // #define VIRTUAL_16_SPEED_SEQUENTIAL // This is still experimental and not working properly! Don't use it.
+#if defined VIRTUAL_3_SPEED && defined VIRTUAL_16_SPEED_SEQUENTIAL
+#error "4_Transmission.h: VIRTUAL_3_SPEED and VIRTUAL_16_SPEED_SEQUENTIAL cannot both be enabled - pick one, or neither for a real gearbox."
+#endif
 
 // Additional transmission options =========================================================================================================
 // Automatic transmission with overdrive (lower RPM in top gear, gear ratio lower than 1:1, 4 & 6 speed only)

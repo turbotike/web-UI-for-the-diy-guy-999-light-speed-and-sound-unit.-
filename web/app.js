@@ -146,7 +146,10 @@ function vehicleToolbar() {
   // Save your vehicle to a shareable .h file.
   const save = el("button", null, "💾 Save vehicle");
   save.title = "Download this vehicle as a .h file you can share with others";
-  save.onclick = () => { window.location = "/download_vehicle?vehicle=" + encodeURIComponent(v); };
+  save.onclick = () => {
+    state.downloading = true; setTimeout(() => { state.downloading = false; }, 4000); // a download is not leaving the page
+    window.location = "/download_vehicle?vehicle=" + encodeURIComponent(v);
+  };
 
   // Load a vehicle .h file someone shared with you.
   const load = el("button", null, "📂 Load vehicle");
@@ -178,6 +181,7 @@ function presetBar() {
   const load = el("button", "mini", "Load");
   load.onclick = async () => {
     const name = sel.value; if (!name) return toast("No preset selected.");
+    if (isDirty() && !confirm("You have unsaved changes - loading a preset replaces them. Continue?")) return;
     try {
       const j = await post("/preset_load", { vehicle: v, name });
       await post("/save", j.data);
@@ -187,6 +191,7 @@ function presetBar() {
   };
   const save = el("button", "mini", "Save as…");
   save.onclick = async () => {
+    if (isDirty() && !(await saveSettings())) return; // the preset must capture what is on the sliders
     const name = prompt("Preset name:"); if (!name) return;
     try { await post("/preset_save", { vehicle: v, name, data: vehicleSnapshot() }); toast("Saved preset “" + name + "”.", "ok"); await reloadKeepTab(); }
     catch (e) { toast(e.message, "err"); }
@@ -195,6 +200,7 @@ function presetBar() {
   del.onclick = async () => {
     const name = sel.value; if (!name) return;
     if (!confirm("Delete preset “" + name + "”?")) return;
+    if (isDirty() && !(await saveSettings())) return; // keep pending edits - the reload would drop them
     try { await post("/preset_delete", { vehicle: v, name }); toast("Deleted.", "ok"); await reloadKeepTab(); }
     catch (e) { toast(e.message, "err"); }
   };
@@ -207,10 +213,11 @@ function vehicleSnapshot() {
   const vf = vehicleFile(); if (!vf) return {};
   const fields = {};
   for (const c of (state.schema.vehicleTab?.controls || [])) {
-    if (c.saveKind === "flag") fields[c.name] = { kind: "flag", enabled: !!c.enabled };
-    else if (c.saveKind === "bool_var") fields[c.name] = { kind: "bool_var", value: c.enabled ? "true" : "false" };
-    else if (c.saveKind === "define_val") fields[c.name] = { kind: "define_val", enabled: c.enabled !== false, value: c.value };
-    else fields[c.name] = { kind: "text_var", value: c.value };
+    const e = effective(vf, c); // what the user sees, pending edits included
+    if (c.saveKind === "flag") fields[c.name] = { kind: "flag", enabled: !!e.enabled };
+    else if (c.saveKind === "bool_var") fields[c.name] = { kind: "bool_var", value: e.enabled ? "true" : "false" };
+    else if (c.saveKind === "define_val") fields[c.name] = { kind: "define_val", enabled: e.enabled !== false, value: e.value };
+    else fields[c.name] = { kind: "text_var", value: e.value };
   }
   for (const g of (state.schema.soundChoices || [])) {
     if (g.selected) fields["__sound__" + g.key] = { kind: "sound_choice", value: g.selected };
@@ -304,6 +311,7 @@ function renderForgePane() {
         del.title = "Delete this custom sound";
         del.onclick = async () => {
           if (!confirm("Delete custom sound " + sel.value + "?")) return;
+          if (isDirty() && !(await saveSettings())) return;
           try { await post("/delete_sound", { filename: sel.value }); toast("Deleted.", "ok"); await reloadKeepTab(); }
           catch (e) { toast(e.message, "err"); }
         };
@@ -393,6 +401,7 @@ async function openSoundModal(group) {
 }
 
 async function useLibrarySound(file, group) {
+  if (isDirty() && !(await saveSettings())) return; // the reload after install would drop pending edits
   try {
     const j = await (await fetch("/sound_text/" + encodeURIComponent(file))).json();
     if (!j.ok) throw new Error(j.error || "Could not read sound");
@@ -433,6 +442,7 @@ function wavToHeader(audioBuffer, varPrefix) {
 async function handleWavFile(file) {
   const group = pendingWavGroup; pendingWavGroup = null;
   if (!group) return;
+  if (isDirty() && !(await saveSettings())) return; // same: the reload after import would drop pending edits
   try {
     toast("Converting WAV…");
     audioCtx ||= new (window.AudioContext || window.webkitAudioContext)();
@@ -730,6 +740,7 @@ async function save() {
   } catch (err) { toast("Save failed: " + err.message, "err"); return false; }
   finally { $("saveBtn").disabled = false; }
 }
+const saveSettings = save; // the vehicle toolbar and preset bar shadow `save` with a button element
 
 // ---------- vehicle change / import ----------
 async function changeVehicle(vehicle) {
@@ -905,7 +916,7 @@ $("quitBtn").onclick = async () => {
 };
 $("importFile").onchange = (e) => { if (e.target.files[0]) importVehicle(e.target.files[0]); e.target.value = ""; };
 $("wavFile").onchange = (e) => { if (e.target.files[0]) handleWavFile(e.target.files[0]); e.target.value = ""; };
-window.addEventListener("beforeunload", (e) => { if (isDirty()) { e.preventDefault(); e.returnValue = ""; } });
+window.addEventListener("beforeunload", (e) => { if (isDirty() && !state.downloading) { e.preventDefault(); e.returnValue = ""; } });
 
 // Heartbeat: lets the server auto-close itself when this tab goes away, so no
 // stray Python process is left running. A refresh only pauses it for a moment.

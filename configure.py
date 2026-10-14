@@ -5998,6 +5998,149 @@ def _remote_profiles():
     return [(n, labels.get(n, n)) for n in names]
 
 
+# One-of choices the firmware headers document as "select one" / "never uncomment more than one".
+# Each becomes ONE dropdown in the UI (the member toggles disappear), and ensure_exclusive_groups()
+# repairs a header that is already in an impossible state - two selected, or none where exactly
+# one is required - before every build, so that class of "it won't compile" cannot happen.
+# "selector" options are read from the file: the '#define NAME' list at the top that picks one
+# '#ifdef NAME ... #endif' block (shaker, servos). The receiver protocol and radio profile in
+# 2_Remote.h are handled by _collapse_protocol_controls() but repaired here too.
+EXCLUSIVE_GROUPS = {
+    "4_Transmission.h": [{
+        "name": "__transmission__", "label": "Transmission mode",
+        "desc": "At most one of these (the header says 'never uncomment more than one'). "
+                "'Real gearbox' means none selected - that is what a TAMIYA 3-speed or any other real "
+                "shifting transmission wants.",
+        "options": [["", "Real gearbox (e.g. TAMIYA 3-speed) / none"],
+                    ["VIRTUAL_3_SPEED", "Virtual 3-speed (simulated shifting)"],
+                    ["VIRTUAL_16_SPEED_SEQUENTIAL", "Virtual 16-speed sequential (experimental)"]],
+        "required": False}],
+    "5_Shaker.h": [{
+        "name": "__shaker__", "label": "Shaker configuration",
+        "desc": "Which shaker motor / weight is fitted. Exactly one must be selected or the firmware "
+                "does not build (shakerIdle undeclared).",
+        "options": "selector", "required": True}],
+    "7_Servos.h": [{
+        "name": "__servos__", "label": "Servo configuration profile",
+        "desc": "The servo endpoint set for your model. Exactly one must be selected.",
+        "options": "selector", "required": True}],
+}
+
+
+def _pretty_name(n):
+    return n.replace("_", " ").title().replace("Gt Power", "GT-Power").replace("Servos ", "Servos: ")
+
+
+def _selector_options(rel_path):
+    """[[name, label], ...] for the selector list at the top of a profile-block header: every
+    '#define NAME' (commented or not) outside the blocks that either names a block or shares the
+    blocks' common prefix - 7_Servos.h lists SERVOS_LANDY_MN_MODEL, which has no block of its own
+    upstream, and it still has to be one of the choices (and never a loose toggle)."""
+    lines = _strip_block_comments(read_text(os.path.join(SRC, rel_path))).split("\n")
+    blocks = [n for n, _a, _b in _remote_blocks(lines)]
+    prefix = os.path.commonprefix(blocks) if blocks else ""
+    if "_" in prefix:
+        prefix = prefix[:prefix.rindex("_") + 1]
+    inside = [False] * len(lines)
+    for _n, a, b in _remote_blocks(lines):
+        for k in range(a, b + 1):
+            inside[k] = True
+    names = []
+    for i, l in enumerate(lines):
+        m = re.match(r"^\s*(?://\s*)?#define\s+(\w+)\b", l)
+        if not m or inside[i] or m.group(1) in names:
+            continue
+        n = m.group(1)
+        if n in blocks or (prefix and n.startswith(prefix)):
+            names.append(n)
+    labels = globals().get("FRIENDLY_NAMES", {}) or {}
+    return [[n, labels.get(n) or _pretty_name(n)] for n in names]
+
+def _group_options(rel_path, g):
+    return _selector_options(rel_path) if g["options"] == "selector" else g["options"]
+
+
+def _active_selectors(rel_path, members):
+    """Which of `members` are defined (uncommented) outside any #ifdef block, comments stripped."""
+    lines = _strip_block_comments(read_text(os.path.join(SRC, rel_path))).split("\n")
+    inside = [False] * len(lines)
+    for _n, a, b in _remote_blocks(lines):
+        for k in range(a, b + 1):
+            inside[k] = True
+    active = []
+    for m in members:
+        pat = re.compile(r"^\s*#define\s+" + re.escape(m) + r"\b")
+        if any(pat.match(l) and not inside[i] for i, l in enumerate(lines)):
+            active.append(m)
+    return active
+
+
+def _collapse_exclusive(rel_path, controls):
+    """Fold every one-of group of this header into a single select control."""
+    if rel_path == "2_Remote.h":
+        controls = _collapse_protocol_controls(controls)
+    for g in EXCLUSIVE_GROUPS.get(rel_path, []):
+        opts = _group_options(rel_path, g)
+        members = [o[0] for o in opts if o[0]]
+        enabled, kept = [], []
+        for c in controls:
+            if c.get("name") in members:
+                if c.get("enabled"):
+                    enabled.append(c["name"])
+                continue
+            kept.append(c)
+        active = next((m for m in members if m in enabled), "")
+        desc = g["desc"]
+        if len(enabled) > 1:
+            desc += " WARNING: more than one is defined in the file right now; the first is shown. Re-select and save to clean it up."
+        if g.get("required") and not enabled:
+            desc += " WARNING: none is selected in the file right now - the build would fail. Pick one and save."
+        controls = [{"name": g["name"], "label": g["label"], "desc": desc, "saveKind": "exclusive_flag",
+                     "control": "select", "value": active, "group": members, "options": opts}] + kept
+    return controls
+
+
+def ensure_exclusive_groups(report=None):
+    """Repair every one-of group that is in an impossible state. Returns the list of fixes made.
+    Called after each save and before each build - so two protocols, two shaker configs or no
+    servo profile can never reach the compiler."""
+    fixes = []
+
+    def fix(rel_path, members, keep, what):
+        apply_changes(rel_path, {m: (m == keep) for m in members})
+        fixes.append("%s: %s - kept %s" % (rel_path, what, keep or "none"))
+
+    # 2_Remote.h: receiver protocol (PWM = none is fine) and radio profile (exactly one)
+    if os.path.isfile(os.path.join(SRC, "2_Remote.h")):
+        act = _active_selectors("2_Remote.h", PROTOCOL_FLAGS)
+        if len(act) > 1:
+            keep = next((n for n in PROTOCOL_FIRMWARE_ORDER if n in act), act[0])
+            fix("2_Remote.h", PROTOCOL_FLAGS, keep, "more than one receiver protocol was enabled (%s)" % ", ".join(act))
+        profs = [n for n, _l in _remote_profiles()]
+        act = _active_selectors("2_Remote.h", profs)
+        if len(act) > 1:
+            fix("2_Remote.h", profs, act[0], "more than one radio profile was selected (%s)" % ", ".join(act))
+        elif not act and profs:
+            fix("2_Remote.h", profs, profs[0], "no radio profile was selected")
+
+    for rel_path, groups in EXCLUSIVE_GROUPS.items():
+        if not os.path.isfile(os.path.join(SRC, rel_path)):
+            continue
+        for g in groups:
+            members = [o[0] for o in _group_options(rel_path, g) if o[0]]
+            if not members:
+                continue
+            act = _active_selectors(rel_path, members)
+            if len(act) > 1:
+                fix(rel_path, members, act[0], "more than one %s was enabled (%s)" % (g["label"].lower(), ", ".join(act)))
+            elif not act and g.get("required"):
+                fix(rel_path, members, members[0], "no %s was selected" % g["label"].lower())
+    if report:
+        for f in fixes:
+            report("Auto-fixed: " + f + "\n")
+    return fixes
+
+
 def build_config_schema():
     """Full configuration as JSON for the SPA: vehicles, the active vehicle's
     tuning, and the General/Remote/ESC/... setting tabs."""
@@ -6008,8 +6151,7 @@ def build_config_schema():
         if fname == "1_Vehicle.h":
             continue  # vehicle choice is handled by the picker, not a tab
         controls = _controls_for_file(fname)
-        if fname == "2_Remote.h":
-            controls = _collapse_protocol_controls(controls)
+        controls = _collapse_exclusive(fname, controls)
         if controls:
             tabs.append({
                 "file": fname,
@@ -6937,6 +7079,8 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     auto_fixes = []
 
+                auto_fixes.extend(ensure_exclusive_groups())
+
                 if eeprom_bump:
                     bump_eeprom_id()
                     auto_fixes.append("EEPROM defaults will be re-seeded on the next boot (eeprom_id bumped), "
@@ -6998,14 +7142,14 @@ class Handler(BaseHTTPRequestHandler):
                 # Stream output from here
                 self.send_response(200)
                 self.send_header("Content-Type", "text/plain; charset=utf-8")
-                self.send_header("Transfer-Encoding", "chunked")
+                # Plain streamed body, terminated by closing the connection (HTTP/1.0 semantics).
+                # Chunked framing was used before, but this server answers as HTTP/1.0 and Chromium
+                # ignores chunked encoding there - the hex chunk sizes leaked into the flash log.
+                self.send_header("Connection", "close")
                 self.end_headers()
 
                 def chunk(msg):
-                    data = msg.encode("utf-8", errors="replace")
-                    self.wfile.write(("%x\r\n" % len(data)).encode("ascii"))
-                    self.wfile.write(data)
-                    self.wfile.write(b"\r\n")
+                    self.wfile.write(msg.encode("utf-8", errors="replace"))
                     self.wfile.flush()
 
                 # Resolve a compiler: Arduino IDE / PATH, else auto-download arduino-cli.
@@ -7014,13 +7158,14 @@ class Handler(BaseHTTPRequestHandler):
                     chunk("\nERROR: No Arduino compiler available and auto-download failed.\n")
                     chunk("Install Arduino IDE 2.x from https://www.arduino.cc/en/software, or check your internet connection.\n")
                     chunk("\n--- DONE (exit 1) ---\n")
-                    self.wfile.write(b"0\r\n\r\n")
+                    self.wfile.flush()
                     self.wfile.flush()
                     return
 
                 # Auto-setup: install the right ESP32 core. Game-controller builds
                 # (GAMEPAD_MODE) use the Bluepad32 core, which bundles the controller
                 # library; everything else uses the pinned 1.0.6 RC core.
+                ensure_exclusive_groups(chunk)  # never hand the compiler two protocols / two shaker configs / no servo profile
                 chunk("Checking ESP32 toolchain...\n")
                 use_gamepad = gamepad_mode_active()
                 if use_gamepad:
@@ -7030,7 +7175,7 @@ class Handler(BaseHTTPRequestHandler):
                     ok_core = ensure_esp32_core(cli, chunk)
                 if not ok_core:
                     chunk("\n--- DONE (exit 1) ---\n")
-                    self.wfile.write(b"0\r\n\r\n")
+                    self.wfile.flush()
                     self.wfile.flush()
                     return
 
@@ -7086,7 +7231,7 @@ class Handler(BaseHTTPRequestHandler):
                     chunk("On macOS, install it by running this in Terminal:  xcode-select --install\n")
                     chunk("(or install Python 3 from https://www.python.org/downloads/), then flash again.\n")
                     chunk("\n--- DONE (exit 1) ---\n")
-                    self.wfile.write(b"0\r\n\r\n"); self.wfile.flush()
+                    self.wfile.flush(); self.wfile.flush()
                     return
 
                 proc = subprocess.Popen(
@@ -7112,7 +7257,7 @@ class Handler(BaseHTTPRequestHandler):
                 rc = proc.returncode
                 status_line = "\n--- DONE (exit %d) ---\n" % rc
                 chunk(status_line)
-                self.wfile.write(b"0\r\n\r\n")
+                self.wfile.flush()
                 self.wfile.flush()
             except Exception as e:
                 try:
