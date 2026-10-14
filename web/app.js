@@ -120,11 +120,25 @@ function controlInput(file, c) {
     wrap.appendChild(inp); wrap.appendChild(valLbl);
   } else {
     const inp = el("input"); inp.type = c.control === "number" ? "number" : "text"; inp.value = eff.value ?? ""; inp.style.width = "150px";
-    inp.onchange = () => {
+    const bounded = c.control === "number" && c.min != null && c.max != null;
+    if (bounded) { inp.min = c.min; inp.max = c.max; inp.step = c.step ?? 1; inp.style.width = "90px"; inp.title = c.noneIsZero ? "0 = NONE (not used)" : ""; }
+    const commit = () => {
+      if (bounded) { // keep typed values inside the range too (the spinner only clamps clicks)
+        let n = Number(inp.value); if (!Number.isFinite(n)) n = c.min;
+        n = Math.max(c.min, Math.min(c.max, Math.round(n))); inp.value = String(n);
+      }
       const p = c.saveKind === "define_val" ? { kind: "define_val", enabled: c.enabled !== false, value: inp.value } : { kind: c.saveKind, value: inp.value };
       recordChange(file, c.name, p);
     };
-    wrap.appendChild(inp);
+    inp.onchange = commit;
+    if (bounded) { // explicit - / + buttons: visible on any theme, usable on a phone, and they can reach 0 (= NONE)
+      const step = (d) => { let n = Number(inp.value); if (!Number.isFinite(n)) n = c.min; inp.value = String(Math.max(c.min, Math.min(c.max, n + d))); commit(); };
+      const minus = el("button", "mini", "\u2212"); minus.type = "button"; minus.title = "Previous channel"; minus.onclick = () => step(-1);
+      const plus = el("button", "mini", "+"); plus.type = "button"; plus.title = "Next channel"; plus.onclick = () => step(1);
+      wrap.classList.add("stepper"); wrap.append(minus, inp, plus);
+    } else {
+      wrap.appendChild(inp);
+    }
   }
   return wrap;
 }

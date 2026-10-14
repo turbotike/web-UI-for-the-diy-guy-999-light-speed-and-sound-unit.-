@@ -5872,6 +5872,25 @@ MISSING_FILES_PAGE = """<!DOCTYPE html><html><head><meta charset="utf-8">
 # existing /save endpoint. Each control declares a `saveKind` matching the
 # /save contract: "flag" | "bool_var" | "define_val" | "text_var".
 
+# Receiver-channel assignments in 2_Remote.h: '#define HAZARDS NONE' / '#define MODE2 9'. The UI shows
+# them as 0..16 number fields where 0 means NONE (the firmware's "no channel" value), because a
+# plain text box holding the word NONE has no arrows and no way back to "off" once a number is in.
+CHANNEL_DEFINES = {"STEERING", "GEARBOX", "THROTTLE", "HORN", "FUNCTION_R", "FUNCTION_L", "POT2",
+                   "MODE1", "MODE2", "MOMENTARY1", "HAZARDS", "INDICATOR_LEFT", "INDICATOR_RIGHT"}
+CHANNEL_MAX = 16  # SBUS carries up to 16; NONE itself is 16 in src.ino
+
+
+def _channel_value_for_header(value):
+    """UI value -> header token: '' / '0' / 'NONE' -> NONE, otherwise an integer clamped to 1..16."""
+    v = str(value or "").strip().upper()
+    if v in ("", "0", "NONE"):
+        return "NONE"
+    try:
+        return str(max(1, min(CHANNEL_MAX, int(float(v)))))
+    except ValueError:
+        return "NONE"
+
+
 def schema_item(item):
     """Normalize one parse_items() entry into a UI control descriptor."""
     name = item.get("name", "")
@@ -5906,6 +5925,15 @@ def schema_item(item):
         out["value"] = val
     else:
         return None
+
+    # Receiver channel: bounded number, 0 = NONE
+    if name in CHANNEL_DEFINES and kind == "define_val":
+        v = str(out.get("value", "")).strip().upper()
+        out["value"] = "0" if v in ("", "NONE") else v
+        out.update({"control": "number", "min": 0, "max": CHANNEL_MAX, "step": 1, "noneIsZero": True})
+        out["desc"] = re.sub(r"\s*NONE to disable\.?", "", out.get("desc") or "").strip()
+        out["desc"] = (out["desc"] + " " if out["desc"] else "") + "0 = NONE (not used)."
+        return out
 
     # Value-bearing control: slider if we have a range, else number/text.
     if name in SLIDER_FIELDS:
@@ -6036,7 +6064,10 @@ def _selector_options(rel_path):
     '#define NAME' (commented or not) outside the blocks that either names a block or shares the
     blocks' common prefix - 7_Servos.h lists SERVOS_LANDY_MN_MODEL, which has no block of its own
     upstream, and it still has to be one of the choices (and never a loose toggle)."""
-    lines = _strip_block_comments(read_text(os.path.join(SRC, rel_path))).split("\n")
+    path = os.path.join(SRC, rel_path)
+    if not os.path.isfile(path):
+        return []
+    lines = _strip_block_comments(read_text(path)).split("\n")
     blocks = [n for n, _a, _b in _remote_blocks(lines)]
     prefix = os.path.commonprefix(blocks) if blocks else ""
     if "_" in prefix:
@@ -7040,7 +7071,10 @@ class Handler(BaseHTTPRequestHandler):
                         elif kind == "bool_var":
                             changes[name] = str(info.get("value", "false"))
                         elif kind == "define_val":
-                            changes[name] = (bool(info.get("enabled")), str(info.get("value", "")))
+                            val = str(info.get("value", ""))
+                            if rel_path == "2_Remote.h" and name in CHANNEL_DEFINES:
+                                val = _channel_value_for_header(val)  # 0 -> NONE, clamp 1..16
+                            changes[name] = (bool(info.get("enabled")), val)
                         elif kind == "exclusive_flag":
                             # One-of choice (receiver protocol): enable the picked #define and
                             # switch every other one in the group off, so they can't conflict.
