@@ -298,8 +298,10 @@ label.opt { color: var(--muted); display: flex; align-items: center; gap: 8px; f
 .gpmap-h { font-family: var(--display); font-size: 17px; color: var(--pink); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
 .gpmap .ctrl { border: none; padding: 6px 0; }
 
-/* Bounded number fields (receiver channels): keep the native spinner visible, and lay out the - / + buttons */
-input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { opacity: 1; height: 26px; cursor: pointer; }
+/* Changeable values: the - / + pair does the stepping; the browser's own tiny spinner is hidden */
+input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; appearance: textfield; }
 .input.stepper { display: flex; align-items: center; gap: 6px; }
 .input.stepper input[type=number] { text-align: center; }
 .input.stepper button.mini { min-width: 34px; font-size: 16px; line-height: 1; padding: 4px 8px; }
+.input.stepper .val { min-width: 48px; text-align: right; }

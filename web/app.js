@@ -117,24 +117,43 @@ function controlInput(file, c) {
       const p = c.saveKind === "define_val" ? { kind: "define_val", enabled: c.enabled !== false, value: inp.value } : { kind: c.saveKind, value: inp.value };
       recordChange(file, c.name, p);
     };
-    wrap.appendChild(inp); wrap.appendChild(valLbl);
+    const nudge = (d) => { // one slider step per click, reusing the slider's own input handler
+      const st = Number(c.step) || 1;
+      let n = Number(inp.value) + d * st;
+      n = Math.max(Number(c.min), Math.min(Number(c.max), n));
+      inp.value = String(Number(n.toFixed(3))); inp.dispatchEvent(new Event("input"));
+    };
+    const minus = el("button", "mini", "\u2212"); minus.type = "button"; minus.title = "Decrease"; minus.onclick = () => nudge(-1);
+    const plus = el("button", "mini", "+"); plus.type = "button"; plus.title = "Increase"; plus.onclick = () => nudge(1);
+    wrap.classList.add("stepper"); wrap.append(minus, inp, plus, valLbl);
   } else {
     const inp = el("input"); inp.type = c.control === "number" ? "number" : "text"; inp.value = eff.value ?? ""; inp.style.width = "150px";
-    const bounded = c.control === "number" && c.min != null && c.max != null;
-    if (bounded) { inp.min = c.min; inp.max = c.max; inp.step = c.step ?? 1; inp.style.width = "90px"; inp.title = c.noneIsZero ? "0 = NONE (not used)" : ""; }
+    const isNum = c.control === "number";
+    const bounded = isNum && c.min != null && c.max != null;
+    // Step by the value's own precision: 3.3 -> 0.1, 140 -> 1 (or the schema's step when it gives one)
+    const stepStr = c.step != null ? String(c.step) : "";
+    const decimals = Math.max((String(eff.value ?? "").split(".")[1] || "").length, (stepStr.split(".")[1] || "").length);
+    const stepSize = c.step != null ? Number(c.step) : (decimals ? Math.pow(10, -decimals) : 1);
+    if (isNum) {
+      inp.step = "any"; inp.inputMode = "decimal"; inp.style.width = "90px";
+      if (bounded) { inp.min = c.min; inp.max = c.max; }
+      if (c.noneIsZero) inp.title = "0 = NONE (not used)";
+    }
+    const normalize = (n) => {
+      if (!Number.isFinite(n)) n = bounded ? Number(c.min) : 0;
+      if (bounded) n = Math.max(Number(c.min), Math.min(Number(c.max), n));
+      return Number(n.toFixed(decimals));
+    };
     const commit = () => {
-      if (bounded) { // keep typed values inside the range too (the spinner only clamps clicks)
-        let n = Number(inp.value); if (!Number.isFinite(n)) n = c.min;
-        n = Math.max(c.min, Math.min(c.max, Math.round(n))); inp.value = String(n);
-      }
+      if (isNum) inp.value = String(normalize(Number(inp.value))); // typed values are clamped/rounded too
       const p = c.saveKind === "define_val" ? { kind: "define_val", enabled: c.enabled !== false, value: inp.value } : { kind: c.saveKind, value: inp.value };
       recordChange(file, c.name, p);
     };
     inp.onchange = commit;
-    if (bounded) { // explicit - / + buttons: visible on any theme, usable on a phone, and they can reach 0 (= NONE)
-      const step = (d) => { let n = Number(inp.value); if (!Number.isFinite(n)) n = c.min; inp.value = String(Math.max(c.min, Math.min(c.max, n + d))); commit(); };
-      const minus = el("button", "mini", "\u2212"); minus.type = "button"; minus.title = "Previous channel"; minus.onclick = () => step(-1);
-      const plus = el("button", "mini", "+"); plus.type = "button"; plus.title = "Next channel"; plus.onclick = () => step(1);
+    if (isNum) { // - / + on every number field: visible on any theme, usable on a phone, reaches 0 (= NONE on channel fields)
+      const nudge = (d) => { inp.value = String(normalize(Number(inp.value) + d * stepSize)); commit(); };
+      const minus = el("button", "mini", "\u2212"); minus.type = "button"; minus.title = "Decrease"; minus.onclick = () => nudge(-1);
+      const plus = el("button", "mini", "+"); plus.type = "button"; plus.title = "Increase"; plus.onclick = () => nudge(1);
       wrap.classList.add("stepper"); wrap.append(minus, inp, plus);
     } else {
       wrap.appendChild(inp);
